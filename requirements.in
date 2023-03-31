@@ -1,3 +1,5 @@
 geopandas
 loguru
+rasterio
 tqdm
+PyYAML

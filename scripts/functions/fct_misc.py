@@ -6,7 +6,7 @@ def format_logger(logger):
     '''Format the logger from loguru
     
     -logger: logger object from loguru
-    return: formatted logger objects
+    return: formatted logger object
     '''
 
     logger.remove()
@@ -44,3 +44,5 @@ def ensure_dir_exists(dirpath):
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
         print(f"The directory {dirpath} was created.")
+
+    return dirpath
