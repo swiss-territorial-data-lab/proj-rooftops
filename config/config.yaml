@@ -1,0 +1,33 @@
+#####################################################################
+###########     configuration file proj-rooftops     ############ 
+#####################################################################
+
+
+# 1-Prepare the tiles geometry according to the AOI and zoom level
+prepare_data.py: 
+  input_folder: "../data/"
+  output_folder: "../output/"
+  dataname: "2499000_1117000_EGID1013180"
+  egid: 1013180
+  pcd_type: "las"
+  # dataname: "2499000_1117000_subsample_buildings"
+  shpname: "SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
+  filters:
+    filter_class: 'True'
+    class_number: 6
+    filter_roof: 'True'
+
+# 1-Prepare the tiles geometry according to the AOI and zoom level
+plane_segmentation.py: 
+  input_folder: "../output/"
+  output_folder: "../output/"
+  dataname: "2499000_1117000_EGID1013180"
+  visu: 'True'
+
+polygonize.py:
+  input_folder: "../output/"
+  output_folder: "../output/"
+  dataname: "2499000_1117000_EGID1013180"
+  epsg: 2056
+  area_threshold: 50
+  visu: 'False'
