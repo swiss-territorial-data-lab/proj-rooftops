@@ -62,14 +62,14 @@ if __name__ == "__main__":
     VISU = cfg['visu']
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME + '_test/')
+    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     written_files = []
 
     # Open point cloud file
-    input_dir = os.path.join(INPUT_DIR + DATA_NAME + '_test/')
+    input_dir = os.path.join(INPUT_DIR + DATA_NAME)
     df = pd.read_csv(input_dir + DATA_NAME + '_filter.csv')
     df = df.drop(['Unnamed: 0'], axis=1) 
     point_data = df.to_numpy()

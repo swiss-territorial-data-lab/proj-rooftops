@@ -65,14 +65,14 @@ if __name__ == "__main__":
     VISU = cfg['visu']
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME + '_test/')
+    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     written_files = []
 
     logger.info(f"Read point cloud file")
-    input_dir = os.path.join(INPUT_DIR + DATA_NAME + '_test/')
+    input_dir = os.path.join(INPUT_DIR + DATA_NAME)
     df = pd.read_csv(input_dir + DATA_NAME + "_all.csv")
 
     # Load planes in df 

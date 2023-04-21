@@ -66,7 +66,7 @@ if __name__ == "__main__":
     FILTER_ROOF = cfg['filters']['filter_roof']
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME + '_test/')
+    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     
     if DATA_TYPE == 'las':    
         # Open and read las file 
-        input_dir = os.path.join(INPUT_DIR + DATA_NAME + '_test/')
+        input_dir = os.path.join(INPUT_DIR + DATA_NAME)
         las = laspy.read(input_dir + DATA_NAME + "." + DATA_TYPE)
         # las.header
         logger.info("3D Point cloud name: " + data)
