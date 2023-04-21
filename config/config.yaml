@@ -3,27 +3,27 @@
 #####################################################################
 
 
-# 1-Prepare the tiles geometry according to the AOI and zoom level
+# 1-Prepare the lidar point cloud
 prepare_data.py: 
   input_folder: "../data/"
   output_folder: "../output/"
   dataname: "2499000_1117000_EGID1013180"
   egid: 1013180
   pcd_type: "las"
-  # dataname: "2499000_1117000_subsample_buildings"
   shpname: "SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
   filters:
     filter_class: 'True'
     class_number: 6
     filter_roof: 'True'
 
-# 1-Prepare the tiles geometry according to the AOI and zoom level
+# 2-Point Cloud plane segmentation and clustering
 plane_segmentation.py: 
   input_folder: "../output/"
   output_folder: "../output/"
   dataname: "2499000_1117000_EGID1013180"
   visu: 'True'
 
+# 3-2D vectorisation of segmented 3D point cloud 
 polygonize.py:
   input_folder: "../output/"
   output_folder: "../output/"
