@@ -31,3 +31,12 @@ polygonize.py:
   epsg: 2056
   area_threshold: 50
   visu: 'False'
+
+# 4-Evaluate the results
+assess_results.py: 
+  input_folder: "../output/"
+  output_folder: "../output/"
+  dataname: "2499000_1117000_EGID1013180"
+  shpname: "2499000_1117000_EGID1013180_occupation.gpkg"
+  gt_shapefile: "../data/processed/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg"
+  egid: 1013180
