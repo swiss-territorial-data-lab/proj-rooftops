@@ -62,15 +62,15 @@ if __name__ == "__main__":
     VISU = cfg['visu']
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
+    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME + '/')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     written_files = []
 
     # Open point cloud file
-    input_dir = os.path.join(INPUT_DIR + DATA_NAME)
-    df = pd.read_csv(input_dir + DATA_NAME + '_filter.csv')
+    input_dir = os.path.join(INPUT_DIR + DATA_NAME + '/' + DATA_NAME + '_filter.csv')
+    df = pd.read_csv(input_dir)
     df = df.drop(['Unnamed: 0'], axis=1) 
     point_data = df.to_numpy()
     logger.info(f"Read point cloud file: {len(point_data)} points")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         colors = plt.get_cmap("tab20")(i)
         segment_models[i], inliers = rest.segment_plane(distance_threshold=0.1,ransac_n=3,num_iterations=1000)
         segments[i]=rest.select_by_index(inliers)
-        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=50, print_progress=True))
+        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=5, print_progress=True))
         candidates=[len(np.where(labels==j)[0]) for j in np.unique(labels)]
         best_candidate=int(np.unique(labels)[np.where(candidates== np.max(candidates))[0]])
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
 
-    # Segmented point cloud vizualisation
+    # Segmented point cloud vizualisation10
     if VISU == 'True':
         geom.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.5, max_nn=16), fast_normal_computation=True)
         geom.paint_uniform_color([0.6,0.6,0.6])

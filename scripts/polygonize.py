@@ -28,6 +28,7 @@ import os, sys
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from shapely.geometry import shape,Polygon,MultiPolygon,mapping, Point
 from shapely.ops import cascaded_union
 from loguru import logger
@@ -65,15 +66,15 @@ if __name__ == "__main__":
     VISU = cfg['visu']
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
+    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME + '/')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     written_files = []
 
     logger.info(f"Read point cloud file")
-    input_dir = os.path.join(INPUT_DIR + DATA_NAME)
-    df = pd.read_csv(input_dir + DATA_NAME + "_all.csv")
+    input_dir = os.path.join(INPUT_DIR + DATA_NAME + '/' + DATA_NAME + "_all.csv")
+    df = pd.read_csv(input_dir)
 
     # Load planes in df 
     df_planes = df[df['type']=='plane']
@@ -148,7 +149,8 @@ if __name__ == "__main__":
     logger.info(f"...done. A file was written: {feature_path}")
 
     gdf_free.plot(color = 'green')
-    # plt.show()
+    plt.savefig(output_dir + DATA_NAME + "_freearea.png")
+    plt.show()
 
     gdf_objects = gdf_clusters.drop(['class'], axis=1) 
     gdf_objects['occupation'] = 1

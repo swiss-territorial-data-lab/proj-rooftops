@@ -79,8 +79,8 @@ if __name__ == "__main__":
     
     if DATA_TYPE == 'las':    
         # Open and read las file 
-        input_dir = os.path.join(INPUT_DIR + DATA_NAME)
-        las = laspy.read(input_dir + DATA_NAME + "." + DATA_TYPE)
+        input_dir = os.path.join(INPUT_DIR + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
+        las = laspy.read(input_dir)
         # las.header
         logger.info("3D Point cloud name: " + data)
         logger.info("Number of points: " + str(las.header.point_count))
