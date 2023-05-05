@@ -1,6 +1,18 @@
+# Create an image mask keeping buildings
 mask_for_buildings.py:
   transparency: true
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
   roofs: /mnt/data-02/cherny/git/proj-rooftops/data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   layer: labelling subset
   image_folder: processed/roof_pictures
+
+# Segment Anything Method
+SAM_rooftops.py:
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  image_dir: data/processed/roof_pictures/masked_images/
+  output_dir: output/SAM/
+  vector_extension: 'gpkg'          # 'gpkg' or 'shp'
+  SAM:
+    dl_checkpoints: False            # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
+    checkpoints: 'sam_vit_h_4b8939.pth'  # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
