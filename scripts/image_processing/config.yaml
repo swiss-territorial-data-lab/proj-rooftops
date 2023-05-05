@@ -1,5 +1,5 @@
 mask_for_buildings.py:
-  working_dir: /mnt/data-01/gsalamin/occupation-toitures
-  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  roofs: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data\initial\vector\SHP_PRODUIT_CAD_BATI_3D\CAD_BATI3D_BASIC_TOIT.shp
   layer: labelling subset
-  image_folder: initial/images/true_ortho_2019
+  image_folder: processed\roof_pictures

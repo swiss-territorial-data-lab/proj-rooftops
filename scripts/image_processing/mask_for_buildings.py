@@ -52,14 +52,14 @@ os.chdir(WORKING_DIR)
 logger.info('Importing data...')
 roofs=gpd.read_file(ROOFS)
 tiles=glob(os.path.join(IMAGE_FOLDER, '*.tif'))
+if '\\' in tiles[0]:
+     tiles=[tile.replace('\\', '/') for tile in tiles]
 
 logger.info('Treating vector data...')
 roofs=roofs.buffer(1)
 merged_roofs_geoms=roofs.unary_union
-merged_roofs=gpd.GeoDataFrame({'id': [i for i in range(len(merged_roofs_geoms.geoms))],
-                               'geometry': [geom for geom in merged_roofs_geoms.geoms]})
 
-for tile in tqdm(tiles, desc='Producing the masks...'):
+for tile in tqdm(tiles, desc='Producing the masks', total=len(tiles)):
 
     with rasterio.open(tile, "r") as src:
         tile_img = src.read()
@@ -71,11 +71,13 @@ for tile in tqdm(tiles, desc='Producing the masks...'):
     mask = rasterize(shapes=polygons, out_shape=im_size)
 
     mask_meta = src.meta.copy()
-    mask_meta.update({'count': 1, 'dtype': 'uint8'})
+    mask_meta.update({'count': 1, 'dtype': 'uint8', 'nodata':99})
 
-    filepath=os.path.join(fct_misc.ensure_dir_exists('processed/tiles/mask'),
+    filepath=os.path.join(fct_misc.ensure_dir_exists(os.path.join(IMAGE_FOLDER, 'mask')),
                             tile.split('/')[-1].split('.')[0] + '_mask.tif')
+    
+
     with rasterio.open(filepath, 'w', **mask_meta) as dst:
         dst.write(mask,1)
 
-logger.success(f'The masks were written in the folder processed/tiles/mask.')
+logger.success(f'The masks were written in the folder {os.path.join(IMAGE_FOLDER, "mask")}.')
