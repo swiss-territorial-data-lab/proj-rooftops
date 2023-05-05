@@ -2,7 +2,7 @@
 data/*
 output/*
 model/*
-test/*
+tests/*
 WBT/*
 
 
