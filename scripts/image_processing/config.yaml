@@ -1,4 +1,5 @@
 mask_for_buildings.py:
+  transparency: true
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   roofs: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data\initial\vector\SHP_PRODUIT_CAD_BATI_3D\CAD_BATI3D_BASIC_TOIT.shp
   layer: labelling subset
