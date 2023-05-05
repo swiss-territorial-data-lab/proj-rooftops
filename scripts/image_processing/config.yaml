@@ -1,5 +1,5 @@
 mask_for_buildings.py:
-  working_dir: /mnt/data-01/gsalamin/occupation-toitures
-  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  roofs: data/processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BATIMENT_HORSOL_TOIT_SP_merge.gpkg
   layer: labelling subset
-  image_folder: initial/images/true_ortho_2019
+  image_folder: data/initial/images/true_ortho_2019
