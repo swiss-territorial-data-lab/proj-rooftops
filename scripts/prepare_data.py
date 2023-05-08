@@ -30,7 +30,10 @@ import pandas as pd
 import geopandas as gpd
 import laspy
 import open3d as o3d
+import whitebox
+wbt = whitebox.WhiteboxTools()
 from loguru import logger
+
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(0, '.')
@@ -55,6 +58,7 @@ if __name__ == "__main__":
         cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
 
     # Load input parameters
+    WORKING_DIR = cfg['working_folder']
     INPUT_DIR = cfg['input_folder']
     OUTPUT_DIR = cfg['output_folder']
     DATA_NAME = cfg['dataname']
@@ -65,8 +69,10 @@ if __name__ == "__main__":
     CLASS_NUMBER = cfg['filters']['class_number']
     FILTER_ROOF = cfg['filters']['filter_roof']
 
+    os.chdir(WORKING_DIR)
+
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR + DATA_NAME)
+    output_dir = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -79,8 +85,9 @@ if __name__ == "__main__":
     
     if DATA_TYPE == 'las':    
         # Open and read las file 
-        input_dir = os.path.join(INPUT_DIR + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
-        las = laspy.read(input_dir)
+        input_data = os.path.join(WORKING_DIR  + '/' + INPUT_DIR + '/' + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
+
+        las = laspy.read(input_data)
         # las.header
         logger.info("3D Point cloud name: " + data)
         logger.info("Number of points: " + str(las.header.point_count))
@@ -89,14 +96,52 @@ if __name__ == "__main__":
         logger.info("Classes: ")
         logger.info(set(list(las.classification)))
 
-        # intensity = las.intensity
-
-        # Clip point cloud with shaepfile 
+        # Clip point cloud with shapefile 
         logger.info('Read shapefile...')
-        gdf_roofs = gpd.read_file(INPUT_DIR + SHP_NAME)
-        dissolved = gdf_roofs.dissolve('EGID', as_index=False)
-        dissolved.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
-        alti_roof = dissolved.loc[dissolved['EGID'] == EGID, 'ALTI_MIN'].iloc[0] - 1.0             # -1 as a below buffer 
+
+        feature_path = os.path.join(WORKING_DIR  + '/' + INPUT_DIR + '/'  + SHP_NAME[:-4]  + "_EGID.shp")
+
+        if os.path.exists(feature_path):
+            logger.info(f"File {SHP_NAME[:-4]}_EGID.shp already exists")
+            dissolved = gpd.read_file(feature_path)
+        else:
+            logger.info(f"File {SHP_NAME[:-4]}_EGID.shp does not exist")
+            logger.info(f"Create it")
+            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + INPUT_DIR  + '/' + SHP_NAME)
+            logger.info(f"Dissolved shapes by EGID number")
+            dissolved = gdf_roofs.dissolve('EGID', as_index=False)
+            dissolved.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
+            dissolved.to_file(feature_path)
+            written_files.append(feature_path)  
+            logger.info(f"...done. A file was written: {feature_path}")
+
+        logger.info(f"Select the shape for EGID {EGID}")        
+        shape = dissolved.loc[dissolved['EGID'] == EGID]
+        try:
+            # Remove all characters before the character '-' from string
+            SHP_EGID = SHP_NAME[SHP_NAME.index('/') + 1 : -4]
+        except ValueError:
+            pass
+        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/' + SHP_EGID  + "_EGID" + str(EGID) + ".shp")
+        shape.to_file(shape_data)
+        written_files.append(shape_data)  
+        logger.info(f"...done. A file was written: {shape_data}")
+
+        output_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/'  + DATA_NAME + '/' + DATA_NAME + "_clip." + DATA_TYPE)
+
+        # las clip
+        logger.info(f"Clip LiDAR point cloud with shapefile")   
+        wbt.clip_lidar_to_polygon(input_data, shape_data, output_data)
+        written_files.append(output_data)  
+        logger.info(f"...done. A file was written: {output_data}")
+
+        # las altitude filter
+        logger.info(f"Filter LiDAR points above the min altitude of the roof (by EGID)")  
+        alti_roof = dissolved.loc[dissolved['EGID'] == EGID, 'ALTI_MIN'].iloc[0] - 2.0             # -1 as a below buffer 
+        logger.info(f"Min altitude of the roof (+ buffer): {(alti_roof):.2f} m")
+
+        # open las file with laspy
+        las = laspy.read(output_data)
 
         # Filter point cloud by class value 
         if FILTER_CLASS == 'True':

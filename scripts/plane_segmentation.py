@@ -94,7 +94,7 @@ if __name__ == "__main__":
         colors = plt.get_cmap("tab20")(i)
         segment_models[i], inliers = rest.segment_plane(distance_threshold=0.1,ransac_n=3,num_iterations=1000)
         segments[i]=rest.select_by_index(inliers)
-        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=5, print_progress=True))
+        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=10, print_progress=True))
         candidates=[len(np.where(labels==j)[0]) for j in np.unique(labels)]
         best_candidate=int(np.unique(labels)[np.where(candidates== np.max(candidates))[0]])
 
@@ -117,12 +117,14 @@ if __name__ == "__main__":
         df1=pd.concat([df1, df], ignore_index=True)  
     feature_path = DATA_NAME + '_planes.csv'
     df1.to_csv(OUTPUT_DIR + feature_path)
+    logger.info(f"...done. A file was written: {feature_path}")
+
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
 
     # Cluster remaining points in point cloud  
     logger.info(f"Cluster remaining points")
-    labels = np.array(rest.cluster_dbscan(eps=0.5, min_points=10))
+    labels = np.array(rest.cluster_dbscan(eps=0.5, min_points=5))
     max_label = labels.max()
     logger.info(f"Point cloud has {max_label + 1} clusters")
     colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))

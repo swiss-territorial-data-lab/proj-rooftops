@@ -2,6 +2,7 @@
 tests/*
 output/*
 data/*
+model/*
 WBT/*
 
 # Byte-compiled / optimized / DLL files
