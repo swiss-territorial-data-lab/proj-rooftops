@@ -59,11 +59,12 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_folder']
-    INPUT_DIR = cfg['input_folder']
+    INPUT_DATA_DIR = cfg['input_data_folder']
+    INPUT_SHP_DIR = cfg['input_shape_folder']
     OUTPUT_DIR = cfg['output_folder']
     DATA_NAME = cfg['dataname']
-    EGID = cfg['egid']
     DATA_TYPE = cfg['pcd_type']
+    EGID = cfg['egid']
     SHP_NAME = cfg['shpname']
     FILTER_CLASS = cfg['filters']['filter_class']
     CLASS_NUMBER = cfg['filters']['class_number']
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     
     if DATA_TYPE == 'las':    
         # Open and read las file 
-        input_data = os.path.join(WORKING_DIR  + '/' + INPUT_DIR + '/' + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
+        input_data = os.path.join(WORKING_DIR  + '/' + INPUT_DATA_DIR + '/' + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
 
         las = laspy.read(input_data)
         # las.header
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         # Clip point cloud with shapefile 
         logger.info('Read shapefile...')
 
-        feature_path = os.path.join(WORKING_DIR  + '/' + INPUT_DIR + '/'  + SHP_NAME[:-4]  + "_EGID.shp")
+        feature_path = os.path.join(WORKING_DIR  + '/' + INPUT_SHP_DIR + '/'  + SHP_NAME[:-4]  + "_EGID.shp")
 
         if os.path.exists(feature_path):
             logger.info(f"File {SHP_NAME[:-4]}_EGID.shp already exists")
@@ -107,7 +108,7 @@ if __name__ == "__main__":
         else:
             logger.info(f"File {SHP_NAME[:-4]}_EGID.shp does not exist")
             logger.info(f"Create it")
-            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + INPUT_DIR  + '/' + SHP_NAME)
+            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + INPUT_SHP_DIR  + '/' + SHP_NAME)
             logger.info(f"Dissolved shapes by EGID number")
             dissolved = gdf_roofs.dissolve('EGID', as_index=False)
             dissolved.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
@@ -117,12 +118,7 @@ if __name__ == "__main__":
 
         logger.info(f"Select the shape for EGID {EGID}")        
         shape = dissolved.loc[dissolved['EGID'] == EGID]
-        try:
-            # Remove all characters before the character '-' from string
-            SHP_EGID = SHP_NAME[SHP_NAME.index('/') + 1 : -4]
-        except ValueError:
-            pass
-        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/' + SHP_EGID  + "_EGID" + str(EGID) + ".shp")
+        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/' + SHP_NAME[: -4]  + "_EGID" + str(EGID) + ".shp")
         shape.to_file(shape_data)
         written_files.append(shape_data)  
         logger.info(f"...done. A file was written: {shape_data}")

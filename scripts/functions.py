@@ -1,12 +1,52 @@
 import pandas as pd
+import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from scipy.spatial import ConvexHull
-from shapely.geometry import shape,Polygon,MultiPolygon,mapping, Point
+from shapely.geometry import shape,Polygon, MultiPolygon,mapping, Point
 from shapely.ops import unary_union
 from loguru import logger
+from descartes import PolygonPatch
+import alphashape
 
-def vectorize(df, array, type, visu):
+
+def vectorize_concave(df, array, type, visu):
+
+    df_object = pd.DataFrame({'class':[type]})
+    df_poly = pd.DataFrame()
+    logger.info(f"Compute 2D vector from points groups of type {type}:")
+
+    for i in range(len(array)):
+        points = df[df['group'] == array[i]]
+        points = points.drop(['Unnamed: 0','Z','group','type'], axis=1) 
+        points = points.to_numpy()
+
+        alpha = 2.0
+        # alpha = alphashape.optimizealpha(points)
+        logger.info(f"alpha value = {alpha}")
+        alpha_shape = alphashape.alphashape(points, alpha)
+
+        if visu == 'True':
+            fig, ax = plt.subplots()
+            ax.scatter(*zip(*points))
+            ax.add_patch(PolygonPatch(alpha_shape, alpha=0.2))
+            plt.show()
+
+        if alpha_shape.type == 'Polygon':
+            poly = Polygon(alpha_shape)
+        elif alpha_shape.type == 'MultiPolygon':
+            poly = MultiPolygon(alpha_shape)
+
+        area = poly.area
+        logger.info(f"Group: {array[i]}, area: {(area):.2f}")
+        df_object['geometry'] = poly
+        df_object['area'] = area # Assuming the OP's x,y coordinates
+        df_poly = df_poly.append(df_object, ignore_index=True)
+        
+    return df_poly
+
+
+def vectorize_convex(df, array, type, visu):
     
     df_object = pd.DataFrame({'class':[type]})
     df_poly = pd.DataFrame()

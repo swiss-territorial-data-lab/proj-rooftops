@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import shape,Polygon,MultiPolygon,mapping, Point
 from shapely.ops import cascaded_union
 from loguru import logger
-from functions import vectorize
+from functions import vectorize_convex, vectorize_concave
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(0, '.')
@@ -83,7 +83,8 @@ if __name__ == "__main__":
 
     # Vectorized planes polygons
     logger.info(f"Vectorize plane(s) polygon(s)")
-    df_poly_planes = vectorize(df_planes, planes, 'plane', VISU)
+    # df_poly_planes = vectorize_convex(df_planes, planes, 'plane', VISU)
+    df_poly_planes = vectorize_concave(df_planes, planes, 'plane', VISU)
 
     # Remove element with area below threshold value and store it to add it to objects df
     small_planes = gpd.GeoDataFrame()
@@ -103,12 +104,13 @@ if __name__ == "__main__":
     # Load remaining clusters in df 
     df_clusters = df[df['type']=='cluster']
     clusters = np.unique(df_clusters['group'])
-    clusters = clusters[clusters >= 0]                          # Remove outlier class (-1)
+    # clusters = clusters[clusters >= 0]                          # Remove outlier class (-1)
     logger.info(f"Number of clusters: {np.max(clusters) + 1}")
 
     # Vectorized clusters polygons
     logger.info(f"Vectorize object(s) polygon(s)")
-    df_poly_clusters = vectorize(df_clusters, clusters, 'object', VISU)
+    # df_poly_clusters = vectorize_convex(df_clusters, clusters, 'object', VISU)
+    df_poly_clusters = vectorize_concave(df_clusters, clusters, 'object', VISU)
 
      # Potentially add new oject(s) previously present(s) in plane df  
     logger.info(f"Add {len(small_planes)} object(s) to the dataframe") 
@@ -150,7 +152,7 @@ if __name__ == "__main__":
 
     gdf_free.plot(color = 'green')
     plt.savefig(output_dir + DATA_NAME + "_freearea.png")
-    plt.show()
+    # plt.show()
 
     gdf_objects = gdf_clusters.drop(['class'], axis=1) 
     gdf_objects['occupation'] = 1

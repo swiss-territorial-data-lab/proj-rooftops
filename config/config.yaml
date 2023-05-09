@@ -6,12 +6,13 @@
 # 1-Prepare the lidar point cloud
 prepare_data.py:
   working_folder: "/mnt/data-02/cherny/git/proj-rooftops"
-  input_folder: "data"
-  output_folder: "output"
+  input_data_folder: "data/LiDAR"
+  input_shape_folder: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/"
+  output_folder: "output/PCD_segmentation"
   dataname: "2499000_1115000"
-  egid: 2034760
   pcd_type: "las"
-  shpname: "SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
+  egid: 2034760
+  shpname: "CAD_BATIMENT_HORSOL_TOIT.shp"
   filters:
     filter_class: 'True'
     class_number: 6
@@ -19,24 +20,24 @@ prepare_data.py:
 
 # 2-Point Cloud plane segmentation and clustering
 plane_segmentation.py: 
-  input_folder: "../output/"
-  output_folder: "../output/"
+  input_folder: "../output/PCD_segmentation/"
+  output_folder: "../output/PCD_segmentation/"
   dataname: "2499000_1115000_EGID2034760"
   visu: 'True'
 
 # 3-2D vectorisation of segmented 3D point cloud 
 polygonize.py:
-  input_folder: "../output/"
-  output_folder: "../output/"
+  input_folder: "../output/PCD_segmentation/"
+  output_folder: "../output/PCD_segmentation/"
   dataname: "2499000_1115000_EGID2034760"
   epsg: 2056
   area_threshold: 50
-  visu: 'True'
+  visu: 'False'
 
 # 4-Evaluate the results
 assess_results.py: 
-  input_folder: "../output/"
-  output_folder: "../output/"
+  input_folder: "../output/PCD_segmentation/"
+  output_folder: "../output/PCD_segmentation/"
   dataname: "2499000_1115000_EGID2034760"
   shpname: "2499000_1115000_EGID2034760_occupation.gpkg"
   gt_shapefile: "../data/processed/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg"

@@ -2,6 +2,7 @@
 
 # --------------------------------------------------------------------------------------
 GDAL==3.0.4
+alphashape
 fiona
 geopandas
 laspy
@@ -12,3 +13,4 @@ open3d
 pyyaml
 requests
 shapely
+whitebox

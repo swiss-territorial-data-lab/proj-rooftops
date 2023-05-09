@@ -94,7 +94,7 @@ if __name__ == "__main__":
         colors = plt.get_cmap("tab20")(i)
         segment_models[i], inliers = rest.segment_plane(distance_threshold=0.1,ransac_n=3,num_iterations=1000)
         segments[i]=rest.select_by_index(inliers)
-        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=10, print_progress=True))
+        labels = np.array(segments[i].cluster_dbscan(eps=d_threshold, min_points=5, print_progress=True))
         candidates=[len(np.where(labels==j)[0]) for j in np.unique(labels)]
         best_candidate=int(np.unique(labels)[np.where(candidates== np.max(candidates))[0]])
 
