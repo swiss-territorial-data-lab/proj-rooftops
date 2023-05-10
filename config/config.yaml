@@ -11,7 +11,7 @@ prepare_data.py:
   output_folder: "output/PCD_segmentation"
   dataname: "2499000_1115000"
   pcd_type: "las"
-  egid: 2034760
+  egid: 1013180
   shpname: "CAD_BATIMENT_HORSOL_TOIT.shp"
   filters:
     filter_class: 'True'
@@ -22,14 +22,14 @@ prepare_data.py:
 plane_segmentation.py: 
   input_folder: "../output/PCD_segmentation/"
   output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1115000_EGID2034760"
+  dataname: "2499000_1115000_EGID1013180"
   visu: 'True'
 
 # 3-2D vectorisation of segmented 3D point cloud 
 polygonize.py:
   input_folder: "../output/PCD_segmentation/"
   output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1115000_EGID2034760"
+  dataname: "2499000_1117000_EGID1013180"
   epsg: 2056
   area_threshold: 50
   visu: 'False'
@@ -38,7 +38,7 @@ polygonize.py:
 assess_results.py: 
   input_folder: "../output/PCD_segmentation/"
   output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1115000_EGID2034760"
-  shpname: "2499000_1115000_EGID2034760_occupation.gpkg"
-  gt_shapefile: "../data/processed/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg"
-  egid: 2034760
+  dataname: "2499000_1117000_EGID1013180"
+  shpname: "2499000_1117000_EGID1013180_occupation.gpkg"
+  gt_shapefile: "../data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg"
+  egid: 1013180
