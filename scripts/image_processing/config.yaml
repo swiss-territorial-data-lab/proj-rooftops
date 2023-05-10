@@ -2,14 +2,14 @@
 mask_for_buildings.py:
   transparency: true
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  roofs: /mnt/data-02/cherny/git/proj-rooftops/data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   layer: labelling subset
-  image_folder: processed/roof_pictures
+  image_folder: orthophotos/2019/TRUE_ORTHOPHOTOS/
 
 # Segment Anything Method
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  image_dir: data/processed/roof_pictures/masked_images/
+  image_dir: data/orthophotos/2019/TRUE_ORTHOPHOTOS/masked_images/
   output_dir: output/SAM/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   SAM:

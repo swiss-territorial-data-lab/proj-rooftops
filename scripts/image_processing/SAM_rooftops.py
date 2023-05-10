@@ -89,10 +89,12 @@ if __name__ == "__main__":
 
     logger.info(f"Read images file name")
     tiles=glob(os.path.join(IMAGE_DIR, '*.tif'))
+
     if '\\' in tiles[0]:
         tiles=[tile.replace('\\', '/') for tile in tiles]
       
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
+        print(os.path.basename(tile))
 
         logger.info(f"Read images: {os.path.basename(tile)}") 
         image = tile
