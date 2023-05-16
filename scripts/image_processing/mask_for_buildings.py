@@ -37,7 +37,7 @@ logger.info('Starting...')
 # Define contants ------------------------------
 
 logger.info(f"Using config.yaml as config file.")
-with open('scripts/image_processing/config.yaml') as fp:
+with open('config/config.yaml') as fp:
         cfg = load(fp, Loader=FullLoader)['mask_for_buildings.py']
 
 logger.info('Defining constants...')
