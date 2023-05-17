@@ -4,9 +4,20 @@ mask_for_buildings.py:
   layer: labelling subset
   image_folder: initial/images/true_ortho_2019
 
+
 get_lidar_infos.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir: initial/LiDAR
+  overwrite: False
 
 
+rasterize_intensity.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: initial/LiDAR
+  overwrite: False
+  parameters:
+    method: idw
+    res: 0.3
+    radius: 0.3
+    returns: 'first'
 

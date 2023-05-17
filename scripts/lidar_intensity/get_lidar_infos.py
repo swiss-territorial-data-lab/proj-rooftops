@@ -20,10 +20,12 @@ with open('config/config.yaml') as fp:
 WORKING_DIR=cfg['working_dir']
 INPUT_DIR=cfg['input_dir']
 
+OVERWRITE= cfg['overwrite'] if 'overwrite' in cfg.keys() else False
+
 OUTPUT_DIR_HTML=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar_info'))
 
 logger.info('Getting the list of files...')
-lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR))
+lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 
 logger.info('Treating files...')
 for file in lidar_files:
@@ -36,12 +38,13 @@ for file in lidar_files:
 
     output_path_html=os.path.join(OUTPUT_DIR_HTML, filename + '.html')
 
-    wbt.lidar_info(
-        file, 
-        output_path_html, 
-        density=True, 
-        vlr=True, 
-        geokeys=True,
-    )
+    if (not os.path.isfile(output_path_html)) | OVERWRITE:
+        wbt.lidar_info(
+            file, 
+            output_path_html, 
+            density=True, 
+            vlr=True, 
+            geokeys=True,
+        )
 
 logger.success(f'The files were saved in the folder "{OUTPUT_DIR_HTML}".')
