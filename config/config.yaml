@@ -21,3 +21,9 @@ rasterize_intensity.py:
     radius: 0.3
     returns: 'first'
 
+
+deviation_determination.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir_images: processed/rasterized_lidar
+  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp

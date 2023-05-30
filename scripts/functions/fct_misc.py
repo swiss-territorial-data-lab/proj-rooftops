@@ -1,6 +1,7 @@
 import os, sys
 
 import geopandas as gpd
+from shapely.affinity import scale
 
 def format_logger(logger):
     '''Format the logger from loguru
@@ -46,3 +47,28 @@ def ensure_dir_exists(dirpath):
         print(f"The directory {dirpath} was created.")
 
     return dirpath
+
+def clip_labels(labels_gdf, tiles_gdf, fact=0.99):
+
+    tiles_gdf['tile_geometry'] = tiles_gdf['geometry']
+        
+    assert(labels_gdf.crs == tiles_gdf.crs)
+    
+    labels_tiles_sjoined_gdf = gpd.sjoin(labels_gdf, tiles_gdf, how='inner', predicate='intersects')
+    
+    def clip_row(row, fact=fact):
+        
+        old_geo = row.geometry
+        scaled_tile_geo = scale(row.tile_geometry, xfact=fact, yfact=fact)
+        new_geo = old_geo.intersection(scaled_tile_geo)
+        row['geometry'] = new_geo
+
+        return row
+
+    clipped_labels_gdf = labels_tiles_sjoined_gdf.apply(lambda row: clip_row(row, fact), axis=1)
+    clipped_labels_gdf.crs = labels_gdf.crs
+
+    clipped_labels_gdf.drop(columns=['tile_geometry', 'index_right'], inplace=True)
+    clipped_labels_gdf.rename(columns={'id': 'tile_id'}, inplace=True)
+
+    return clipped_labels_gdf
