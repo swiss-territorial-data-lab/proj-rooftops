@@ -7,6 +7,9 @@ from yaml import load, FullLoader
 import pandas as pd
 import geopandas as gpd
 import rasterio
+import rasterio.features
+from numpy import NaN
+from shapely.geometry import shape
 from rasterstats import zonal_stats
 
 sys.path.insert(1, 'scripts')
@@ -28,7 +31,20 @@ def cause_occupation(df, message='Undefined cause'):
 
     return df
 
+def get_tilepath_from_id(tile_id, im_list):
+
+    matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
+    if len(matching_path)>1:
+        logger.critical(f'There are multiple tiles corresponding to the id {tile_id}.')
+        sys.exit(1)
+    else:
+        tilepath=matching_path[0]
+
+    return tilepath
+
 # Define constants ----------------
+
+DEBUG=False
 
 WORKING_DIR=cfg['working_dir']
 INPUT_DIR_IMAGES=cfg['input_dir_images']
@@ -38,9 +54,12 @@ ROOFS=cfg['roofs']
 
 # Parameter for eliminations
 PROJECTED_AREA=2
-LIM_STD=6000
-LIM_MOE=750
+NODATA_OVERLAP=0.25
+LIM_STD=5500
+LIM_MOE=400
 Z=2
+
+written_files=[]
 
 os.chdir(WORKING_DIR)
 
@@ -52,30 +71,77 @@ roofs=gpd.read_file(ROOFS)
 logger.info('Filtering for roofs clearly too small...')
 small_roofs=roofs[roofs['SHAPE_AREA']<PROJECTED_AREA].reset_index(drop=True)
 small_roofs=cause_occupation(small_roofs, f'projected area < {PROJECTED_AREA} m2')
+small_roofs['nodata_overlap']=NaN
 
-logger.info(f'{small_roofs.shape[0]+1} roof planes are classified as occupied' + 
-            f' because their projected surface for those is smaller than {PROJECTED_AREA} m2.')
+logger.info(f'{small_roofs.shape[0]} roof planes are classified as occupied' + 
+            f' because their projected surface is smaller than {PROJECTED_AREA} m2.')
 logger.info(f'{small_roofs.geometry.area.sum().round(1)} projected m2 were eliminated.')
-
 
 large_roofs=roofs[~(roofs['SHAPE_AREA']<PROJECTED_AREA)].copy()
 
-# Get roofs planes with a high percentage of nodata values
-# cf https://gis.stackexchange.com/questions/295362/polygonize-raster-file-according-to-band-values
+if DEBUG:
+    large_roofs=large_roofs.sample(frac=0.1, ignore_index=True, random_state=1)
 
-# -> Create polygons of nodata
-# -> Calculate the area of intersection with the roof plane
-# -> Exclude if the intersection is more than XX%
-
-
-# Make stats per polygon
 logger.info('Clipping labels...')
 lidar_tiles.rename(columns={'fme_basena': 'id'}, inplace=True)
 clipped_roofs=fct.clip_labels(large_roofs, lidar_tiles)
-clipped_roofs_cleaned=clipped_roofs[~(clipped_roofs['geometry'].is_empty | clipped_roofs['geometry'].isna())].copy()
+existing_clipped_roofs=clipped_roofs[~(clipped_roofs['geometry'].is_empty | clipped_roofs['geometry'].isna())].copy()
 
-clipped_roofs_cleaned.to_file(os.path.join('processed', 'tests', 'test_clipped_roofs.shp'))
+del large_roofs, clipped_roofs
 
+# Get roofs planes with a high percentage of nodata values
+# cf https://gis.stackexchange.com/questions/295362/polygonize-raster-file-according-to-band-values
+logger.info('Getting zones with nodata value...')
+
+nodata_polygons=[]
+for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting nodata area on tiles...'):
+
+    if any(tile_id in tilepath for tilepath in im_list):
+
+        tilepath=get_tilepath_from_id(tile_id, im_list)
+
+        with rasterio.open(tilepath, crs='EPSG:2056') as src:
+            intensity=src.read(1)
+
+            shapes = list(rasterio.features.shapes(intensity, transform=src.transform))
+            nodata_polygons.extend([shape(geom) for geom, value in shapes if value == src.nodata])
+
+nodata_df=gpd.GeoDataFrame({'id': [i for i in range(len(nodata_polygons))], 'geometry': nodata_polygons}, crs='EPSG:2056')
+
+logger.info('Getting the overlap between nodata values and the roof plans...')
+
+existing_clipped_roofs['clipped_area']=existing_clipped_roofs.geometry.area
+nodata_overlap=gpd.overlay(nodata_df, existing_clipped_roofs)
+nodata_overlap['joined_area']=nodata_overlap.geometry.area
+
+nodata_overlap_grouped=nodata_overlap[['OBJECTID', 'tile_id', 'joined_area']].groupby(by=['OBJECTID', 'tile_id']).sum().reset_index()
+nodata_overlap_full=gpd.GeoDataFrame(nodata_overlap_grouped.merge(existing_clipped_roofs, how='right', on=['OBJECTID', 'tile_id']), crs='EPSG:2056')
+nodata_overlap_full['nodata_overlap']=nodata_overlap_full['joined_area']/nodata_overlap_full['clipped_area']
+
+logger.info('Excluding roofs with too much area not classifed as building...')
+
+no_roofs=nodata_overlap_full[nodata_overlap_full['nodata_overlap']>0.75].copy()
+no_roofs['status']='undefined'
+no_roofs['reason']='More than 75% of the roof area is not classified as building. Check wether it is a building or not.'
+no_roofs.reset_index(drop=True, inplace=True)
+
+building_roofs=nodata_overlap_full[(nodata_overlap_full['nodata_overlap']<=0.75) | (nodata_overlap_full['nodata_overlap'].isna())].copy()
+
+other_classes_roofs=building_roofs[building_roofs['nodata_overlap']>NODATA_OVERLAP].copy()
+other_classes_roofs=cause_occupation(other_classes_roofs, f'More than {NODATA_OVERLAP*100}% of the area is not classified as building.')
+
+clipped_roofs_cleaned=building_roofs[(building_roofs['nodata_overlap']<=NODATA_OVERLAP) | (nodata_overlap_full['nodata_overlap'].isna())].reset_index(drop=True)
+
+logger.info(f'{no_roofs.shape[0]} roofs are classified as undefined, because they do not overlap enough with the building class.')
+logger.info(f'{other_classes_roofs.shape[0]} roofs are classified as occupied, '+
+            f'because more than {NODATA_OVERLAP*100}% of their surface is not classified as building.')
+
+del existing_clipped_roofs
+del nodata_polygons, nodata_df
+del nodata_overlap, nodata_overlap_grouped, nodata_overlap_full
+del building_roofs
+
+# Make stats per polygon
 zs_per_clear_roofs=gpd.GeoDataFrame()
 roofs_high_variability=gpd.GeoDataFrame()
 roofs_high_std=gpd.GeoDataFrame()
@@ -86,12 +152,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
 
         roofs_on_tile=clipped_roofs_cleaned[clipped_roofs_cleaned['tile_id']==tile_id].reset_index(drop=True)
 
-        matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
-        if len(matching_path)>1:
-            logger.critical(f'There are multiple tiles corresponding to the id {tile_id}.')
-            sys.exit(1)
-        else:
-            tilepath=matching_path[0]
+        tilepath=get_tilepath_from_id(tile_id, im_list)
         
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             intensity=src.read(1)
@@ -132,15 +193,16 @@ roofs_high_variability=pd.concat([roofs_high_variability, roofs_high_moe, roofs_
 
 
 # If roofs appear several times, keep the largest surface
-roofs_occupation=pd.concat([zs_per_clear_roofs, roofs_high_variability, small_roofs], ignore_index=True)
-roofs_occupation['area']=roofs_occupation.geometry.area
-roofs_occupation_cleaned=roofs_occupation.sort_values('area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
+roofs_occupation=pd.concat([zs_per_clear_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
+roofs_occupation['clipped_area']=roofs_occupation.geometry.area
+roofs_occupation_cleaned=roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
 
-logger.info(f'{roofs_occupation.shape[0]-roofs_occupation_cleaned.shape[0]} geometries were dropped because they were duplicates due to the label clipping.')
+logger.info(f'{roofs_occupation.shape[0]-roofs_occupation_cleaned.shape[0]} geometries were dropped'+
+            f' because they were duplicates due to the label clipping.')
 
 # Reattach to original geometries
-roofs_occupation_cleaned_df=pd.DataFrame(roofs_occupation_cleaned.drop(columns=['geometry', 'area']))
-roofs_occupation_cleaned_gdf=gpd.GeoDataFrame(roofs_occupation_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'))
+roofs_occupation_cleaned_df=pd.DataFrame(roofs_occupation_cleaned.drop(columns=['geometry', 'clipped_area']))
+roofs_occupation_cleaned_gdf=gpd.GeoDataFrame(roofs_occupation_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'), crs='EPSG:2056')
 
 logger.info('Saving files...')
 roofs_occupation_cleaned_gdf.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='roof_occupation')
