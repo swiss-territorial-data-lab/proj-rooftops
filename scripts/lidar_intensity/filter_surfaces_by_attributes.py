@@ -19,11 +19,18 @@ logger=fct.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
-    cfg = load(fp, Loader=FullLoader)['deviation_determination.py']
+    cfg = load(fp, Loader=FullLoader)['filter_surfaces_by_attributes.py']
 
 # Define functions ---------------
 
 def cause_occupation(df, message='Undefined cause'):
+    '''
+    Set the status to “occupied” and write the reason behind this.
+
+    - df: dataframe of the occupied surface
+    - message: message to write
+    return: df with the column 'status' and 'reason'
+    '''
 
     df['status']='occupied'
     df['reason']=message
@@ -32,6 +39,13 @@ def cause_occupation(df, message='Undefined cause'):
     return df
 
 def get_tilepath_from_id(tile_id, im_list):
+    '''
+    Get the tilepath containing the tile id from a list and check that there is no more than one.
+
+    - tile_id: string with (part of) the tile name
+    - im_list: list of the image/tile pathes
+    return: matching tilepath
+    '''
 
     matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
     if len(matching_path)>1:
