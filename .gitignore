@@ -1,6 +1,7 @@
 # Folders
 data/*
 output/*
+input/*
 model/*
 tests/*
 WBT/*

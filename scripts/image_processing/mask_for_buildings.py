@@ -59,7 +59,7 @@ if '\\' in tiles[0]:
      tiles=[tile.replace('\\', '/') for tile in tiles]
 
 logger.info('Treating vector data...')
-roofs=roofs.buffer(1)
+roofs=roofs.buffer(0)
 merged_roofs_geoms=roofs.unary_union
 
 for tile in tqdm(tiles, desc='Producing the masks', total=len(tiles)):

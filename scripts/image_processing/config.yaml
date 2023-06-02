@@ -1,3 +1,11 @@
+# Tiles generation
+tiles_generation.py:
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_images
+  shape_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  tiles_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/Tiles/tiles_test.shp
+  output_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
+
 # Create an image mask keeping buildings
 mask_for_buildings.py:
   transparency: true
@@ -9,10 +17,48 @@ mask_for_buildings.py:
 # Segment Anything Method
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  image_dir: data/orthophotos/2019/TRUE_ORTHOPHOTOS/masked_images/
-  output_dir: output/SAM/
+  # image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_image/
+  image_dir:  /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
+  #  image_dir: output/SAM/oth-images/SS
+  output_dir: output/SAM/tests/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   SAM:
     dl_checkpoints: False            # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth'  # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+
+# 1-Prepare the tiles geometry according to the AOI and zoom level
+prepare_data.py: 
+  srs: "EPSG:2056"                       # Projection of the input file
+  datasets:
+    labels_shapefile: /mnt/data-02/cherny/git/proj-rooftops/data/AOI.shp
+  output_folder: output/SAM/
+  zoom_level: 18    #z, keep between 15 and 18  
+
+# 2-Request tiles according to the provided AOI and tiles parameters
+generate_tilesets.py:
+  debug_mode: False             #reduced amount of tiles
+  datasets:
+    aoi_tiles_geojson: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/tiles.geojson
+    orthophotos_web_service:
+      type: XYZ # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
+      url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
+      # url: https://wms.geo.admin.ch/service
+      # layers: ch.swisstopo.swissimage
+      # srs: "EPSG:2056"
+  output_folder: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/
+  tile_size: 512 # per side, in pixels
+  overwrite: True
+  n_jobs: 10
+  COCO_metadata:
+    year: 2021
+    version: 1.0
+    description: Swiss Image Hinterground w/ Quarry and exploitation site detection
+    contributor: swisstopo
+    url: https://swisstopo.ch
+    license:
+      name: Unknown
+      url:
+    category:
+        name: "Quarry"
+        supercategory: "Land usage"

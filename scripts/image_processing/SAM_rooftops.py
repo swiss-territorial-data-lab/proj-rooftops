@@ -6,20 +6,7 @@
 #      Clemence Herny 
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
-#      Copyright (c) 2020 Republic and Canton of Geneva
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import os, sys
 import time
@@ -31,10 +18,7 @@ from tqdm import tqdm
 from yaml import load, FullLoader
 
 import torch
-import geopandas as gpd
-import numpy as np
 import matplotlib.pyplot as plt
-import rasterio
 from rasterio.mask import mask
 from rasterio.features import rasterize
 from shapely.geometry import Polygon, mapping
@@ -115,8 +99,8 @@ if __name__ == "__main__":
             checkpoint=checkpoint,
             model_type='vit_h',
             device=device,
-            erosion_kernel=(3, 3),
-            mask_multiplier=255,
+            # erosion_kernel=(3, 3),
+            # mask_multiplier=255,
             sam_kwargs=None,
         )
 
@@ -125,10 +109,16 @@ if __name__ == "__main__":
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
         mask = file_path
-        sam.generate(image, mask)
+        sam.generate(image, mask, batch=False, foreground=False, unique=True, erosion_kernel=None, mask_multiplier=255)
         written_files.append(file_path)  
         logger.info(f"...done. A file was written: {file_path}")
 
+        file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+                                tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
+        sam.show_masks(cmap="binary_r")
+        sam.show_anns(axis="off", alpha=0.7, output=file_path)
+        plt.show()
+        
         logger.info(f"Convert segmentation mask to vector layer")  
         if SHP_EXT == 'gpkg': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
