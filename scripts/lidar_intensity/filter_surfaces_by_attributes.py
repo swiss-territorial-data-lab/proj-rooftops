@@ -73,8 +73,6 @@ LIM_STD=5500
 LIM_MOE=400
 Z=2
 
-written_files=[]
-
 os.chdir(WORKING_DIR)
 
 logger.info('Getting the files...')
@@ -219,10 +217,9 @@ roofs_occupation_cleaned_df=pd.DataFrame(roofs_occupation_cleaned.drop(columns=[
 roofs_occupation_cleaned_gdf=gpd.GeoDataFrame(roofs_occupation_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'), crs='EPSG:2056')
 
 logger.info('Saving files...')
-roofs_occupation_cleaned_gdf.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='roof_occupation')
+filepath=os.path.join('processed', 'tests', 'roofs.gpkg')
 
-small_roofs.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='small_roofs', driver="GPKG")
-roofs_high_variability.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='variable_roofs')
+layername='roof_occupation'
+roofs_occupation_cleaned_gdf.to_file(filepath, layer=layername)
 
-roofs_high_std.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='variable_roofs_std')
-roofs_high_moe.to_file(os.path.join('processed', 'tests', 'roofs.gpkg'), layer='variable_roofs_moe')
+logger.success(f'The files were written in the geopackage "{filepath}" in the layer {layername}.')

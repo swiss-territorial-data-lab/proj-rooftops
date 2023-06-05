@@ -22,7 +22,7 @@ INPUT_DIR=cfg['input_dir']
 
 OVERWRITE= cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
-OUTPUT_DIR_HTML=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar_info'))
+OUTPUT_DIR_HTML=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/lidar_info'))
 
 logger.info('Getting the list of files...')
 lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))

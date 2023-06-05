@@ -28,7 +28,7 @@ RES=PARAMETERS['res']
 RADIUS=PARAMETERS['radius']
 RETURNS=PARAMETERS['returns']
 
-OUTPUT_DIR_TIF=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/rasterized_lidar'))
+OUTPUT_DIR_TIF=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
 
 logger.info('Getting the list of files...')
 lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))

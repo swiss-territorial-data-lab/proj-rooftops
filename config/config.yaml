@@ -22,6 +22,24 @@ rasterize_intensity.py:
     returns: 'first'
 
 
+rasterize_roughness.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: initial/LiDAR
+  overwrite: True
+  make_dem: True
+  parameters_dem: 
+    resolution: 0.3
+    radius: 0.3
+    min_z: 325
+    max_z: 525
+    max_edge: 25
+  make_rgh: True
+  parameters_rgh:
+    min_scale: 1
+    max_scale: 2
+    step: 1
+
+
 filter_surfaces_by_attributes.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir_images: processed/rasterized_lidar
