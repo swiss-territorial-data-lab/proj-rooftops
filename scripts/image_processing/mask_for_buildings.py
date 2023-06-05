@@ -46,19 +46,19 @@ logger.info('Defining constants...')
 TRANSPARENCY=cfg['transparency']
 
 WORKING_DIR=cfg['working_dir']
-ROOFS=cfg['roofs']
+SHP_ROOFS=cfg['roofs_dir']
 LAYER=cfg['layer']
-IMAGE_FOLDER=cfg['image_folder']
+IMAGE_FOLDER=cfg['image_dir']
 
 os.chdir(WORKING_DIR)
 
 logger.info('Importing data...')
-roofs=gpd.read_file(ROOFS)
+roofs=gpd.read_file(SHP_ROOFS)
 tiles=glob(os.path.join(IMAGE_FOLDER, '*.tif'))
 if '\\' in tiles[0]:
      tiles=[tile.replace('\\', '/') for tile in tiles]
 
-logger.info('Treating vector data...')
+logger.info('Processing vector data...')
 roofs=roofs.buffer(0)
 merged_roofs_geoms=roofs.unary_union
 

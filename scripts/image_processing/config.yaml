@@ -1,31 +1,45 @@
 # Tiles generation
 tiles_generation.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_images
-  shape_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_images/
+  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   tiles_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/Tiles/tiles_test.shp
+  buffer: 1                # Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   output_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
 
 # Create an image mask keeping buildings
 mask_for_buildings.py:
   transparency: true
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  roofs: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   layer: labelling subset
-  image_folder: orthophotos/2019/TRUE_ORTHOPHOTOS/
+  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
 
 # Segment Anything Method
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   # image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_image/
   image_dir:  /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
-  #  image_dir: output/SAM/oth-images/SS
+  shape_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   output_dir: output/SAM/tests/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   SAM:
     dl_checkpoints: False            # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth'  # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    batch: True
+    foreground: true
+    unique: true
+    erosion_kernel: None
+    mask_multiplier: 255
+    custom_SAM: False
+
+# Create an image mask keeping buildings
+produce_vector_layer.py:
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  detection_dir: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/tests/segmented_images/
+  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/tests/segmented_images/
 
 # 1-Prepare the tiles geometry according to the AOI and zoom level
 prepare_data.py: 
@@ -53,12 +67,12 @@ generate_tilesets.py:
   COCO_metadata:
     year: 2021
     version: 1.0
-    description: Swiss Image Hinterground w/ Quarry and exploitation site detection
+    description: Swiss Image Hinterground w/
     contributor: swisstopo
     url: https://swisstopo.ch
     license:
       name: Unknown
       url:
     category:
-        name: "Quarry"
+        name: "Roof"
         supercategory: "Land usage"

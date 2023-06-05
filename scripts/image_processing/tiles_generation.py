@@ -54,7 +54,8 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     TILES_DIR = cfg['tiles_dir']
-    SHP_DIR = cfg['shape_dir']
+    SHP_ROOFS = cfg['roofs_dir']
+    BUFFER = cfg['buffer']
     OUTPUT_DIR = cfg['output_dir']
 
     os.chdir(WORKING_DIR)
@@ -65,16 +66,16 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    SHP_DIR, SHP_NAME = os.path.split(SHP_DIR)
-    feature_path = os.path.join(SHP_DIR, SHP_NAME[:-4]  + "_EGID.shp")
+    SHP_ROOFS, ROOFS_NAME = os.path.split(SHP_ROOFS)
+    feature_path = os.path.join(SHP_ROOFS, ROOFS_NAME[:-4]  + "_EGID.shp")
 
     if os.path.exists(feature_path):
-        logger.info(f"File {SHP_NAME[:-4]}_EGID.shp already exists")
+        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
         rooftops = gpd.read_file(feature_path)
     else:
-        logger.info(f"File {SHP_NAME[:-4]}_EGID.shp does not exist")
+        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + SHP_DIR  + '/' + SHP_NAME)
+        gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + SHP_ROOFS  + '/' + ROOFS_NAME)
         logger.info(f"Dissolved shapes by EGID number")
         rooftops = gdf_roofs.dissolve('EGID', as_index=False)
         rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
@@ -155,7 +156,7 @@ if __name__ == "__main__":
                 image = raster
 
         logger.info("Rooftops' boundary box shapes")
-        bbox_shape = bbox_list[bbox_list['EGID'] == i]['geometry']  
+        bbox_shape = bbox_list[bbox_list['EGID'] == i]['geometry'].buffer(BUFFER, join_style=2)  
 
         # Clip image by the rooftops bounding box shape
         logger.info("Clip image with bounding box")

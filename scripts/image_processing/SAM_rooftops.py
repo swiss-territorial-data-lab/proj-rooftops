@@ -16,7 +16,9 @@ from glob import glob
 from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
+import re
 
+import geopandas as gpd
 import torch
 import matplotlib.pyplot as plt
 from rasterio.mask import mask
@@ -27,6 +29,7 @@ from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 
 # the following allows us to import modules from within this file's parent folder
 # sys.path.insert(0, '.')
+
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 logger=fct_misc.format_logger(logger)
@@ -58,9 +61,16 @@ if __name__ == "__main__":
     IMAGE_DIR=cfg['image_dir']
     OUTPUT_DIR=cfg['output_dir']
     SHP_EXT=cfg['vector_extension']
+    SHP_ROOF=cfg['shape_dir']
     DL_CKP=cfg['SAM']['dl_checkpoints']
     CKP_DIR=cfg['SAM']['checkpoints_dir']
     CKP=cfg['SAM']['checkpoints']
+    BATCH=cfg['SAM']['batch']
+    FOREGROUND=cfg['SAM']['foreground']
+    UNIQUE=cfg['SAM']['unique']
+    EK=cfg['SAM']['erosion_kernel']
+    MASK_MULTI=cfg['SAM']['mask_multiplier']
+    CUSTOM_SAM=cfg['SAM']['custom_SAM']
 
     os.chdir(WORKING_DIR)
 
@@ -78,10 +88,12 @@ if __name__ == "__main__":
         tiles=[tile.replace('\\', '/') for tile in tiles]
       
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
-        print(os.path.basename(tile))
 
         logger.info(f"Read images: {os.path.basename(tile)}") 
         image = tile
+        egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
+        roofs=gpd.read_file(SHP_ROOF)
+        shp_egid = roofs[roofs['EGID'] == egid]
 
         logger.info(f"Perform image segmentation with SAM")  
         if DL_CKP == True:
@@ -95,13 +107,26 @@ if __name__ == "__main__":
         logger.info(f"Select pretrained model: {CKP}")   
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        if CUSTOM_SAM == True:
+            sam_kwargs = {
+                "points_per_side": 32,
+                "pred_iou_thresh": 0.86,
+                "stability_score_thresh": 0.92,
+                "crop_n_layers": 1,
+                "crop_n_points_downscale_factor": 2,
+                "min_mask_region_area": 100,
+            }
+        else:
+            sam_kwargs=None
+
         sam = SamGeo(
             checkpoint=checkpoint,
             model_type='vit_h',
             device=device,
             # erosion_kernel=(3, 3),
             # mask_multiplier=255,
-            sam_kwargs=None,
+            sam_kwargs=sam_kwargs,
         )
 
         logger.info(f"Produce and save mask")  
@@ -109,7 +134,7 @@ if __name__ == "__main__":
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
         mask = file_path
-        sam.generate(image, mask, batch=False, foreground=False, unique=True, erosion_kernel=None, mask_multiplier=255)
+        sam.generate(image, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=EK, mask_multiplier=MASK_MULTI)
         written_files.append(file_path)  
         logger.info(f"...done. A file was written: {file_path}")
 
@@ -117,8 +142,8 @@ if __name__ == "__main__":
                                 tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
         sam.show_masks(cmap="binary_r")
         sam.show_anns(axis="off", alpha=0.7, output=file_path)
-        plt.show()
-        
+        # plt.show()
+
         logger.info(f"Convert segmentation mask to vector layer")  
         if SHP_EXT == 'gpkg': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
