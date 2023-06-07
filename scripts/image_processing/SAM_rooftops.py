@@ -68,16 +68,14 @@ if __name__ == "__main__":
     BATCH=cfg['SAM']['batch']
     FOREGROUND=cfg['SAM']['foreground']
     UNIQUE=cfg['SAM']['unique']
-    EK=cfg['SAM']['erosion_kernel']
+    # EK=cfg['SAM']['erosion_kernel']
     MASK_MULTI=cfg['SAM']['mask_multiplier']
     CUSTOM_SAM=cfg['SAM']['custom_SAM']
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    fct_misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -134,7 +132,7 @@ if __name__ == "__main__":
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
         mask = file_path
-        sam.generate(image, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=EK, mask_multiplier=MASK_MULTI)
+        sam.generate(image, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
         written_files.append(file_path)  
         logger.info(f"...done. A file was written: {file_path}")
 
@@ -148,13 +146,14 @@ if __name__ == "__main__":
         if SHP_EXT == 'gpkg': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.gpkg')       
-            sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
+            sam.tiff_to_gpkg(mask, file_path, EPSG, simplify_tolerance=None)
+
             written_files.append(file_path)  
             logger.info(f"...done. A file was written: {file_path}")
         elif SHP_EXT == 'shp': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.shp')        
-            sam.tiff_to_vector(mask, file_path)
+            sam.tiff_to_vector(mask, file_path, EPSG)
             written_files.append(file_path)  
             logger.info(f"...done. A file was written: {file_path}")
 

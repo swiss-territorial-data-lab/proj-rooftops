@@ -19,6 +19,9 @@ from tqdm import tqdm
 import re
 import geopandas as gpd
 
+sys.path.insert(1, 'scripts')
+import functions.fct_misc as fct_misc
+
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(0, '.')
 
@@ -46,13 +49,15 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     DETECTION_DIR = cfg['detection_dir']
     ROOFS_DIR = cfg['roofs_dir']
+    SHP_EXT = cfg['vector_extension']
+    SRS = cfg['srs']
     OUTPUT_DIR = cfg['output_dir']
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    fct_misc.ensure_dir_exists(OUTPUT_DIR)
+
     written_files = []
 
     # Get the rooftops shapes
@@ -73,24 +78,32 @@ if __name__ == "__main__":
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
 
-    # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer 
-    #     
+    # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
-    tiles=glob(os.path.join(DETECTION_DIR, '*.shp'))
+    tiles=glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
 
     if '\\' in tiles[0]:
         tiles=[tile.replace('\\', '/') for tile in tiles]
 
     vector_layer = gpd.GeoDataFrame() 
 
-    for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
+    for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
 
-        logger.info(f"Read shapefile: {os.path.basename(tile)}") 
-        objects = gpd.read_file(tile).dissolve(by='value')
-        objects.set_crs(epsg=2056, inplace=True)
+        logger.info(f"Read shapefile: {os.path.basename(tile)}")
+        objects = gpd.read_file(tile)
+
+        # Set CRS
+        if SHP_EXT == 'shp':
+            objects.set_crs(SRS, inplace=True)
+        elif SHP_EXT == 'gpkg':
+            objects.crs = {'init' : SRS}
+        objects.dissolve(by='value')
+
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
         shape_egid  = rooftops[rooftops['EGID'] == egid]
         shape_egid.geometry = shape_egid.geometry.buffer(1)
+
+        fct_misc.test_crs(objects, shape_egid)
 
         logger.info(f"Filter detection by EGID location")
         selection = objects.sjoin(shape_egid, how='inner', predicate="within")
