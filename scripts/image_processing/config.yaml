@@ -4,18 +4,12 @@ tiles_generation.py:
   image_dir: data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_images/
   roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   tiles_dir: data/orthophotos/2019/TRUE_ORTHOPHOTOS/Tiles/tiles_test.shp
-  buffer: 1                #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   output_dir: input/tiles/
+  buffer: 1                #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
+  mask: true               # Choose if a building mask (by EGID) is applied to image
 
-# 2 - Create an image mask keeping buildings
-mask_for_buildings.py:
-  transparency: true
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  layer: labelling subset
-  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
 
-# 3 - Segment Anything Method
+# 2 - Segment Anything Method
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   # image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_image/
@@ -77,3 +71,11 @@ generate_tilesets.py:
     category:
         name: "Roof"
         supercategory: "Land usage"
+
+# Create an image mask keeping buildings
+mask_for_buildings.py:
+  transparency: true
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
+  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  layer: labelling subset
+  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/

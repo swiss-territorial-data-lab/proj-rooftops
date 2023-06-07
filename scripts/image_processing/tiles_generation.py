@@ -13,7 +13,6 @@ import time
 import argparse
 import yaml
 from loguru import logger
-from glob import glob
 from tqdm import tqdm
 
 import pandas as pd
@@ -56,8 +55,9 @@ if __name__ == "__main__":
     IMAGE_DIR = cfg['image_dir']
     TILES_DIR = cfg['tiles_dir']
     SHP_ROOFS = cfg['roofs_dir']
-    BUFFER = cfg['buffer']
     OUTPUT_DIR = cfg['output_dir']
+    BUFFER = cfg['buffer']
+    MASK = cfg['mask']
 
     os.chdir(WORKING_DIR)
 
@@ -157,6 +157,24 @@ if __name__ == "__main__":
 
                 image = raster
 
+        if MASK:
+            logger.info("Apply building mask")
+            egid_shape = rooftops[rooftops['EGID'] == i]['geometry'].buffer(BUFFER, join_style=2)                
+                
+            with rio.open(tile) as src:
+                mask_image, mask_transform = rio.mask.mask(src, egid_shape)
+                mask_meta=src.meta
+
+            mask_meta.update({'transform': mask_transform})
+            feature_mask_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'masked_images')),
+                                     f"tile_EGID_{int(i)}_masked.tif")
+                
+            with rio.open(feature_mask_path, 'w', **mask_meta) as dst:
+                dst.write(mask_image)
+            raster = rio.open(feature_mask_path)
+
+            image = raster
+
         logger.info("Rooftops' boundary box shapes")
         bbox_shape = bbox_list[bbox_list['EGID'] == i]['geometry'].buffer(BUFFER, join_style=2)  
 
@@ -169,8 +187,11 @@ if __name__ == "__main__":
                         "width": out_image.shape[2],
                         "transform": out_transform})
 
-        feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(i)}.tif")
-        with rasterio.open(feature_path, "w", **out_meta) as dest:
+        if MASK:
+           feature_path = feature_mask_path
+        else: 
+            feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(i)}.tif")
+        with rio.open(feature_path, "w", **out_meta) as dest:
             dest.write(out_image)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
