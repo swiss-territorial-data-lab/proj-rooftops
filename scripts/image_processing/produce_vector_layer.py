@@ -49,9 +49,9 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     DETECTION_DIR = cfg['detection_dir']
     ROOFS_DIR = cfg['roofs_dir']
+    OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
-    OUTPUT_DIR = cfg['output_dir']
 
     os.chdir(WORKING_DIR)
 
@@ -93,20 +93,17 @@ if __name__ == "__main__":
         objects = gpd.read_file(tile)
 
         # Set CRS
-        if SHP_EXT == 'shp':
-            objects.set_crs(SRS, inplace=True)
-        elif SHP_EXT == 'gpkg':
-            objects.crs = {'init' : SRS}
-        objects.dissolve(by='value')
-
+        objects.crs = SRS
+        shape_objects = objects.dissolve('value', as_index=False)
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
         shape_egid  = rooftops[rooftops['EGID'] == egid]
-        shape_egid.geometry = shape_egid.geometry.buffer(1)
+        shape_egid.buffer(0)
+        # shape_egid.geometry = shape_egid.geometry.buffer(1)
 
-        fct_misc.test_crs(objects, shape_egid)
+        fct_misc.test_crs(shape_objects, shape_egid)
 
         logger.info(f"Filter detection by EGID location")
-        selection = objects.sjoin(shape_egid, how='inner', predicate="within")
+        selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
         selection['area'] = selection.area 
         selection.drop(['index_right', 'OBJECTID', 'ALTI_MIN', 'ALTI_MAX', 'DATE_LEVE','SHAPE_AREA', 'SHAPE_LEN'], axis=1)
         feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}_segment_selection.gpkg")
