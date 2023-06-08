@@ -124,7 +124,7 @@ if __name__ == "__main__":
     logger.info("Find the image tile(s) number(s) intersecting the rooftop shape")
     unique_egid = join["EGID"].unique() 
 
-    for i in tqdm(unique_egid[:10], desc='EGID in AOI', total=len(unique_egid)):
+    for i in tqdm(unique_egid[:2], desc='EGID in AOI', total=len(unique_egid)):
         tiles_list = join[join['EGID'] == i]
         image_list = ((tiles_list['TileName'].to_numpy()).tolist())
 
@@ -150,10 +150,11 @@ if __name__ == "__main__":
                         "transform": output,
                     })
 
-                    mosaic_path = os.path.join(OUTPUT_DIR, 'mosaic.tiff')
-                    with rio.open(mosaic_path, "w", **output_meta) as m:
+                    mosaic_path = os.path.join(OUTPUT_DIR, 'mosaic.tif')
+                    with rio.open(tile, "w", **output_meta) as m:
                         m.write(mosaic)
                     raster = rio.open(mosaic_path)
+                    tile = mosaic_path
 
                 image = raster
 

@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
     tiles=glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
-
+    print(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
     if '\\' in tiles[0]:
         tiles=[tile.replace('\\', '/') for tile in tiles]
 

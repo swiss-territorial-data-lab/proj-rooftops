@@ -13,10 +13,13 @@ tiles_generation.py:
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   # image_dir: /mnt/data-02/cherny/git/proj-rooftops/data/orthophotos/2019/TRUE_ORTHOPHOTOS/test_image/
-  image_dir:  input/tiles/
+  image_dir:  input/tiles/sensitivity_analysis
   shape_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
-  output_dir: output/SAM/tests/
+  output_dir: output/SAM/tests/sensitivity_analysis/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
+  image_crop:                       # Activate the option to crop the input image according to pixel coordinates
+    enable: true
+    size: [0,1026,0,1026] 
   SAM:
     dl_checkpoints: False            # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
@@ -25,16 +28,16 @@ SAM_rooftops.py:
     foreground: true
     unique: true
     mask_multiplier: 255
-    custom_SAM: False
+    custom_SAM: false
 
 # Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  detection_dir: output/SAM/tests/segmented_images/
+  detection_dir: output/SAM/tests/sensitivity_analysis/segmented_images
   roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   srs: "EPSG:2056"                       # Projection of the input file
-  output_dir: output/SAM/tests/
+  output_dir: output/SAM/tests/sensitivity_analysis
 
 # 1-Prepare the tiles geometry according to the AOI and zoom level
 prepare_data.py: 

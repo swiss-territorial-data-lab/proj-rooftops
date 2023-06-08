@@ -17,6 +17,7 @@ from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
 import re
+import cv2
 
 import geopandas as gpd
 import torch
@@ -32,6 +33,8 @@ from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
+import functions.common as c
+
 logger=fct_misc.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
@@ -62,6 +65,11 @@ if __name__ == "__main__":
     OUTPUT_DIR=cfg['output_dir']
     SHP_EXT=cfg['vector_extension']
     SHP_ROOF=cfg['shape_dir']
+    CROP=cfg['image_crop']['enable']
+    if CROP == True:
+        SIZE = cfg['image_crop']['size']
+    else:
+        CROP = None
     DL_CKP=cfg['SAM']['dl_checkpoints']
     CKP_DIR=cfg['SAM']['checkpoints_dir']
     CKP=cfg['SAM']['checkpoints']
@@ -89,6 +97,14 @@ if __name__ == "__main__":
 
         logger.info(f"Read images: {os.path.basename(tile)}") 
         image = tile
+
+        # Crop the input image by pixel value
+        if CROP:
+            logger.info(f"Crop image with size {SIZE}") 
+            image = c.crop(image, SIZE, IMAGE_DIR)
+            written_files.append(image)  
+            logger.info(f"...done. A file was written: {image}") 
+
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
         roofs=gpd.read_file(SHP_ROOF)
         shp_egid = roofs[roofs['EGID'] == egid]
@@ -107,6 +123,7 @@ if __name__ == "__main__":
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         if CUSTOM_SAM == True:
+            logger.info("Use of customed SAM parameters")
             sam_kwargs = {
                 "points_per_side": 32,
                 "pred_iou_thresh": 0.86,
@@ -146,14 +163,14 @@ if __name__ == "__main__":
         if SHP_EXT == 'gpkg': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.gpkg')       
-            sam.tiff_to_gpkg(mask, file_path, EPSG, simplify_tolerance=None)
+            sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
 
             written_files.append(file_path)  
             logger.info(f"...done. A file was written: {file_path}")
         elif SHP_EXT == 'shp': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.shp')        
-            sam.tiff_to_vector(mask, file_path, EPSG)
+            sam.tiff_to_vector(mask, file_path)
             written_files.append(file_path)  
             logger.info(f"...done. A file was written: {file_path}")
 
