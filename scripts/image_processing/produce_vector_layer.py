@@ -105,15 +105,15 @@ if __name__ == "__main__":
         logger.info(f"Filter detection by EGID location")
         selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
         selection['area'] = selection.area 
-        selection.drop(['index_right', 'OBJECTID', 'ALTI_MIN', 'ALTI_MAX', 'DATE_LEVE','SHAPE_AREA', 'SHAPE_LEN'], axis=1)
+        final_gdf = selection.drop(['index_right', 'OBJECTID', 'ALTI_MIN', 'ALTI_MAX', 'DATE_LEVE','SHAPE_AREA', 'SHAPE_LEN'], axis=1)
         feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}_segment_selection.gpkg")
-        selection.to_file(feature_path)
+        final_gdf.to_file(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
         
         # Merge/Combine multiple shapefiles into one
         logger.info(f"Merge shapefiles together in a single vector layer")
-        vector_layer = gpd.pd.concat([vector_layer, selection])
+        vector_layer = gpd.pd.concat([vector_layer, final_gdf])
     feature_path = os.path.join(OUTPUT_DIR, "SAM_vector_layer.gpkg")
     vector_layer.to_file(feature_path)
     written_files.append(feature_path)  

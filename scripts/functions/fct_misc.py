@@ -1,6 +1,10 @@
 import os, sys
-
+import pandas as pd
 import geopandas as gpd
+import numpy as np
+sys.path.insert(1, 'scripts')
+import functions.fct_misc as fct_misc
+import functions.common as c
 
 def format_logger(logger):
     '''Format the logger from loguru
@@ -46,3 +50,96 @@ def ensure_dir_exists(dirpath):
         print(f"The directory {dirpath} was created.")
 
     return dirpath
+
+
+
+def get_fractional_sets(the_preds_gdf, the_labels_gdf):
+
+    preds_gdf = the_preds_gdf.copy()
+    labels_gdf = the_labels_gdf.copy()
+
+    if len(labels_gdf) == 0:
+        fp_gdf = preds_gdf.copy()
+        tp_gdf = gpd.GeoDataFrame()
+        fn_gdf = gpd.GeoDataFrame()       
+        return tp_gdf, fp_gdf, fn_gdf
+    
+    try:
+        assert(preds_gdf.crs == labels_gdf.crs), f"CRS Mismatch: predictions' CRS = {preds_gdf.crs}, labels' CRS = {labels_gdf.crs}"
+    except Exception as e:
+        raise Exception(e)
+
+    # CREATE ADDITIONAL COLUMN FOR TP, FP AND FN CLASSIFICATION AND IOU COMPUTATION
+    labels_gdf['dummy_id'] = labels_gdf.index
+    labels_gdf['geom_GT'] = labels_gdf.geometry
+    preds_gdf['geom_DET'] = preds_gdf.geometry
+
+    # TRUE POSITIVES
+    left_join = gpd.sjoin(preds_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
+    tp_gdf_temp = left_join[left_join.dummy_id.notnull()].copy()
+
+    # IOU computation between GT geometry and Detection geometry
+    geom1 = (tp_gdf_temp['geom_DET'].to_numpy()).tolist()
+    geom2 = (tp_gdf_temp['geom_GT'].to_numpy()).tolist()
+    iou = []
+    for (i, ii) in zip(geom1, geom2):
+        iou.extend([c.IOU(i, ii)])
+    df_iou = pd.DataFrame({'IOU': iou})
+    tp_gdf_temp['IOU'] = df_iou.values
+
+    # Filter detection based on IOU value
+    # Keep only max IOU value for each detection mask
+    tp_gdf = tp_gdf_temp.groupby(['value'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
+    
+    # Detection with IOU lower than threshold value are considered as considered FP and remove from TP list   
+    threshold_iou = 0.1
+    fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold_iou]
+    val_fp = (fp_gdf_temp['value'].to_numpy()).tolist()
+    tp_gdf = tp_gdf[~tp_gdf['value'].isin(val_fp)]
+
+    tp_gdf.drop(columns=['dummy_id'], inplace=True)
+    
+
+    # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes
+    fp_gdf = left_join[left_join.dummy_id.isna()].copy()
+    fp_gdf = pd.concat([fp_gdf, fp_gdf_temp])
+    assert(len(fp_gdf[fp_gdf.duplicated()]) == 0)
+
+    fp_gdf.drop(columns=['dummy_id'], inplace=True)
+
+    # FALSE NEGATIVES -> objects that have been missed by the algorithm
+    # right_join = gpd.sjoin(df1, df2, how='right', predicate='intersects', lsuffix='left', rsuffix='right')
+    right_join = gpd.sjoin(labels_gdf, preds_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
+    
+    # 
+    fn_gdf_temp = pd.concat([tp_gdf_temp, tp_gdf, fp_gdf_temp]).drop_duplicates(keep=False)
+    val_fn = (fn_gdf_temp['ID_GT'].to_numpy()).tolist()
+    fn_gdf_temp = right_join[right_join['ID_GT'].isin(val_fn)]
+    fn_gdf = right_join[right_join.value.isna()].copy()
+    fn_gdf = pd.concat([fn_gdf, fn_gdf_temp])
+   
+    fn_gdf.drop_duplicates(subset=['dummy_id'], inplace=True)
+
+    # Filter GT shape already listed as TP 
+    val_filter = (tp_gdf['ID_GT'].to_numpy()).tolist()
+    fn_gdf = fn_gdf[~fn_gdf['ID_GT'].isin(val_filter)]
+
+
+    return tp_gdf, fp_gdf, fn_gdf
+
+
+def get_metrics(tp_gdf, fp_gdf, fn_gdf):
+    
+    TP = len(tp_gdf)
+    FP = len(fp_gdf)
+    FN = len(fn_gdf)
+    #print(TP, FP, FN)
+    
+    if TP == 0:
+        return 0, 0, 0
+
+    precision = TP / (TP + FP)
+    recall    = TP / (TP + FN)
+    f1 = 2*precision*recall/(precision+recall)
+    
+    return precision, recall, f1
