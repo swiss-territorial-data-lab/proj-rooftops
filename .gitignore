@@ -4,6 +4,8 @@ output/*
 data/*
 model/*
 WBT/*
+input/*
+scripts/plots.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
