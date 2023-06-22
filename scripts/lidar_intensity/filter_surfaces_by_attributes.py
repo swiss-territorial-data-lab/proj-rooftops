@@ -38,24 +38,6 @@ def cause_occupation(df, message='Undefined cause'):
 
     return df
 
-def get_tilepath_from_id(tile_id, im_list):
-    '''
-    Get the tilepath containing the tile id from a list and check that there is no more than one.
-
-    - tile_id: string with (part of) the tile name
-    - im_list: list of the image/tile pathes
-    return: matching tilepath
-    '''
-
-    matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
-    if len(matching_path)>2:
-        logger.critical(f'There are multiple tiles corresponding to the id {tile_id}.')
-        sys.exit(1)
-    else:
-        tilepath=matching_path[0]
-
-    return tilepath
-
 # Define constants ----------------
 
 DEBUG=False
@@ -77,6 +59,7 @@ LIM_ROUGHNESS=7.5
 STAT_LIMITS={'MOE_i': LIM_MOE, 'std_i': LIM_STD, 'median_r': LIM_ROUGHNESS}
 
 os.chdir(WORKING_DIR)
+OUTPUT_DIR=fct.ensure_dir_exists('processed/roofs')
 
 logger.info('Getting the files...')
 im_list_intensity=glob(os.path.join(INPUT_DIR_IMAGES, 'intensity', '*.tif'))
@@ -114,7 +97,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting nodata area on tiles
 
     if any(tile_id in tilepath for tilepath in im_list_intensity):
 
-        tilepath=get_tilepath_from_id(tile_id, im_list_intensity)
+        tilepath=fct.get_tilepath_from_id(tile_id, im_list_intensity)
 
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             intensity=src.read(1)
@@ -167,7 +150,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
         roofs_on_tile=clipped_roofs_cleaned[clipped_roofs_cleaned['tile_id']==tile_id].reset_index(drop=True)
 
         # Intensity statistics
-        tilepath=get_tilepath_from_id(tile_id, im_list_intensity)
+        tilepath=fct.get_tilepath_from_id(tile_id, im_list_intensity)
         
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             intensity=src.read(1)
@@ -182,7 +165,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
                                             'std': 'std_i', 'count': 'count_i'}, inplace=True)
     
         # Roughness statistics
-        tilepath=get_tilepath_from_id(tile_id, im_list_roughness)
+        tilepath=fct.get_tilepath_from_id(tile_id, im_list_roughness)
         
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             roughness=src.read(1)
@@ -247,10 +230,10 @@ logger.info(f'{roofs_occupation.shape[0]-roofs_occupation_cleaned.shape[0]} geom
 roofs_occupation_cleaned_df=pd.DataFrame(roofs_occupation_cleaned.drop(columns=['geometry', 'clipped_area']))
 roofs_occupation_cleaned_gdf=gpd.GeoDataFrame(roofs_occupation_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'), crs='EPSG:2056')
 roofs_occupation_cleaned_gdf=roofs_occupation_cleaned_gdf.round(3)
-roofs_occupation_cleaned_gdf.drop(columns=['max_i', 'min_i', 'mean_i', 'max_r', 'min_r', 'mean_r', 'count_r',])
+roofs_occupation_cleaned_gdf.drop(columns=['max_i', 'min_i', 'mean_i', 'max_r', 'min_r', 'mean_r', 'count_r', 'tile_id'])
 
 logger.info('Saving files...')
-filepath=os.path.join('processed', 'tests', 'roofs.gpkg')
+filepath=os.path.join(OUTPUT_DIR, 'roofs.gpkg')
 
 layername='roof_occupation'
 roofs_occupation_cleaned_gdf.to_file(filepath, layer=layername)

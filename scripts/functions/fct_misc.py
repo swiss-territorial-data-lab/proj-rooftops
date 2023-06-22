@@ -1,4 +1,5 @@
 import os, sys
+from loguru import logger
 
 import geopandas as gpd
 from shapely.affinity import scale
@@ -20,6 +21,8 @@ def format_logger(logger):
     logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - <red>{level}</red> - <level>{message}</level>",
             level="ERROR")
     return logger
+
+logger=format_logger(logger)
 
 def test_crs(crs1, crs2 = "EPSG:2056"):
     '''
@@ -72,3 +75,24 @@ def clip_labels(labels_gdf, tiles_gdf, fact=0.99):
     clipped_labels_gdf.rename(columns={'id': 'tile_id'}, inplace=True)
 
     return clipped_labels_gdf
+
+def get_tilepath_from_id(tile_id, im_list):
+    '''
+    Get the tilepath containing the tile id from a list and check that there is no more than one.
+
+    - tile_id: string with (part of) the tile name
+    - im_list: list of the image/tile pathes
+    return: matching tilepath
+    '''
+
+    matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
+    if len(matching_path)>1:
+        logger.critical(f'There are multiple tiles corresponding to the id {tile_id}.')
+        sys.exit(1)
+    elif len(matching_path)==0:
+        logger.warning(f'There is no tile corresponding to the id {tile_id}.')
+        return None
+    else:
+        tilepath=matching_path[0]
+
+    return tilepath
