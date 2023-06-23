@@ -40,7 +40,7 @@ LAYER=cfg['roofs_layer']
 METHOD=cfg['method']
 
 os.chdir(WORKING_DIR)
-OUTPUT_PATH='processed/roofs/segm_test.gpkg'
+OUTPUT_PATH='processed/roofs/256_normalization/segm_test.gpkg'
 _ = fct.ensure_dir_exists(os.path.dirname(OUTPUT_PATH))
 
 logger.info('Reading files...')
@@ -81,6 +81,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
 
         nan_intensity=intensity.copy()
         nan_intensity[nan_intensity==im_profile['nodata']]=np.nan
+        nan_intensity[im_mask==False]=np.nan
 
         nan_normalized_intensity = np.divide(
             nan_intensity - np.nanmin(nan_intensity),
@@ -88,7 +89,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
         )
 
         normalized_intensity=nan_normalized_intensity.copy()
-        normalized_intensity[normalized_intensity==np.nan]=99
+        normalized_intensity[normalized_intensity==np.nan]=999
 
         if METHOD=='felzenszwalb':
             scale=1
