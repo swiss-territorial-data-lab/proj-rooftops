@@ -54,6 +54,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     TILES_DIR = cfg['tiles_dir']
+    ROOFS_LIST = cfg['roofs_list_dir']
     SHP_ROOFS = cfg['roofs_dir']
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
@@ -87,8 +88,16 @@ if __name__ == "__main__":
     # AOI 
     logger.info("Select rooftop's shapes in the AOI")
     tiles = gpd.read_file(TILES_DIR)
-    AOI = tiles.dissolve()
-    rooftops_list = gpd.clip(rooftops, AOI)
+    
+    ##!!! This part has to be improved !!! 
+    # # Select EGID within an AOI 
+    # AOI = tiles.dissolve()
+    # rooftops_list = gpd.clip(rooftops, AOI)
+
+    # # Get the EGID list from a file
+    egid_list = gpd.read_file(ROOFS_LIST)
+    rooftops_list = egid_list
+
 
     # Find the image's tiles intersecting the rooftops' shapes  
     logger.info("Intersection of rooftops' shape and images' tile")
@@ -115,6 +124,8 @@ if __name__ == "__main__":
             coords = c.bbox(bounds)
             coords_list.append(coords)
 
+            logger.info(f"EGID {egid}")
+
         bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs = 'epsg:2056', geometry = coords_list).drop_duplicates(subset='EGID')
         bbox_list.to_file(feature_path)
         written_files.append(feature_path)  
@@ -124,7 +135,7 @@ if __name__ == "__main__":
     logger.info("Find the image tile(s) number(s) intersecting the rooftop shape")
     unique_egid = join["EGID"].unique() 
 
-    for i in tqdm(unique_egid[:2], desc='EGID in AOI', total=len(unique_egid)):
+    for i in tqdm(unique_egid[:], desc='EGID in AOI', total=len(unique_egid)):
         tiles_list = join[join['EGID'] == i]
         image_list = ((tiles_list['TileName'].to_numpy()).tolist())
 
@@ -151,8 +162,12 @@ if __name__ == "__main__":
                     })
 
                     mosaic_path = os.path.join(OUTPUT_DIR, 'mosaic.tif')
-                    with rio.open(tile, "w", **output_meta) as m:
+                    with rio.open(mosaic_path, "w", **output_meta) as m:
                         m.write(mosaic)
+
+                    written_files.append(mosaic_path)  
+                    logger.info(f"...done. A file was written: {mosaic_path}")
+
                     raster = rio.open(mosaic_path)
                     tile = mosaic_path
 

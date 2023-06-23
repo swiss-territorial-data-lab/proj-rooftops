@@ -125,11 +125,11 @@ if __name__ == "__main__":
         if CUSTOM_SAM == True:
             logger.info("Use of customed SAM parameters")
             sam_kwargs = {
-                "points_per_side": 32,
+                "points_per_side": 64,
                 "pred_iou_thresh": 0.86,
                 "stability_score_thresh": 0.92,
                 "crop_n_layers": 1,
-                "crop_n_points_downscale_factor": 2,
+                "crop_n_points_downscale_factor": 1,
                 "min_mask_region_area": 100,
             }
         else:
