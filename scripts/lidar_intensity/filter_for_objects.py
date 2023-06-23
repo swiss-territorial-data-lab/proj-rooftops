@@ -61,39 +61,11 @@ free_roofs=free_roofs[['OBJECTID', 'EGID', 'ALTI_MAX', 'ALTI_MIN', 'geometry']]
 
 logger.info(f'{free_roofs.shape[0]} roofs are estimed unoccupied.')
 
-logger.info('Merge the roofs by EGID and by slope...')
-
-# The intensity is influenced by the slope -> separate inclined from flat roofs by pretty breaks (Jenks)
-free_roofs['DIFF_ALTI']=free_roofs['ALTI_MAX']-free_roofs['ALTI_MIN']
-
-slope_limits=[0, 0.4, 1.4, 2.6, 4.3, 6.7, 11.6]
-roofs_by_slope=[]
-for lim_nbr in range(len(slope_limits)-1):
-
-    roofs_by_slope.append(
-        free_roofs[
-            (free_roofs['DIFF_ALTI']>=slope_limits[lim_nbr])
-            & 
-            (free_roofs['DIFF_ALTI']<slope_limits[lim_nbr+1])
-        ]
-    )
-
-roofs_by_slope.append(free_roofs[free_roofs['DIFF_ALTI']>slope_limits[-1]])
-
-roofs_by_EGID_and_slope = gpd.GeoDataFrame()
-for roof_table in roofs_by_slope:
-
-    dissolved_roofs=roof_table.dissolve(by='EGID')
-
-    roofs_by_EGID_and_slope=pd.concat([roofs_by_EGID_and_slope, dissolved_roofs.reset_index()], ignore_index=True)
-
-logger.info(f'{roofs_by_EGID_and_slope.shape[0]} roof parts are considered.')
-
 logger.info('Getting the median intensity by EGID...')
 
-tiles.rename(columns={'fme_basena': 'tile_id'}, inplace=True)
-tiles_per_roof=gpd.sjoin(roofs_by_EGID_and_slope, tiles, how='left')
+tiles_per_roof=gpd.sjoin(free_roofs, tiles, how='left')
 tiles_per_roof.reset_index(inplace=True)
+tiles_per_roof.rename(columns={'fme_basena': 'tile_id'}, inplace=True)
 
 tiles_per_roof['tilepath']=[fct.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
 tiles_per_roof = tiles_per_roof[~tiles_per_roof['tilepath'].isna()]
@@ -193,7 +165,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
         object_gdf=gpd.GeoDataFrame(geoms, columns=['geometry', 'class'])
         object_gdf.set_crs(crs=im_profile['crs'], inplace=True)
 
-        roof=roofs_by_EGID_and_slope.loc[roofs_by_EGID_and_slope['OBJECTID']==roof_id, ['geometry', 'EGID']]
+        roof=free_roofs.loc[free_roofs['OBJECTID']==roof_id, ['geometry', 'EGID']]
         objects_in_roof=object_gdf.overlay(roof)
         if 'MultiPolygon' in objects_in_roof.geometry.geom_type.values:
             objects_in_roof=objects_in_roof.explode(ignore_index=True)
@@ -225,13 +197,13 @@ logger.info('Saving geodataframe to geopackage...')
 filename=os.path.join(OUTPUT_DIR, 'roofs.gpkg')
 
 if PROCEDURE=='sd':
-    layername= f'objects_on_roofs_sd_rdp_{RDP}'
+    layername= f'objects_on_roofs_{factor}_sd_rdp_{RDP}'
     # Avoid polygons thin as lines
     tmp=objects['geometry'].buffer(0.2)
     tmp2=tmp.buffer(-0.2)
     objects['geometry']=tmp2
 elif PROCEDURE=='ds':
-    layername= f'objects_on_roofs_ds_{RDP}'
+    layername= f'objects_on_roofs_{factor}_ds_rdp_{RDP}'
 
 objects.to_file(filename, layer=layername)
 objects.to_file(filename, layer='objects_on_roofs')
