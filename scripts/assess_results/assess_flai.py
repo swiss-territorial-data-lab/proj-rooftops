@@ -45,7 +45,7 @@ os.chdir(WORKING_DIR)
 OUTPUT_DIR='final/flai_metrics'
 fct_misc.ensure_dir_exists(OUTPUT_DIR)
 
-written_files = []
+written_files = {}
 
 
 logger.info('Read and format input data')
@@ -152,7 +152,10 @@ if nbr_labels != nbr_tagged_labels:
 
         untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
         untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
-        untagged_gt_gdf.to_file(filename, layer='missing_label_tags', index=False)
+
+        layer_name='missing_label_tags'
+        untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+        written_files[filename]=layer_name
 
     elif nbr_labels < nbr_tagged_labels:
         all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
@@ -160,7 +163,10 @@ if nbr_labels != nbr_tagged_labels:
         duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
         duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
         duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
-        duplicated_labels.to_file(filename, layer='duplicated_label_tags', index=False)
+
+        layer_name='duplicated_label_tags'
+        duplicated_labels.to_file(filename, layer=layer_name, index=False)
+        written_files[filename]=layer_name
 
 
 # Set the final dataframe with tagged prediction
@@ -171,9 +177,9 @@ tagged_preds_gdf = tagged_preds_gdf.drop(['index_right', 'geom_GT', 'FID', 'fid'
 
 feature_path = os.path.join(OUTPUT_DIR, f'tagged_predictions.gpkg')
 tagged_preds_gdf.to_file(feature_path, driver='GPKG', index=False, layer=TILE_NAME + '_tags')
-written_files.append(feature_path)
+written_files[feature_path]=TILE_NAME + '_tags'
 
 print()
 logger.info("The following files were written. Let's check them out!")
-for written_file in written_files:
-    logger.info(written_file)
+for path in written_files.keys():
+    logger.info(f'  file: {path}, layer: {written_files[path]}')
