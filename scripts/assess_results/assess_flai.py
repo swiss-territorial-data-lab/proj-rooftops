@@ -32,7 +32,7 @@ with open('config/config_flai.yaml') as fp:
 
 # Load input parameters
 WORKING_DIR = cfg['working_dir']
-METHOD='one-to-many'
+METHOD='one-to-one'
 
 GT = cfg['gt']
 DETECTION = cfg['detection']
@@ -46,6 +46,7 @@ OUTPUT_DIR='final/flai_metrics'
 fct_misc.ensure_dir_exists(OUTPUT_DIR)
 
 written_files = []
+
 
 logger.info('Read and format input data')
 
@@ -73,6 +74,7 @@ if TILES:
 nbr_labels=gdf_gt.shape[0]
 logger.info(f"Read GT file: {nbr_labels} shapes")
 
+
 logger.info(f"Metrics computation")
 if METHOD=='one-to-one':
     logger.info('Using the one-to-one method.')
@@ -83,7 +85,6 @@ else:
 
 best_f1=0
 for threshold in tqdm([i/100 for i in range(10 ,100, 5)], desc='Search for the best threshold on the IoU'):
-
 
     tp_gdf_loop, fp_gdf_loop, fn_gdf_loop = metrics.get_fractional_sets(gdf_detec, gdf_gt, iou_threshold=threshold, method=METHOD)
 
@@ -106,7 +107,8 @@ for threshold in tqdm([i/100 for i in range(10 ,100, 5)], desc='Search for the b
 
         best_threshold=threshold
 
-logger.info(f'The best threshold for the IoU is {best_threshold} in regards to the F1 score.')
+logger.info(f'The best threshold for the IoU is {best_threshold} in regard to the F1 score.')
+
 
 TP = tp_gdf.shape[0]
 FP = fp_gdf.shape[0]
@@ -114,10 +116,26 @@ FN = fn_gdf.shape[0]
 
 logger.info(f"   TP = {TP}, FP = {FP}, FN = {FN}")
 logger.info(f"   precision = {best_precision:.2f}, recall = {best_recall:.2f}, f1 = {best_f1:.2f}")
-if METHOD=='one-to-one':
-    logger.info(f" - Compute mean Jaccard index")
-    iou_average = tp_gdf['IOU'].mean()
-    logger.info(f"   IOU average = {iou_average:.2f}")
+if METHOD=='one-to-many':
+    tp_with_duplicates=tp_gdf.copy()
+    dissolved_tp_gdf=tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
+
+    geom1 = dissolved_tp_gdf.geometry.values.tolist()
+    geom2 = dissolved_tp_gdf['geom_GT'].values.tolist()
+    iou = []
+    for (i, ii) in zip(geom1, geom2):
+        iou.append(metrics.intersection_over_union(i, ii))
+    dissolved_tp_gdf['IOU'] = iou
+
+    tp_gdf=dissolved_tp_gdf.copy()
+
+logger.info(f" - Compute mean Jaccard index")
+iou_average = tp_gdf['IOU'].mean()
+logger.info(f"   IOU average = {iou_average:.2f}")
+
+if METHOD=='one-to-many':
+    logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
+
 
 two_preds_one_label=len(tp_gdf.loc[tp_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist())
 if two_preds_one_label > 0:
@@ -144,12 +162,6 @@ if nbr_labels != nbr_tagged_labels:
         duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
         duplicated_labels.to_file(filename, layer='duplicated_label_tags', index=False)
 
-
-if METHOD=='one-to-many':
-    tp_with_duplicates=tp_gdf.copy()
-    tp_gdf = tp_with_duplicates.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
-
-    logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
 
 # Set the final dataframe with tagged prediction
 logger.info(f"Set the final dataframe")
