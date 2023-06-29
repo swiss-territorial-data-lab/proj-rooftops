@@ -32,7 +32,7 @@ with open('config/config_flai.yaml') as fp:
 
 # Load input parameters
 WORKING_DIR = cfg['working_dir']
-METHOD='one-to-one'
+METHOD = cfg['method']
 
 GT = cfg['gt']
 DETECTION = cfg['detection']
