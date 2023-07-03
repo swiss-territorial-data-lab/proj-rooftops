@@ -106,7 +106,7 @@ if roofs_with_heritages.shape[0]!=nbr_roofs:
 
 logger.info('Marking roofs too steep for vegetation...')
 condition_vegetation_inclination=(
-     (roofs_with_heritages['PENTE_MOYE'] > VEGETATION_INCLINATION) & (roofs_with_heritages['suitability'].isnull())
+     (roofs_with_heritages['PENTE_MOYE'] >= VEGETATION_INCLINATION) & (roofs_with_heritages['suitability'].isnull())
 )
 roofs_with_heritages.loc[condition_vegetation_inclination, 'suitability'] = 'unsuitable for vegetation'
 roofs_with_heritages.loc[condition_vegetation_inclination, 'reason'] = 'slope too steep'

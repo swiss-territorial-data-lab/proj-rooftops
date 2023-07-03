@@ -24,4 +24,4 @@ filter_by_attributes.py:
       pitched_roofs:
         solar_area: 200      # surface limit in m2
     vegetation_area: 20     # surface limit in m2
-    vegetation_inclination: 10    # 5% = 2.86° -> round up by 10, because we have the average slope and it is sensitive to obstacles
+    vegetation_inclination: 15    # 5% = 2.86° -> set to 15, because we have the average slope and it is very sensitive to obstacles
