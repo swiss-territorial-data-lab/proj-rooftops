@@ -142,9 +142,11 @@ if two_preds_one_label > 0:
     logger.warning(f'{two_preds_one_label} labels are associated with more than one prediction considered as TP.')
 
 nbr_tagged_labels = TP + FN -two_preds_one_label
+filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+if os.path.exists(filename):
+    os.remove(filename)
 if nbr_labels != nbr_tagged_labels:
     logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-    filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
     logger.info(f'The list of the problematic labels in exported to {filename}.')
 
     if nbr_labels > nbr_tagged_labels:

@@ -124,11 +124,6 @@ def get_fractional_sets(preds_gdf, labels_gdf, iou_threshold=0.1, method='one-to
    
     fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
 
-    # Filter GT shape already listed as TP 
-    id_gt_filter = (tp_gdf['ID_GT'].to_numpy()).tolist()
-    fn_gdf = fn_gdf[~fn_gdf['ID_GT'].isin(id_gt_filter)]
-
-
     return tp_gdf, fp_gdf, fn_gdf
 
 
