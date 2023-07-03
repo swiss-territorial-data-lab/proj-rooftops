@@ -62,7 +62,8 @@ if __name__ == "__main__":
     gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
     gdf_gt['ID_GT'] = gdf_gt.index
     gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
-    logger.info(f"Read GT file: {len(gdf_gt)} shapes")
+    nbr_labels=len(gdf_gt)
+    logger.info(f"Read GT file: {nbr_labels} shapes")
 
     gdf_detec = gpd.read_file(DETECTION)
     gdf_detec = gdf_detec# [gdf_detec['occupation'] == 1]
@@ -95,6 +96,35 @@ if __name__ == "__main__":
     logger.info(f" - Compute mean Jaccard index")
     iou_average = tp_gdf['IOU'].mean()
     logger.info(f"   IOU average = {iou_average:.2f}")
+
+
+    nbr_tagged_labels = TP + FN 
+    filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+    os.remove(filename)
+    if nbr_labels != nbr_tagged_labels:
+        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+        logger.info(f'The list of the problematic labels in exported to {filename}.')
+
+        if nbr_labels > nbr_tagged_labels:
+            tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+
+            untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
+
+            layer_name='missing_label_tags'
+            untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+            written_files.append(filename)
+
+        elif nbr_labels < nbr_tagged_labels:
+            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+
+            duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
+            duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
+            duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
+
+            layer_name='duplicated_label_tags'
+            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+            written_files.append(filename)
 
 
     # Set the final dataframe with tagged prediction
