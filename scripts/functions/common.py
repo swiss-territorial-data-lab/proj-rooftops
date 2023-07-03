@@ -59,7 +59,7 @@ def IOU(pol1_xy, pol2_xy):
     # Calculate intersection and union, and tne IOU
     polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
     polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
-    return polygon_intersection / polygon_union
+    return round(polygon_intersection / polygon_union, 3)
 
 
 def format_logger(logger):
@@ -126,22 +126,20 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
         raise Exception(e)
 
     # CREATE ADDITIONAL COLUMN FOR TP, FP AND FN CLASSIFICATION AND IOU COMPUTATION
-    labels_gdf['dummy_id'] = labels_gdf.index
     labels_gdf['geom_GT'] = labels_gdf.geometry
     preds_gdf['geom_DET'] = preds_gdf.geometry
 
     # TRUE POSITIVES
     left_join = gpd.sjoin(preds_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
-    tp_gdf_temp = left_join[left_join.dummy_id.notnull()].copy()
+    tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
     geom1 = (tp_gdf_temp['geom_DET'].to_numpy()).tolist()
     geom2 = (tp_gdf_temp['geom_GT'].to_numpy()).tolist()
     iou = []
     for (i, ii) in zip(geom1, geom2):
-        iou.extend([IOU(i, ii)])
-    df_iou = pd.DataFrame({'IOU': iou})
-    tp_gdf_temp['IOU'] = df_iou.values
+        iou.append(IOU(i, ii))
+    tp_gdf_temp['IOU'] = iou
 
     # Filter detection based on IOU value
     # Keep only max IOU value for each detection mask
@@ -150,39 +148,31 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
     # Detection with IOU lower than threshold value are considered as considered FP and remove from TP list   
     threshold_iou = 0.1
     fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold_iou]
-    val_fp = (fp_gdf_temp['value'].to_numpy()).tolist()
+    val_fp = fp_gdf_temp['value'].unique().tolist()
     tp_gdf = tp_gdf[~tp_gdf['value'].isin(val_fp)]
 
-    tp_gdf.drop(columns=['dummy_id'], inplace=True)
+    tp_gdf.drop(columns=['ID_GT'], inplace=True)
     
 
     # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes
-    fp_gdf = left_join[left_join.dummy_id.isna()].copy()
+    fp_gdf = left_join[left_join.ID_GT.isna()].copy()
     fp_gdf = pd.concat([fp_gdf, fp_gdf_temp])
     assert(len(fp_gdf[fp_gdf.duplicated()]) == 0)
 
-    fp_gdf.drop(columns=['dummy_id'], inplace=True)
 
     # FALSE NEGATIVES -> objects that have been missed by the algorithm
-    # right_join = gpd.sjoin(df1, df2, how='right', predicate='intersects', lsuffix='left', rsuffix='right')
     right_join = gpd.sjoin(labels_gdf, preds_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     
-    # 
-    fn_gdf_temp = pd.concat([tp_gdf_temp, tp_gdf, fp_gdf_temp]).drop_duplicates(keep=False)
-    val_fn = (fn_gdf_temp['ID_GT'].to_numpy()).tolist()
-    fn_gdf_temp = right_join[right_join['ID_GT'].isin(val_fn)]
-    fn_gdf = right_join[right_join.value.isna()].copy()
-    fn_gdf = pd.concat([fn_gdf, fn_gdf_temp])
-   
-    fn_gdf.drop_duplicates(subset=['dummy_id'], inplace=True)
-
-    # Filter GT shape already listed as TP 
-    val_filter = (tp_gdf['ID_GT'].to_numpy()).tolist()
-    fn_gdf = fn_gdf[~fn_gdf['ID_GT'].isin(val_filter)]
+    id_gt_tp=tp_gdf['ID_GT'].unique().tolist()
+    suppressed_tp=tp_gdf_temp[~tp_gdf_temp['ID_GT'].isin(id_gt_tp)]
+    id_gt_filter = suppressed_tp['ID_GT'].unique().tolist()
     
-    fn_gdf.drop(columns=['dummy_id'], inplace=True)
-
-
+    fn_too_low_hit_gdf = right_join[right_join['ID_GT'].isin(id_gt_filter)]
+    fn_no_hit_gdf = right_join[right_join.ID_DET.isna()].copy()
+    fn_gdf = pd.concat([fn_no_hit_gdf, fn_too_low_hit_gdf])
+   
+    fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
+    
     return tp_gdf, fp_gdf, fn_gdf
 
 
