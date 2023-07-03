@@ -61,7 +61,7 @@ STAT_LIMITS={'MOE_i': LIM_MOE, 'std_i': LIM_STD, 'median_r': LIM_ROUGHNESS}
 os.chdir(WORKING_DIR)
 OUTPUT_DIR=fct.ensure_dir_exists('processed/roofs')
 
-logger.info('Getting the files...')
+logger.info('Reading the files and getting the tilepathes...')
 im_list_intensity=glob(os.path.join(INPUT_DIR_IMAGES, 'intensity', '*.tif'))
 im_list_roughness=glob(os.path.join(INPUT_DIR_IMAGES, 'roughness', '*.tif'))
 lidar_tiles=gpd.read_file(LIDAR_TILES)
@@ -84,7 +84,19 @@ if DEBUG:
 logger.info('Clipping labels...')
 lidar_tiles.rename(columns={'fme_basena': 'id'}, inplace=True)
 clipped_roofs=fct.clip_labels(large_roofs, lidar_tiles)
-existing_clipped_roofs=clipped_roofs[~(clipped_roofs['geometry'].is_empty | clipped_roofs['geometry'].isna())].copy()
+clipped_roofs['tilepath_intensity']=[
+    fct.get_tilepath_from_id(tile_id, im_list_intensity) 
+    if any(tile_id in tilepath for tilepath in im_list_intensity) else None 
+    for tile_id in clipped_roofs['tile_id'].to_numpy().tolist()
+]
+clipped_roofs['tilepath_roughness']=[
+    fct.get_tilepath_from_id(tile_id, im_list_roughness) 
+    if any(tile_id in tilepath for tilepath in im_list_roughness) else None 
+    for tile_id in clipped_roofs['tile_id'].to_numpy().tolist()
+]
+existing_clipped_roofs=clipped_roofs[~(clipped_roofs['geometry'].is_empty | clipped_roofs['geometry'].isna() | clipped_roofs['tilepath_intensity'].isnull())].copy()
+
+nbr_existing_clipped_roofs=existing_clipped_roofs.shape[0]
 
 del large_roofs, clipped_roofs
 
@@ -132,9 +144,14 @@ other_classes_roofs=cause_occupation(other_classes_roofs, f'More than {NODATA_OV
 
 clipped_roofs_cleaned=building_roofs[(building_roofs['nodata_overlap']<=NODATA_OVERLAP) | (nodata_overlap_full['nodata_overlap'].isna())].reset_index(drop=True)
 
-logger.info(f'{no_roofs.shape[0]} roofs are classified as undefined, because they do not overlap with the building class at more than 75%.')
-logger.info(f'{other_classes_roofs.shape[0]} roofs are classified as occupied, '+
+nbr_no_roofs=no_roofs.shape[0]
+nbr_other_class_roofs=other_classes_roofs.shape[0]
+logger.info(f'{nbr_no_roofs} roofs are classified as undefined, because they do not overlap with the building class at more than 75%.')
+logger.info(f'{nbr_other_class_roofs} roofs are classified as occupied, '+
             f'because more than {NODATA_OVERLAP*100}% of their surface is not classified as building.')
+
+if nbr_no_roofs + nbr_other_class_roofs + clipped_roofs_cleaned.shape[0] != nbr_existing_clipped_roofs:
+    logger.error(f'There is a difference of {nbr_no_roofs + nbr_other_class_roofs + clipped_roofs_cleaned.shape[0]  - nbr_existing_clipped_roofs} roofs after treating for nodata values.')
 
 del existing_clipped_roofs
 del nodata_polygons, nodata_df
@@ -145,7 +162,7 @@ del building_roofs
 zs_per_roof=gpd.GeoDataFrame()
 for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from tiles...'):
 
-    if any(tile_id in tilepath for tilepath in im_list_intensity) and any(tile_id in tilepath for tilepath in im_list_intensity):
+    if any(tile_id in tilepath for tilepath in im_list_intensity) and any(tile_id in tilepath for tilepath in im_list_roughness):
 
         roofs_on_tile=clipped_roofs_cleaned[clipped_roofs_cleaned['tile_id']==tile_id].reset_index(drop=True)
 
@@ -191,7 +208,7 @@ zs_per_roof['MOE_i'] = Z*zs_per_roof['std_i']/(zs_per_roof['count_i']**(1/2))
 
 index_over_lim=[]
 for attribute in STAT_LIMITS.keys():
-    index_over_lim.extend(zs_per_roof.index[zs_per_roof[attribute] > STAT_LIMITS[attribute]].tolist())
+    index_over_lim.extend(zs_per_roof[zs_per_roof[attribute] > STAT_LIMITS[attribute]].index.tolist())
 seen = set()
 dupes_index = [roof_index for roof_index in index_over_lim if roof_index in seen or seen.add(roof_index)]  
 
@@ -219,6 +236,10 @@ roofs_high_variability=pd.concat([roofs_high_variability, roofs_high_moe, roofs_
 zs_per_clear_roofs['status']='not occupied'
 
 # If roofs appear several times, keep the largest surface
+final_nbr_roofs=len(zs_per_clear_roofs) + len(roofs_high_variability) + len(other_classes_roofs) + len(no_roofs)
+if final_nbr_roofs!=nbr_existing_clipped_roofs:
+    logger.error(f'There is a difference of {final_nbr_roofs-nbr_existing_clipped_roofs} in the number of roofs between the start and the end.')
+
 roofs_occupation=pd.concat([zs_per_clear_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
 roofs_occupation['clipped_area']=roofs_occupation.geometry.area
 roofs_occupation_cleaned=roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
@@ -234,7 +255,6 @@ roofs_occupation_cleaned_gdf.drop(columns=['max_i', 'min_i', 'mean_i', 'max_r', 
 
 logger.info('Saving files...')
 filepath=os.path.join(OUTPUT_DIR, 'roofs.gpkg')
-
 layername='roof_occupation'
 roofs_occupation_cleaned_gdf.to_file(filepath, layer=layername)
 
