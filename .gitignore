@@ -1,3 +1,6 @@
+# Testing
+**/*/test*.ipynb
+
 # Folders
 data/*
 output/*

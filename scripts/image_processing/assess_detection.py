@@ -100,7 +100,8 @@ if __name__ == "__main__":
 
     nbr_tagged_labels = TP + FN 
     filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
-    os.remove(filename)
+    if os.path.exists(filename):
+        os.remove(filename)
     if nbr_labels != nbr_tagged_labels:
         logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
         logger.info(f'The list of the problematic labels in exported to {filename}.')
