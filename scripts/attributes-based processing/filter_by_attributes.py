@@ -16,6 +16,117 @@ with open('config/config_expert_attributes.yaml') as fp:
         cfg = load(fp, Loader=FullLoader)['filter_by_attributes.py']
 
 
+# Define functions -------------------------
+
+def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
+    '''
+    Calculate the total surface of roof per EGID and do the if-else statement to test if there is enough space for a solar installation.
+
+    - gdf: geodataframe of the roofs with the columns EGID, SURFACE_TO, NO_INDUSTRIAL_ZONE, suitability, and reason.
+    - messages: dictionary of the message to indicate the lack of suitability with the keys "no vegetation", "no solar" and "nothing".
+    - solar_house: limit in m2 to which it becomes worth to install a solar installation on a house.
+    - solar_industry: limit in m2 to which it becomes worth to install a solar installation on an industry.
+    return: the same geodataframe, buth with an attribute "tot_surface_EGID" 
+        and the attributes "suitability" and "reason" updated with the solar informations
+    '''
+
+    min_area=min([solar_house, solar_industry])
+
+    gdf_by_egid=gdf.groupby(by=['EGID'])['SURFACE_TO'].sum().reset_index()
+    gdf_by_egid.rename(columns={'SURFACE_TO':'tot_surface_EGID'}, inplace=True)
+    gdf_by_egid_and_zone=gdf.merge(gdf_by_egid, on='EGID')
+
+    solar_suitability=[]
+    solar_reason=[]
+
+    for roof in gdf_by_egid_and_zone.itertuples():
+
+        # The building does not have any other contraindications.
+        if roof.suitability==None:
+            # The roof has at least the min area
+            if roof.tot_surface_EGID<min_area:
+                solar_suitability.append(messages['no solar'])
+                solar_reason.append(f'The roof area is under {min_area} m2 which is too small for solar installation.')
+                continue
+
+            # The building is NOT industrial
+            if not isinstance(roof.NO_INDUSTRIAL_ZONE, str):
+
+                # The surface is too small for solar panels
+                if roof.tot_surface_EGID < solar_house:
+                    solar_suitability.append(messages['no solar'])
+                    solar_reason.append(f'The roof area is under {solar_house} m2 which is too small for solar installation.')
+                    continue
+
+                # The surface is ok for solar panels.
+                else:
+                    solar_suitability.append(None)
+                    solar_reason.append(None)
+                    continue
+            
+            # The building is industrial.
+            else:
+
+                # The surface is too small for solar panels
+                if roof.tot_surface_EGID < solar_industry:
+                    solar_suitability.append(messages['no solar'])
+                    solar_reason.append(f'The roof area is under {solar_industry} m2 which is too small for solar installation.')
+                    continue
+
+                # The surface is ok for solar panels.
+                else:
+                    solar_suitability.append(None)
+                    solar_reason.append(None)
+                    continue
+
+        # The building is already unsuited for vegetation.
+        if roof.suitability==messages['no vegetation']:
+
+            # The roof has at least the min area
+            if roof.tot_surface_EGID<min_area:
+                solar_suitability.append(messages['nothing'])
+                solar_reason.append(roof.reason + f' The roof area is under {min_area} m2 which is too small for solar installation.')
+                continue
+
+            # The building is NOT industrial
+            if not isinstance(roof.NO_INDUSTRIAL_ZONE, str):
+
+                # The surface is too small for solar panels
+                if roof.tot_surface_EGID < solar_house:
+                    solar_suitability.append(messages['nothing'])
+                    solar_reason.append(roof.reason + f' The roof area is under {solar_house} m2 which is too small for solar installation.')
+                    continue
+
+                # The surface is ok for solar panels.
+                else:
+                    solar_suitability.append(roof.suitability)
+                    solar_reason.append(roof.reason)
+                    continue
+            
+            # The building is industrial.
+            else:
+
+                # The surface is too small for solar panels
+                if roof.tot_surface_EGID < solar_industry:
+                    solar_suitability.append(messages['nothing'])
+                    solar_reason.append(roof.reason + f' The roof area is under {solar_industry} m2 which is too small for solar installation.')
+                    continue
+
+                # The surface is ok for solar panels.
+                else:
+                    solar_suitability.append(roof.suitability)
+                    solar_reason.append(roof.reason)
+                    continue
+        else:
+            solar_suitability.append(roof.suitability)
+            solar_reason.append(roof.reason)
+
+    gdf_by_egid_and_zone['suitability']=solar_suitability
+    gdf_by_egid_and_zone['reason']=solar_reason
+
+    return gdf_by_egid_and_zone
+
+
 # Define constants --------------------------
 
 WORKING_DIRECTORY=cfg['working_directory']
@@ -39,6 +150,9 @@ PITCHED_SOLAR_INDUSTRY=PARAMETERS['industrial_buildings']['pitched_roofs']['sola
 VEGETATION_AREA=PARAMETERS['vegetation_area']
 VEGETATION_INCLINATION=PARAMETERS['vegetation_inclination']
 
+SUITABILITY_MESSAGES={'no vegetation': 'unsuitable for vegetation', 'no solar': 'unsuitable for solar installations', 
+                      'nothing': 'not suitable for valorisation', 'uncertain': 'unsure'}
+
 os.chdir(WORKING_DIRECTORY)
 FILEPATH=os.path.join(fct_misc.ensure_dir_exists('processed/roofs'), 'roofs.gpkg')
 
@@ -51,79 +165,128 @@ heritage_classement=gpd.read_file(HERITAGE_CLASSEMENT)
 industrial_zones=gpd.read_file(INDUSTRIAL_ZONES)
 
 roofs=fct_misc.test_valid_geom(roofs[['OBJECTID', 'geometry']], correct=True, gdf_obj_name='DIT roofs')
+solar_surfaces.drop(columns=['LIEU', 'SHAPE_AREA', 'SHAPE_LEN'])
 
 nbr_roofs=solar_surfaces.shape[0]
 logger.info(f'There are {nbr_roofs} roof shapes for {len(solar_surfaces.EGID.unique().tolist())} EGIDs.')
 
-logger.info('Uniting the roofs as defined by the SITG and the OCEN...')
+
+logger.info('Uniting the roofs as defined by the DIT and the OCEN...')
 
 solar_surfaces['area']=round(solar_surfaces.area, 3)
 joined_surfaces=gpd.sjoin(roofs, solar_surfaces, how='right', predicate='intersects', lsuffix='DIT', rsuffix='OCEN')
 roofs['geom_DIT']=roofs.geometry
-joined_surfaces=joined_surfaces.merge(roofs[['OBJECTID', 'geom_DIT']], how='left', left_on='OBJECTID_DIT', right_on='OBJECTID')
+joined_surfaces_with_area=joined_surfaces.merge(roofs[['OBJECTID', 'geom_DIT']], how='left', left_on='OBJECTID_DIT', right_on='OBJECTID')
 
 intersecting_area=[]
-for (geom1, geom2) in zip(joined_surfaces.geom_DIT.values.tolist(), joined_surfaces.geometry.values.tolist()):
+for (geom1, geom2) in zip(joined_surfaces_with_area.geom_DIT.values.tolist(), joined_surfaces_with_area.geometry.values.tolist()):
     if geom1 is not None:
         intersecting_area.append(round(geom1.intersection(geom2).area, 3))
     else:
         intersecting_area.append(None)
 
-joined_surfaces['intersecting_area']=intersecting_area
-joined_surfaces.drop(columns=['geom_DIT', 'index_DIT'], inplace=True)
-joined_surfaces.sort_values(by=['intersecting_area'], ascending=False, inplace=True)
+joined_surfaces_with_area['intersecting_area']=intersecting_area
+joined_surfaces_with_area.drop(columns=['geom_DIT', 'index_DIT'], inplace=True)
+joined_surfaces_with_area.sort_values(by=['intersecting_area'], ascending=False, inplace=True)
 
-united_roofs=joined_surfaces.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True)
+united_surfaces=joined_surfaces_with_area.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True)
+
+captured_dit_id=united_surfaces['OBJECTID_DIT'].unique().tolist()
+missing_dit_id=roofs.loc[~roofs['OBJECTID'].isin(captured_dit_id), 'OBJECTID'].unique().tolist()
+
+if len(missing_dit_id)>0:
+    logger.warning(f'{len(missing_dit_id)} DIT roofs did not have a correspondance in the OCEN roofs.')
+    logger.warning(f'Those roofs can not be used due to missing information about total surface or slope.')
+
+united_surfaces.loc[united_surfaces['intersecting_area'] < 0.75, 'OBJECTID_DIT']=NaN
 
 del roofs, solar_surfaces, joined_surfaces
 
-if united_roofs.shape[0]!=nbr_roofs:
+if united_surfaces.shape[0]!=nbr_roofs:
     logger.error('The number of roofs changed after the join between DIT and OCEN.' +
-                 f' There is a difference of {united_roofs.shape[0]-nbr_roofs} roofs compared to the original number.')
+                 f' There is a difference of {united_surfaces.shape[0]-nbr_roofs} surfaces compared to the original number.')
 
-logger.info('Indicating buildings in heritage zones...')
 
-heritage_ensemble.rename(columns={'N_CLASSEME': 'NO_CLASSE'}, inplace=True, errors='raise')
-heritage=pd.concat(
-    [heritage_classement[['OBJECTID', 'NO_CLASSE', 'geometry']], 
-      heritage_ensemble[['OBJECTID', 'NO_CLASSE', 'geometry']]]
-)
+united_surfaces['suitability']=[
+    SUITABILITY_MESSAGES['no vegetation']
+    if slope > VEGETATION_INCLINATION else None
+    for slope in united_surfaces['PENTE_MOYE'].to_numpy()
+]
+united_surfaces['reason']=[
+    'The slope area is too strong for vegetation.'
+    if slope > VEGETATION_INCLINATION else None
+    for slope in united_surfaces['PENTE_MOYE'].to_numpy()
+]
 
-roofs_with_heritages=gpd.sjoin(united_roofs, heritage, how='left', lsuffix='roof', rsuffix='heritage')
-# TODO: determine overlap percentage and set attributes only over a certain limit
-# or use predicate = 'within" and then add the attributes for all EGID
+logger.info('Separating roofs from parkings and other covers...')
+roofs_to_process=united_surfaces[united_surfaces.EGID!=0]
+other_surfaces=united_surfaces[united_surfaces.EGID==0]
 
-roofs_with_heritages['suitability']=None
-roofs_with_heritages.loc[roofs_with_heritages['NO_CLASSE'].notna(), 'suitability']='unsure'
-roofs_with_heritages['reason']=None
-roofs_with_heritages.loc[roofs_with_heritages['NO_CLASSE'].notna(), 'reason']='Part of an heritage building'
+if any(united_surfaces.EGID.isnull()):
+    logger.error('There are some roofs with a null EGID that are not processed to the end.')
 
-roofs_with_heritages.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True, inplace=True)
 
-if roofs_with_heritages.shape[0]!=nbr_roofs:
-    logger.error('The number of roofs changed after the join the heritage geodata.' +
-                 f' There is a difference of {roofs_with_heritages.shape[0]-nbr_roofs} roofs compared to the original number.')
+logger.info('Testing the area left on each surface for vegetation...')
 
-logger.info('Marking roofs too steep for vegetation...')
-condition_vegetation_inclination=(
-     (roofs_with_heritages['PENTE_MOYE'] >= VEGETATION_INCLINATION) & (roofs_with_heritages['suitability'].isnull())
-)
-roofs_with_heritages.loc[condition_vegetation_inclination, 'suitability'] = 'unsuitable for vegetation'
-roofs_with_heritages.loc[condition_vegetation_inclination, 'reason'] = 'slope too steep'
+roofs_accepting_vege=roofs_to_process[roofs_to_process.suitability.isnull()]
+area_tmp_gdf=roofs_accepting_vege.groupby(by='EGID')['SURFACE_TO'].sum().reset_index()
 
-logger.info('Determining which roofs are parts of industrial buildings...')
+area_tmp_gdf['suitability']=[
+    SUITABILITY_MESSAGES['no vegetation'] if surface < VEGETATION_AREA else None for surface in area_tmp_gdf.SURFACE_TO.to_numpy()
+]
+area_tmp_gdf['reason']=[
+    f'The roof area is under {VEGETATION_AREA} m2 too small for vegetation.' 
+    if surface < VEGETATION_AREA else None for surface in area_tmp_gdf.SURFACE_TO.to_numpy()
+]
+
+# Bring the result back into the global dataframe
+roofs_with_vegetation_suitability=roofs_to_process.merge(area_tmp_gdf, how='left', on='EGID', suffixes=('', '_vege'))
+
+roofs_with_vegetation_suitability.loc[
+    roofs_with_vegetation_suitability.suitability_vege == SUITABILITY_MESSAGES['no vegetation'], 'suitability'
+] = SUITABILITY_MESSAGES['no vegetation']
+roofs_with_vegetation_suitability.loc[
+    roofs_with_vegetation_suitability.suitability_vege == SUITABILITY_MESSAGES['no vegetation'], 'reason'
+] = roofs_with_vegetation_suitability.loc[
+    roofs_with_vegetation_suitability.suitability_vege == SUITABILITY_MESSAGES['no vegetation'], 'reason_vege'
+    ]
+
+roofs_with_vegetation_suitability.drop(columns=['SURFACE_TO_vege', 'suitability_vege', 'reason_vege'], inplace=True)
+
+other_surfaces.loc[other_surfaces.suitability.isnull(), 'reason']=[
+    'This surface is not a roof.' for surface in other_surfaces[other_surfaces.suitability.isnull()].SURFACE_TO.to_numpy()
+]
+other_surfaces.loc[other_surfaces.suitability.isnull(), 'suitability']=[
+    SUITABILITY_MESSAGES['no vegetation'] for surface in other_surfaces[other_surfaces.suitability.isnull()].SURFACE_TO.to_numpy()
+]
+
+nbr_surfaces_tmp=roofs_with_vegetation_suitability.shape[0] + other_surfaces.shape[0]
+if nbr_surfaces_tmp!=nbr_roofs:
+    logger.error('The number of roofs changed after setting the suitability for vegetation.' +
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+    
+del roofs_accepting_vege, united_surfaces, roofs_to_process, area_tmp_gdf
+
+
+logger.info('Determining which surfaces are parts of industrial buildings...')
 industrial_zones.drop(columns=['NOM_ZONE', 'SOUS_ZONE', 'SURF_ZONE', 'SHAPE_AREA', 'SHAPE_LEN'], inplace=True)
 industrial_zones.rename(columns={'OBJECTID': 'OBJECTID_IZ', 'NOM': 'NOM_ZONE', 'N_ZONE': 'NO_INDUSTRIAL_ZONE'}, inplace=True)
 
-roofs_by_zone=gpd.sjoin(roofs_with_heritages, industrial_zones, 
+roofs_by_zone=gpd.sjoin(roofs_with_vegetation_suitability, industrial_zones, 
                         how='left', predicate='within', lsuffix='', rsuffix='industy')
-roofs_by_zone.drop_duplicates(subset=roofs_with_heritages.columns, inplace=True, ignore_index=True)
+roofs_by_zone.drop_duplicates(subset=roofs_with_vegetation_suitability.columns, inplace=True, ignore_index=True)
 
-if roofs_by_zone.shape[0]!=nbr_roofs:
-    logger.error('The number of roofs changed after the join the industrial zones.' +
-                 f' There is a difference of {roofs_by_zone.shape[0]-nbr_roofs} roofs compared to the original number.')
-    
-logger.info('Sorting the roofs by slope...')
+other_surfaces_by_zone=gpd.sjoin(other_surfaces, industrial_zones, 
+                        how='left', predicate='within', lsuffix='', rsuffix='industy')
+other_surfaces_by_zone.drop_duplicates(subset=other_surfaces.columns, inplace=True, ignore_index=True)
+
+nbr_surfaces_tmp=roofs_by_zone.shape[0] + other_surfaces_by_zone.shape[0]
+if nbr_surfaces_tmp != nbr_roofs:
+     logger.error('The number of roofs changed after setting the type of zone.' +
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+     
+logger.info('Sorting the surfaces by slope...')
+
 flat_roofs_by_zone_tmp=roofs_by_zone[
     (
         (roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (roofs_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_HOUSES)
@@ -142,16 +305,16 @@ pitched_roofs_by_zone_tmp=roofs_by_zone[
     )
 ]
 
+# Resolving conflicts for roofs partially flat and pitched
 # Better by area than occurence?
 flat_occurences_egid=flat_roofs_by_zone_tmp.value_counts(subset=['EGID'])
 pitched_occurences_egid=pitched_roofs_by_zone_tmp.value_counts(subset=['EGID'])
 common_egid=flat_occurences_egid.index.intersection(pitched_occurences_egid.index)
 
-logger.info(f'With a limit at {FLAT_VS_PITCHED_HOUSES}° for houses and "skyscraper" and' +
-            f' a limit at {FLAT_VS_PITCHED_INDUSTRY}° for industrial buildings,' +
-            f' there are {len(flat_occurences_egid)} flat roof buildings and {len(pitched_occurences_egid)} pitched roof buildings. ' +
-            f'{len(common_egid)} buildings are in the two classes.')
-logger.info(f'Buildings are suppressed in the table where there are the least occurences.')
+logger.info(f'With a limit at {FLAT_VS_PITCHED_HOUSES}° for houses and "skyscraper" and a limit at {FLAT_VS_PITCHED_INDUSTRY}° for industrial '+
+            f'buildings, there are {len(flat_occurences_egid)} flat roof buildings and {len(pitched_occurences_egid)} pitched roof buildings. ' +
+            f'{len(common_egid)} buildings are in the two classes')
+logger.info(f'Buildings are suppressed on the side where they have the least occurences.')
 
 egid_occurences=pd.concat([flat_occurences_egid, pitched_occurences_egid], axis=1)
 egid_occurences[egid_occurences.isna()]=0
@@ -159,18 +322,91 @@ egid_occurences.reset_index(inplace=True)
 
 flat_egids=egid_occurences.loc[egid_occurences[0] >= egid_occurences[1], 'EGID'].tolist()
 pitched_egids=egid_occurences.loc[egid_occurences[0] < egid_occurences[1], 'EGID'].tolist()
-flat_egids.append(0)
 
-flat_roofs_by_zone=flat_roofs_by_zone_tmp[flat_roofs_by_zone_tmp.EGID.isin(flat_egids)]
-pitched_roofs_by_zone=pitched_roofs_by_zone_tmp[pitched_roofs_by_zone_tmp.EGID.isin(pitched_egids)]
+flat_roofs_by_zone=roofs_by_zone[roofs_by_zone.EGID.isin(flat_egids)]
+pitched_roofs_by_zone=roofs_by_zone[roofs_by_zone.EGID.isin(pitched_egids)]
 
-new_nbr_roofs=flat_roofs_by_zone.shape[0] + pitched_roofs_by_zone.shape[0]
-if new_nbr_roofs != nbr_roofs:
-    logger.error('The number of roofs changed after the separation between flat and pitched.' +
-                 f' There is a difference of {new_nbr_roofs-nbr_roofs} roofs compared to the original number.')
+flat_other_surfaces_by_zone=other_surfaces_by_zone[
+    (
+        (other_surfaces_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (other_surfaces_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_HOUSES)
+    ) |
+    (
+        (~other_surfaces_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (other_surfaces_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_INDUSTRY)
+    )
+]
+
+pitched_other_surfaces_by_zone=other_surfaces_by_zone[
+    (
+        (other_surfaces_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (other_surfaces_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_HOUSES)
+    ) |
+    (
+        (~other_surfaces_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (other_surfaces_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_INDUSTRY)
+    )
+]
+
+flat_surfaces_by_zone=pd.concat([flat_roofs_by_zone, flat_other_surfaces_by_zone], ignore_index=True)
+pitched_surfaces_by_zone=pd.concat([pitched_roofs_by_zone, pitched_other_surfaces_by_zone], ignore_index=True)
+
+nbr_surfaces_tmp = flat_surfaces_by_zone.shape[0] + pitched_surfaces_by_zone.shape[0]
+if nbr_surfaces_tmp != nbr_roofs:
+     logger.error('The number of surfaces changed after setting separating between flat and pitched surfaces.' +
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+     
+del roofs_by_zone, other_surfaces, other_surfaces_by_zone
+del flat_occurences_egid, pitched_occurences_egid, egid_occurences
+del flat_roofs_by_zone_tmp, pitched_roofs_by_zone_tmp, flat_roofs_by_zone, pitched_roofs_by_zone
+
+logger.info('Testing the suitability of surfaces for solar installations...')
+flat_surfaces_by_egid_and_zone=check_solar_suitability(flat_surfaces_by_zone, SUITABILITY_MESSAGES, 
+                        solar_house=FLAT_SOLAR_HOUSES, solar_industry=FLAT_SOLAR_INDUSTRY)
+
+pitched_surfaces_by_egid_and_zone=check_solar_suitability(pitched_surfaces_by_zone, SUITABILITY_MESSAGES, 
+                        solar_house=PITCHED_SOLAR_HOUSES, solar_industry=PITCHED_SOLAR_INDUSTRY)
+
+surfaces_by_egid_and_zone=pd.concat([flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone], ignore_index=True)
+
+nbr_surfaces_tmp = surfaces_by_egid_and_zone.shape[0]
+if nbr_surfaces_tmp != nbr_roofs:
+     logger.error('The number of surfaces changed after testing the suitability of roofs for solar installation.' +
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+
+del flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone
+
+
+logger.info('Indicating buildings in heritage zones...')
+
+heritage_ensemble.rename(columns={'N_CLASSEME': 'NO_CLASSE'}, inplace=True, errors='raise')
+heritage=pd.concat(
+    [heritage_classement[['OBJECTID', 'NO_CLASSE', 'geometry']], 
+      heritage_ensemble[['OBJECTID', 'NO_CLASSE', 'geometry']]]
+)
+heritage['geometry']= heritage.geometry.buffer(3)
+
+surfaces_with_heritage_info=gpd.sjoin(surfaces_by_egid_and_zone, heritage, how='left', predicate='within', lsuffix='roof', rsuffix='heritage')
+heritage_egids=surfaces_with_heritage_info.loc[surfaces_with_heritage_info['NO_CLASSE'].notna(),'EGID'].unique().tolist()
+heritage_egids.remove(0)
+
+surfaces_with_heritage_info.loc[
+    (surfaces_with_heritage_info.EGID.isin(heritage_egids)) & (surfaces_with_heritage_info.suitability != SUITABILITY_MESSAGES['nothing']), 'suitability'
+]=SUITABILITY_MESSAGES['uncertain']
+surfaces_with_heritage_info.loc[
+    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (surfaces_with_heritage_info.reason.isnull()), 'reason'
+]='This EGID is part of an heritage building'
+surfaces_with_heritage_info.loc[
+    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 'reason'
+]=surfaces_with_heritage_info.loc[
+        (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 'reason'
+    ] + ' This EGID is part of an heritage building.'
+
+surfaces_with_heritage_info.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True, inplace=True)
+
+if surfaces_with_heritage_info.shape[0]!=nbr_roofs:
+    logger.error('The number of roofs changed after the join the heritage geodata.' +
+                 f' There is a difference of {surfaces_with_heritage_info.shape[0]-nbr_roofs} surfaces compared to the original number.')
+    
 
 logger.info('Saving file...')
-roofs_by_zone.to_file(FILEPATH, layer='attributes_filtered_roofs')
+surfaces_with_heritage_info.to_file(FILEPATH, layer='attributes_filtered_roofs')
 
 logger.success(f'Done! The results were written in the geopackage {FILEPATH}, in the layer "attributes_filtered_roofs".')
 
