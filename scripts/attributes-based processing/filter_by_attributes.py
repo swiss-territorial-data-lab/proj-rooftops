@@ -46,7 +46,7 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
             # The roof has at least the min area
             if roof.tot_surface_EGID<min_area:
                 solar_suitability.append(messages['no solar'])
-                solar_reason.append(f'The roof area is under {min_area} m2 which is too small for solar installation.')
+                solar_reason.append(f'The roof area over the EGID is under {min_area} m2 which is too small for solar installation.')
                 continue
 
             # The building is NOT industrial
@@ -55,7 +55,7 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
                 # The surface is too small for solar panels
                 if roof.tot_surface_EGID < solar_house:
                     solar_suitability.append(messages['no solar'])
-                    solar_reason.append(f'The roof area is under {solar_house} m2 which is too small for solar installation.')
+                    solar_reason.append(f'The roof area over the EGID is under {solar_house} m2 which is too small for solar installation.')
                     continue
 
                 # The surface is ok for solar panels.
@@ -70,7 +70,7 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
                 # The surface is too small for solar panels
                 if roof.tot_surface_EGID < solar_industry:
                     solar_suitability.append(messages['no solar'])
-                    solar_reason.append(f'The roof area is under {solar_industry} m2 which is too small for solar installation.')
+                    solar_reason.append(f'The roof area over the EGID is under {solar_industry} m2 which is too small for solar installation.')
                     continue
 
                 # The surface is ok for solar panels.
@@ -85,7 +85,8 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
             # The roof has at least the min area
             if roof.tot_surface_EGID<min_area:
                 solar_suitability.append(messages['nothing'])
-                solar_reason.append(roof.reason + f' The roof area is under {min_area} m2 which is too small for solar installation.')
+                solar_reason.append(roof.reason + 
+                                    f' The roof area over the EGID is under {min_area} m2 which is too small for solar installation.')
                 continue
 
             # The building is NOT industrial
@@ -94,7 +95,8 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
                 # The surface is too small for solar panels
                 if roof.tot_surface_EGID < solar_house:
                     solar_suitability.append(messages['nothing'])
-                    solar_reason.append(roof.reason + f' The roof area is under {solar_house} m2 which is too small for solar installation.')
+                    solar_reason.append(roof.reason + 
+                                        f' The roof area over the EGID is under {solar_house} m2 which is too small for solar installation.')
                     continue
 
                 # The surface is ok for solar panels.
@@ -109,7 +111,8 @@ def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
                 # The surface is too small for solar panels
                 if roof.tot_surface_EGID < solar_industry:
                     solar_suitability.append(messages['nothing'])
-                    solar_reason.append(roof.reason + f' The roof area is under {solar_industry} m2 which is too small for solar installation.')
+                    solar_reason.append(roof.reason + 
+                                        f' The roof area is under {solar_industry} m2 which is too small for solar installation.')
                     continue
 
                 # The surface is ok for solar panels.
@@ -139,6 +142,7 @@ HERITAGE_ENSEMBLE=INPUT_FILES['heritage']['ensembles']
 HERITAGE_CLASSEMENT=INPUT_FILES['heritage']['classement']
 INDUSTRIAL_ZONES=INPUT_FILES['industrial_zones']
 
+SOLAR_ABS_MIN_AREA=PARAMETERS['solar_absolute_minimum_area']
 HOUSE_VS_BUILDING=PARAMETERS['house_vs_building']
 FLAT_VS_PITCHED_HOUSES=PARAMETERS['houses']['flat_vs_pitched']
 FLAT_SOLAR_HOUSES=PARAMETERS['houses']['flat_roofs']['solar_area']
@@ -171,7 +175,9 @@ solar_surfaces.drop(columns=['LIEU', 'SHAPE_AREA', 'SHAPE_LEN'])
 logger.info('Uniting the roofs as defined by the DIT and the OCEN...')
 
 solar_surfaces['area']=round(solar_surfaces.area, 3)
-joined_surfaces=gpd.sjoin(roofs[['OBJECTID', 'geometry']], solar_surfaces, how='right', predicate='intersects', lsuffix='DIT', rsuffix='OCEN')
+joined_surfaces=gpd.sjoin(
+    roofs[['OBJECTID', 'geometry']], solar_surfaces, how='right', predicate='intersects', lsuffix='DIT', rsuffix='OCEN'
+)
 roofs['geom_DIT']=roofs.geometry
 joined_surfaces_with_area=joined_surfaces.merge(roofs[['OBJECTID', 'geom_DIT']], how='left', left_on='OBJECTID_DIT', right_on='OBJECTID')
 
@@ -197,8 +203,8 @@ missed_DIT_roofs.rename(columns={'OBJECTID': 'OBJECTID_DIT', 'PENTE_MOY':'PENTE_
 missed_DIT_roofs.drop(columns=['geom_DIT'], inplace=True)
 all_surfaces=pd.concat([united_surfaces, missed_DIT_roofs], ignore_index=True)
 
-nbr_surfaces=solar_surfaces.shape[0]
-logger.info(f'There are {nbr_surfaces} roof shapes for {len(solar_surfaces.EGID.unique().tolist())} EGIDs.')
+nbr_surfaces=all_surfaces.shape[0]
+logger.info(f'There are {nbr_surfaces} roof shapes for {len(all_surfaces.EGID.unique().tolist())} EGIDs.')
 
 del roofs, solar_surfaces, joined_surfaces, united_surfaces
 
@@ -210,7 +216,7 @@ all_surfaces['suitability']=[
     for slope in all_surfaces['PENTE_MOYE'].to_numpy()
 ]
 all_surfaces['reason']=[
-    'The slope area is too strong for vegetation.'
+    'The slope is too steep for vegetation.'
     if slope > VEGETATION_INCLINATION else None
     for slope in all_surfaces['PENTE_MOYE'].to_numpy()
 ]
@@ -232,7 +238,7 @@ area_tmp_gdf['suitability']=[
     SUITABILITY_MESSAGES['no vegetation'] if surface < VEGETATION_AREA else None for surface in area_tmp_gdf.SURFACE_TO.to_numpy()
 ]
 area_tmp_gdf['reason']=[
-    f'The roof area is under {VEGETATION_AREA} m2 too small for vegetation.' 
+    f'The roof area is under {VEGETATION_AREA} m2 which is too small for vegetation.' 
     if surface < VEGETATION_AREA else None for surface in area_tmp_gdf.SURFACE_TO.to_numpy()
 ]
 
@@ -281,24 +287,41 @@ nbr_surfaces_tmp=roofs_by_zone.shape[0] + other_surfaces_by_zone.shape[0]
 if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of roofs changed after setting the type of zone.' +
                  f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
-     
+
+
+logger.info('Marking the roofs less than 2 m2 as too small...')
+large_roofs_by_zone=roofs_by_zone[roofs_by_zone['SURFACE_TO']>SOLAR_ABS_MIN_AREA].copy()
+small_roofs_by_zone=roofs_by_zone[roofs_by_zone['SURFACE_TO']<=SOLAR_ABS_MIN_AREA].copy()
+
+small_roofs_by_zone.loc[:,'suitability']=[
+    SUITABILITY_MESSAGES['no solar']
+    if suitability==None else SUITABILITY_MESSAGES['nothing']
+    for suitability in small_roofs_by_zone.suitability.to_numpy()
+]
+small_roofs_by_zone.loc[:,'reason']=[
+    f'The roof section is small than {SOLAR_ABS_MIN_AREA} m2, which is too small for a solar panel.'
+    if reason==None else reason + f'The roof section is small than {SOLAR_ABS_MIN_AREA} m2, which is too small for a solar panel.'
+    for reason in small_roofs_by_zone.reason.to_numpy()
+]
+
+
 logger.info('Sorting the surfaces by slope...')
 
-flat_roofs_by_zone_tmp=roofs_by_zone[
+flat_roofs_by_zone_tmp=large_roofs_by_zone[
     (
-        (roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (roofs_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_HOUSES)
+        (large_roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (large_roofs_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_HOUSES)
     ) |
     (
-        (~roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (roofs_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_INDUSTRY)
+        (~large_roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (large_roofs_by_zone['PENTE_MOYE'] < FLAT_VS_PITCHED_INDUSTRY)
     )
 ]
 
-pitched_roofs_by_zone_tmp=roofs_by_zone[
+pitched_roofs_by_zone_tmp=large_roofs_by_zone[
     (
-        (roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (roofs_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_HOUSES)
+        (large_roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (large_roofs_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_HOUSES)
     ) |
     (
-        (~roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (roofs_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_INDUSTRY)
+        (~large_roofs_by_zone['NO_INDUSTRIAL_ZONE'].isnull()) & (large_roofs_by_zone['PENTE_MOYE'] >= FLAT_VS_PITCHED_INDUSTRY)
     )
 ]
 
@@ -320,8 +343,8 @@ egid_occurences.reset_index(inplace=True)
 flat_egids=egid_occurences.loc[egid_occurences[0] >= egid_occurences[1], 'EGID'].tolist()
 pitched_egids=egid_occurences.loc[egid_occurences[0] < egid_occurences[1], 'EGID'].tolist()
 
-flat_roofs_by_zone=roofs_by_zone[roofs_by_zone.EGID.isin(flat_egids)]
-pitched_roofs_by_zone=roofs_by_zone[roofs_by_zone.EGID.isin(pitched_egids)]
+flat_roofs_by_zone=large_roofs_by_zone[large_roofs_by_zone.EGID.isin(flat_egids)]
+pitched_roofs_by_zone=large_roofs_by_zone[large_roofs_by_zone.EGID.isin(pitched_egids)]
 
 flat_other_surfaces_by_zone=other_surfaces_by_zone[
     (
@@ -344,7 +367,7 @@ pitched_other_surfaces_by_zone=other_surfaces_by_zone[
 flat_surfaces_by_zone=pd.concat([flat_roofs_by_zone, flat_other_surfaces_by_zone], ignore_index=True)
 pitched_surfaces_by_zone=pd.concat([pitched_roofs_by_zone, pitched_other_surfaces_by_zone], ignore_index=True)
 
-nbr_surfaces_tmp = flat_surfaces_by_zone.shape[0] + pitched_surfaces_by_zone.shape[0]
+nbr_surfaces_tmp = flat_surfaces_by_zone.shape[0] + pitched_surfaces_by_zone.shape[0] + small_roofs_by_zone.shape[0]
 if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after setting separating between flat and pitched surfaces.' +
                  f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
@@ -360,14 +383,16 @@ flat_surfaces_by_egid_and_zone=check_solar_suitability(flat_surfaces_by_zone, SU
 pitched_surfaces_by_egid_and_zone=check_solar_suitability(pitched_surfaces_by_zone, SUITABILITY_MESSAGES, 
                         solar_house=PITCHED_SOLAR_HOUSES, solar_industry=PITCHED_SOLAR_INDUSTRY)
 
-surfaces_by_egid_and_zone=pd.concat([flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone], ignore_index=True)
+surfaces_by_egid_and_zone=pd.concat(
+    [flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone, small_roofs_by_zone], ignore_index=True
+)
 
 nbr_surfaces_tmp = surfaces_by_egid_and_zone.shape[0]
 if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after testing the suitability of roofs for solar installation.' +
                  f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
 
-del flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone
+del flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone, small_roofs_by_zone
 
 
 logger.info('Indicating buildings in heritage zones...')
@@ -379,23 +404,29 @@ heritage=pd.concat(
 )
 heritage['geometry']= heritage.geometry.buffer(3)
 
-surfaces_with_heritage_info=gpd.sjoin(surfaces_by_egid_and_zone, heritage, how='left', predicate='within', lsuffix='roof', rsuffix='heritage')
+surfaces_with_heritage_info=gpd.sjoin(
+    surfaces_by_egid_and_zone, heritage, how='left', predicate='within', lsuffix='roof', rsuffix='heritage'
+)
 heritage_egids=surfaces_with_heritage_info.loc[surfaces_with_heritage_info['NO_CLASSE'].notna(),'EGID'].unique().tolist()
 heritage_egids.remove(0)
 
 surfaces_with_heritage_info.loc[
-    (surfaces_with_heritage_info.EGID.isin(heritage_egids)) & (surfaces_with_heritage_info.suitability != SUITABILITY_MESSAGES['nothing']), 'suitability'
+    (surfaces_with_heritage_info.EGID.isin(heritage_egids)) & (surfaces_with_heritage_info.suitability != SUITABILITY_MESSAGES['nothing']), 
+    'suitability'
 ]=SUITABILITY_MESSAGES['uncertain']
 surfaces_with_heritage_info.loc[
-    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (surfaces_with_heritage_info.reason.isnull()), 'reason'
+    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (surfaces_with_heritage_info.reason.isnull()), 
+    'reason'
 ]='This EGID is part of an heritage building'
 surfaces_with_heritage_info.loc[
-    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 'reason'
+    (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 
+    'reason'
 ]=surfaces_with_heritage_info.loc[
-        (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 'reason'
+        (surfaces_with_heritage_info.suitability == SUITABILITY_MESSAGES['uncertain']) & (~surfaces_with_heritage_info.reason.isnull()), 
+        'reason'
     ] + ' This EGID is part of an heritage building.'
 
-surfaces_with_heritage_info.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True, inplace=True)
+surfaces_with_heritage_info.drop_duplicates(subset=['OBJECTID_OCEN', 'OBJECTID_DIT'], ignore_index = True, inplace=True)
 
 if surfaces_with_heritage_info.shape[0]!=nbr_surfaces:
     logger.error('The number of roofs changed after the join the heritage geodata.' +
