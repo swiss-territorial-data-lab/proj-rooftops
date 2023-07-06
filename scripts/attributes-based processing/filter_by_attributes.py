@@ -164,17 +164,14 @@ heritage_ensemble=gpd.read_file(HERITAGE_ENSEMBLE)
 heritage_classement=gpd.read_file(HERITAGE_CLASSEMENT)
 industrial_zones=gpd.read_file(INDUSTRIAL_ZONES)
 
-roofs=fct_misc.test_valid_geom(roofs[['OBJECTID', 'geometry']], correct=True, gdf_obj_name='DIT roofs')
+roofs=fct_misc.test_valid_geom(roofs[['OBJECTID', 'geometry', 'SURFACE_TO', 'PENTE_MOY', 'EGID']], correct=True, gdf_obj_name='DIT roofs')
 solar_surfaces.drop(columns=['LIEU', 'SHAPE_AREA', 'SHAPE_LEN'])
-
-nbr_roofs=solar_surfaces.shape[0]
-logger.info(f'There are {nbr_roofs} roof shapes for {len(solar_surfaces.EGID.unique().tolist())} EGIDs.')
 
 
 logger.info('Uniting the roofs as defined by the DIT and the OCEN...')
 
 solar_surfaces['area']=round(solar_surfaces.area, 3)
-joined_surfaces=gpd.sjoin(roofs, solar_surfaces, how='right', predicate='intersects', lsuffix='DIT', rsuffix='OCEN')
+joined_surfaces=gpd.sjoin(roofs[['OBJECTID', 'geometry']], solar_surfaces, how='right', predicate='intersects', lsuffix='DIT', rsuffix='OCEN')
 roofs['geom_DIT']=roofs.geometry
 joined_surfaces_with_area=joined_surfaces.merge(roofs[['OBJECTID', 'geom_DIT']], how='left', left_on='OBJECTID_DIT', right_on='OBJECTID')
 
@@ -192,37 +189,37 @@ joined_surfaces_with_area.sort_values(by=['intersecting_area'], ascending=False,
 united_surfaces=joined_surfaces_with_area.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True)
 
 captured_dit_id=united_surfaces['OBJECTID_DIT'].unique().tolist()
-missing_dit_id=roofs.loc[~roofs['OBJECTID'].isin(captured_dit_id), 'OBJECTID'].unique().tolist()
-
-if len(missing_dit_id)>0:
-    logger.warning(f'{len(missing_dit_id)} DIT roofs did not have a correspondance in the OCEN roofs.')
-    logger.warning(f'Those roofs can not be used due to missing information about total surface or slope.')
+missed_DIT_roofs=roofs[~roofs['OBJECTID'].isin(captured_dit_id)].copy()
 
 united_surfaces.loc[united_surfaces['intersecting_area'] < 0.75, 'OBJECTID_DIT']=NaN
 
-del roofs, solar_surfaces, joined_surfaces
+missed_DIT_roofs.rename(columns={'OBJECTID': 'OBJECTID_DIT', 'PENTE_MOY':'PENTE_MOYE'}, inplace=True)
+missed_DIT_roofs.drop(columns=['geom_DIT'], inplace=True)
+all_surfaces=pd.concat([united_surfaces, missed_DIT_roofs], ignore_index=True)
 
-if united_surfaces.shape[0]!=nbr_roofs:
-    logger.error('The number of roofs changed after the join between DIT and OCEN.' +
-                 f' There is a difference of {united_surfaces.shape[0]-nbr_roofs} surfaces compared to the original number.')
+nbr_surfaces=solar_surfaces.shape[0]
+logger.info(f'There are {nbr_surfaces} roof shapes for {len(solar_surfaces.EGID.unique().tolist())} EGIDs.')
+
+del roofs, solar_surfaces, joined_surfaces, united_surfaces
 
 
-united_surfaces['suitability']=[
+logger.info('Setting suitability for vegetation based on roof slope...')
+all_surfaces['suitability']=[
     SUITABILITY_MESSAGES['no vegetation']
     if slope > VEGETATION_INCLINATION else None
-    for slope in united_surfaces['PENTE_MOYE'].to_numpy()
+    for slope in all_surfaces['PENTE_MOYE'].to_numpy()
 ]
-united_surfaces['reason']=[
+all_surfaces['reason']=[
     'The slope area is too strong for vegetation.'
     if slope > VEGETATION_INCLINATION else None
-    for slope in united_surfaces['PENTE_MOYE'].to_numpy()
+    for slope in all_surfaces['PENTE_MOYE'].to_numpy()
 ]
 
 logger.info('Separating roofs from parkings and other covers...')
-roofs_to_process=united_surfaces[united_surfaces.EGID!=0]
-other_surfaces=united_surfaces[united_surfaces.EGID==0]
+roofs_to_process=all_surfaces[all_surfaces.EGID!=0]
+other_surfaces=all_surfaces[all_surfaces.EGID==0]
 
-if any(united_surfaces.EGID.isnull()):
+if any(all_surfaces.EGID.isnull()):
     logger.error('There are some roofs with a null EGID that are not processed to the end.')
 
 
@@ -261,11 +258,11 @@ other_surfaces.loc[other_surfaces.suitability.isnull(), 'suitability']=[
 ]
 
 nbr_surfaces_tmp=roofs_with_vegetation_suitability.shape[0] + other_surfaces.shape[0]
-if nbr_surfaces_tmp!=nbr_roofs:
+if nbr_surfaces_tmp!=nbr_surfaces:
     logger.error('The number of roofs changed after setting the suitability for vegetation.' +
-                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
     
-del roofs_accepting_vege, united_surfaces, roofs_to_process, area_tmp_gdf
+del roofs_accepting_vege, all_surfaces, roofs_to_process, area_tmp_gdf
 
 
 logger.info('Determining which surfaces are parts of industrial buildings...')
@@ -281,9 +278,9 @@ other_surfaces_by_zone=gpd.sjoin(other_surfaces, industrial_zones,
 other_surfaces_by_zone.drop_duplicates(subset=other_surfaces.columns, inplace=True, ignore_index=True)
 
 nbr_surfaces_tmp=roofs_by_zone.shape[0] + other_surfaces_by_zone.shape[0]
-if nbr_surfaces_tmp != nbr_roofs:
+if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of roofs changed after setting the type of zone.' +
-                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
      
 logger.info('Sorting the surfaces by slope...')
 
@@ -348,9 +345,9 @@ flat_surfaces_by_zone=pd.concat([flat_roofs_by_zone, flat_other_surfaces_by_zone
 pitched_surfaces_by_zone=pd.concat([pitched_roofs_by_zone, pitched_other_surfaces_by_zone], ignore_index=True)
 
 nbr_surfaces_tmp = flat_surfaces_by_zone.shape[0] + pitched_surfaces_by_zone.shape[0]
-if nbr_surfaces_tmp != nbr_roofs:
+if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after setting separating between flat and pitched surfaces.' +
-                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
      
 del roofs_by_zone, other_surfaces, other_surfaces_by_zone
 del flat_occurences_egid, pitched_occurences_egid, egid_occurences
@@ -366,9 +363,9 @@ pitched_surfaces_by_egid_and_zone=check_solar_suitability(pitched_surfaces_by_zo
 surfaces_by_egid_and_zone=pd.concat([flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone], ignore_index=True)
 
 nbr_surfaces_tmp = surfaces_by_egid_and_zone.shape[0]
-if nbr_surfaces_tmp != nbr_roofs:
+if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after testing the suitability of roofs for solar installation.' +
-                 f' There is a difference of {nbr_surfaces_tmp-nbr_roofs} surfaces compared to the original number.')
+                 f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
 
 del flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone
 
@@ -400,9 +397,9 @@ surfaces_with_heritage_info.loc[
 
 surfaces_with_heritage_info.drop_duplicates(subset='OBJECTID_OCEN', ignore_index = True, inplace=True)
 
-if surfaces_with_heritage_info.shape[0]!=nbr_roofs:
+if surfaces_with_heritage_info.shape[0]!=nbr_surfaces:
     logger.error('The number of roofs changed after the join the heritage geodata.' +
-                 f' There is a difference of {surfaces_with_heritage_info.shape[0]-nbr_roofs} surfaces compared to the original number.')
+                 f' There is a difference of {surfaces_with_heritage_info.shape[0]-nbr_surfaces} surfaces compared to the original number.')
     
 
 logger.info('Saving file...')
