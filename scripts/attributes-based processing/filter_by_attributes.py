@@ -18,23 +18,32 @@ with open('config/config_expert_attributes.yaml') as fp:
 
 # Define functions -------------------------
 
-def check_solar_suitability(gdf, messages, solar_house=0, solar_industry=0):
+def prepare_solar_check(gdf):
     '''
-    Calculate the total surface of roof per EGID and do the if-else statement to test if there is enough space for a solar installation.
+    Calculate the total surface of roof per EGID
 
-    - gdf: geodataframe of the roofs with the columns EGID, SURFACE_TO, NO_INDUSTRIAL_ZONE, suitability, and reason.
-    - messages: dictionary of the message to indicate the lack of suitability with the keys "no vegetation", "no solar" and "nothing".
-    - solar_house: limit in m2 to which it becomes worth to install a solar installation on a house.
-    - solar_industry: limit in m2 to which it becomes worth to install a solar installation on an industry.
-    return: the same geodataframe, buth with an attribute "tot_surface_EGID" 
-        and the attributes "suitability" and "reason" updated with the solar informations
+    - gdf: geodataframe of the roofs with the columns EGID and SURFACE_TO.
+    return: the same geodataframe, but with an attribute "tot_surface_EGID"
     '''
-
-    min_area=min([solar_house, solar_industry])
 
     gdf_by_egid=gdf.groupby(by=['EGID'])['SURFACE_TO'].sum().reset_index()
     gdf_by_egid.rename(columns={'SURFACE_TO':'tot_surface_EGID'}, inplace=True)
     gdf_by_egid_and_zone=gdf.merge(gdf_by_egid, on='EGID')
+
+    return gdf_by_egid_and_zone
+
+def check_solar_suitability(gdf_by_egid_and_zone, messages, solar_house=0, solar_industry=0):
+    '''
+    Do the if-else statement to test if there is enough space for a solar installation.
+   
+    - gdf_by_egid_and_zone: geodataframe of the roofs with the columns tot_surface_EGID, NO_INDUSTRIAL_ZONE, suitability, and reason.
+    - messages: dictionary of the message to indicate the lack of suitability with the keys "no vegetation", "no solar" and "nothing".
+    - solar_house: limit in m2 to which it becomes worth to install a solar installation on a house.
+    - solar_industry: limit in m2 to which it becomes worth to install a solar installation on an industry.
+    return: the same geodataframe, but with the attributes "suitability" and "reason" updated with the solar informations
+    '''
+
+    min_area=min([solar_house, solar_industry])
 
     solar_suitability=[]
     solar_reason=[]
@@ -169,7 +178,10 @@ heritage_classement=gpd.read_file(HERITAGE_CLASSEMENT)
 industrial_zones=gpd.read_file(INDUSTRIAL_ZONES)
 
 roofs=fct_misc.test_valid_geom(roofs[['OBJECTID', 'geometry', 'SURFACE_TO', 'PENTE_MOY', 'EGID']], correct=True, gdf_obj_name='DIT roofs')
-solar_surfaces.drop(columns=['LIEU', 'SHAPE_AREA', 'SHAPE_LEN'])
+solar_surfaces=fct_misc.test_valid_geom(
+    solar_surfaces[['OBJECTID', 'EGID', 'TYPE_SURFA', 'ID_SURFACE', 'ORIENTATIO', 'PENTE_MOYE', 'IRR_MOYENN', 'SURFACE_TO', 'geometry']], 
+    correct=True, gdf_obj_name='solar surfaces'
+)
 
 
 logger.info('Uniting the roofs as defined by the DIT and the OCEN...')
@@ -364,27 +376,38 @@ pitched_other_surfaces_by_zone=other_surfaces_by_zone[
     )
 ]
 
-flat_surfaces_by_zone=pd.concat([flat_roofs_by_zone, flat_other_surfaces_by_zone], ignore_index=True)
-pitched_surfaces_by_zone=pd.concat([pitched_roofs_by_zone, pitched_other_surfaces_by_zone], ignore_index=True)
-
-nbr_surfaces_tmp = flat_surfaces_by_zone.shape[0] + pitched_surfaces_by_zone.shape[0] + small_roofs_by_zone.shape[0]
+nbr_surfaces_tmp = flat_roofs_by_zone.shape[0] + flat_other_surfaces_by_zone.shape[0] + \
+                    pitched_roofs_by_zone.shape[0] + pitched_other_surfaces_by_zone.shape[0] + small_roofs_by_zone.shape[0]
 if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after setting separating between flat and pitched surfaces.' +
                  f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
      
 del roofs_by_zone, other_surfaces, other_surfaces_by_zone
 del flat_occurences_egid, pitched_occurences_egid, egid_occurences
-del flat_roofs_by_zone_tmp, pitched_roofs_by_zone_tmp, flat_roofs_by_zone, pitched_roofs_by_zone
+del flat_roofs_by_zone_tmp, pitched_roofs_by_zone_tmp
 
 logger.info('Testing the suitability of surfaces for solar installations...')
-flat_surfaces_by_egid_and_zone=check_solar_suitability(flat_surfaces_by_zone, SUITABILITY_MESSAGES, 
-                        solar_house=FLAT_SOLAR_HOUSES, solar_industry=FLAT_SOLAR_INDUSTRY)
 
-pitched_surfaces_by_egid_and_zone=check_solar_suitability(pitched_surfaces_by_zone, SUITABILITY_MESSAGES, 
+flat_roofs_by_egid_and_zone=prepare_solar_check(flat_roofs_by_zone)
+flat_roofs_by_egid_and_zone=check_solar_suitability(flat_roofs_by_egid_and_zone, SUITABILITY_MESSAGES, 
+                        solar_house=FLAT_SOLAR_HOUSES, solar_industry=FLAT_SOLAR_INDUSTRY)
+flat_other_surfaces_by_zone['tot_surface_EGID']=flat_other_surfaces_by_zone['SURFACE_TO']
+flat_other_surfaces_by_egid_and_zone=check_solar_suitability(flat_other_surfaces_by_zone, SUITABILITY_MESSAGES,
+                                                             FLAT_SOLAR_HOUSES, FLAT_SOLAR_INDUSTRY)
+
+pitched_roofs_by_egid_and_zone=prepare_solar_check(pitched_roofs_by_zone)
+pitched_roofs_by_egid_and_zone=check_solar_suitability(pitched_roofs_by_egid_and_zone, SUITABILITY_MESSAGES, 
                         solar_house=PITCHED_SOLAR_HOUSES, solar_industry=PITCHED_SOLAR_INDUSTRY)
+pitched_other_surfaces_by_zone['tot_surface_EGID']=pitched_other_surfaces_by_zone['SURFACE_TO']
+ptiched_other_surfaces_by_egid_and_zone=check_solar_suitability(pitched_other_surfaces_by_zone, SUITABILITY_MESSAGES,
+                                                             PITCHED_SOLAR_HOUSES, PITCHED_SOLAR_INDUSTRY)
 
 surfaces_by_egid_and_zone=pd.concat(
-    [flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone, small_roofs_by_zone], ignore_index=True
+    [
+        flat_roofs_by_egid_and_zone, flat_other_surfaces_by_egid_and_zone, 
+        pitched_roofs_by_egid_and_zone, ptiched_other_surfaces_by_egid_and_zone,
+        small_roofs_by_zone
+    ], ignore_index=True
 )
 
 nbr_surfaces_tmp = surfaces_by_egid_and_zone.shape[0]
@@ -392,7 +415,7 @@ if nbr_surfaces_tmp != nbr_surfaces:
      logger.error('The number of surfaces changed after testing the suitability of roofs for solar installation.' +
                  f' There is a difference of {nbr_surfaces_tmp-nbr_surfaces} surfaces compared to the original number.')
 
-del flat_surfaces_by_egid_and_zone, pitched_surfaces_by_egid_and_zone, small_roofs_by_zone
+del small_roofs_by_zone
 
 
 logger.info('Indicating buildings in heritage zones...')
