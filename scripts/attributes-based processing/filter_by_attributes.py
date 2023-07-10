@@ -164,7 +164,7 @@ VEGETATION_AREA=PARAMETERS['vegetation_area']
 VEGETATION_INCLINATION=PARAMETERS['vegetation_inclination']
 
 SUITABILITY_MESSAGES={'no vegetation': 'unsuitable for vegetation', 'no solar': 'unsuitable for solar installations', 
-                      'nothing': 'not suitable for valorisation', 'uncertain': 'unsure'}
+                      'nothing': 'not suitable for valorization', 'uncertain': 'unsure'}
 
 os.chdir(WORKING_DIRECTORY)
 FILEPATH=os.path.join(fct_misc.ensure_dir_exists('processed/roofs'), 'roofs.gpkg')
@@ -196,7 +196,7 @@ joined_surfaces_with_area=joined_surfaces.merge(roofs[['OBJECTID', 'geom_DIT']],
 intersecting_area=[]
 for (geom1, geom2) in zip(joined_surfaces_with_area.geom_DIT.values.tolist(), joined_surfaces_with_area.geometry.values.tolist()):
     if geom1 is not None:
-        intersecting_area.append(round(geom1.intersection(geom2).area, 3))
+        intersecting_area.append(round(geom1.intersection(geom2).area/geom2.area, 3))
     else:
         intersecting_area.append(None)
 
