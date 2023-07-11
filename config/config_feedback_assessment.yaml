@@ -1,0 +1,4 @@
+assess_feedbacks.py:
+  working_directory: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_folder: verifications\retours_Benjamin
+  output_file: Benjamins_feedback.xlsx
