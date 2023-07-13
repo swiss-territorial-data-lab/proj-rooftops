@@ -6,6 +6,7 @@ loguru
 matplotlib
 numpy
 open3d
+optuna
 rasterio
 tqdm
 pyyaml

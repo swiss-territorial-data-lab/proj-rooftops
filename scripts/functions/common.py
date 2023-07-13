@@ -5,7 +5,7 @@ import geopandas as gpd
 from shapely.geometry import Polygon
 import rasterio
 from rasterio.windows import Window
-
+from loguru import logger
 
 
 def bbox(bounds):

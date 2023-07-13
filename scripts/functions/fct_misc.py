@@ -6,6 +6,7 @@ sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 import functions.common as c
 
+
 def format_logger(logger):
     '''Format the logger from loguru
     

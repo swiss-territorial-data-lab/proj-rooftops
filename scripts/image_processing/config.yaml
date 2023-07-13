@@ -9,6 +9,7 @@ tiles_generation.py:
   buffer: 1                #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: false               # Choose if a building mask (by EGID) is applied to image
 
+
 # 2- Create an image mask keeping buildings
 mask_for_buildings.py:
   transparency: true
@@ -16,6 +17,7 @@ mask_for_buildings.py:
   roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   layer: labelling subset
   image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
+
 
 # 3 - Segment Anything Method
 SAM_rooftops.py:
@@ -35,7 +37,8 @@ SAM_rooftops.py:
     foreground: true
     unique: true
     mask_multiplier: 255
-    custom_SAM: false
+    custom_SAM: true
+
 
 # 4 - Create an image mask keeping buildings
 produce_vector_layer.py:
@@ -55,38 +58,38 @@ assess_detection.py:
   output_dir: output/SAM/tests/sensitivity_analysis/
   egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
 
-# Prepare the tiles geometry according to the AOI and zoom level
-prepare_data.py: 
-  srs: "EPSG:2056"                       # Projection of the input file
-  datasets:
-    labels_shapefile: /mnt/data-02/cherny/git/proj-rooftops/data/AOI.shp
-  output_folder: output/SAM/
-  zoom_level: 18    #z, keep between 15 and 18  
 
-# Request tiles according to the provided AOI and tiles parameters
-generate_tilesets.py:
-  debug_mode: False             #reduced amount of tiles
-  datasets:
-    aoi_tiles_geojson: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/tiles.geojson
-    orthophotos_web_service:
-      type: XYZ # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
-      url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
-      # url: https://wms.geo.admin.ch/service
-      # layers: ch.swisstopo.swissimage
-      # srs: "EPSG:2056"
-  output_folder: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/
-  tile_size: 512 # per side, in pixels
-  overwrite: True
-  n_jobs: 10
-  COCO_metadata:
-    year: 2021
-    version: 1.0
-    description: Swiss Image Hinterground w/
-    contributor: swisstopo
-    url: https://swisstopo.ch
-    license:
-      name: Unknown
-      url:
-    category:
-        name: "Roof"
-        supercategory: "Land usage"
+# 6 - Hyperparamters optimization
+model_evaluation.py:
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  image_dir:  input/tiles_opti/
+  shp_roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  shp_roofs_egid_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
+  gt: data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
+  output_dir: output/SAM/opti/
+  detection: 'SAM_vector_layer'
+  vector_extension: 'gpkg'                # 'gpkg' or 'shp'
+  srs: "EPSG:2056"                        # Projection of the input file 
+  image_crop:                             # Activate the option to crop the input image according to pixel coordinates
+    enable: false
+    size: [0,1026,0,1026] 
+  SAM:
+    dl_checkpoints: False                 # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
+    checkpoints: 'sam_vit_h_4b8939.pth'   # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    batch: false
+    foreground: true
+    unique: true
+    mask_multiplier: 255
+    n_trials: 5                           # Number of trial to perform to find the optimized hyperparamters 
+    param_grid:                           # Define hyperameters values to test 
+      points_per_side: [32, 64, 128]
+      points_per_batch: [32, 64, 128]
+      pred_iou_thresh: [0.85,0.88]
+      stability_score_thresh: [0.95]
+      stability_score_offset: [1.0]
+      box_nms_thresh: [0.7]             
+      crop_n_layers: [0]
+      crop_nms_thresh: [0.7]
+      crop_n_points_downscale_factor: [1]
+      min_mask_region_area: [0]
