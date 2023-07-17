@@ -1,54 +1,19 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  Proj rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-
-
-
 import os, sys
-import time
-import argparse
-import yaml
 import re
 import torch
 from glob import glob
 from loguru import logger
 from tqdm import tqdm
 
+import pandas as pd
 import geopandas as gpd
-import optuna
 from samgeo import SamGeo
-
-# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.common as fct_com
 
-logger=fct_com.format_logger(logger)
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
-
-####### Functions ####### 
-# Objective function for hyperparameters optimization
-def objective(trial):
-
-    logger.info(f"Call objective function for hyperparameters optimization")
-
-    PPS = trial.suggest_float('points_per_side', 0, 200)
-    PPB = trial.suggest_float('points_per_batch', 0, 200)
-    IOU_THD = trial.suggest_float('pred_iou_thresh', 0, 1)
-    SST = trial.suggest_float('stability_score_thresh', 0, 1)
-    SSO = trial.suggest_float('stability_score_offset', 0, 1)
-    BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0, 1)
-    CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 1)
-    CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0, 1)
-    CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 50)
-    MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 10)
-
+def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files):
+    
     logger.info(f"Read images file name")
     tiles=glob(os.path.join(IMAGE_DIR, '*.tif'))
 
@@ -84,26 +49,24 @@ def objective(trial):
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        logger.info("Test SAM hyperparameters values")
-
-        param_grid = {
-            "points_per_side": PPS,
-            'points_per_batch':PPB,
-            'pred_iou_thresh': IOU_THD,
-            'stability_score_thresh': SST, 
-            'stability_score_offset': SSO,
-            'box_nms_thresh': BOX_MNS_THD,
-            'crop_n_layers': CROP_N_LAYERS,
-            'crop_nms_thresh': CROP_MNS_THD,
-            'crop_n_points_downscale_factor': CROP_N_POINTS_DS_FACTOR,
-            'min_mask_region_area': MIN_MASK_REGION_AREA
+        sam_kwargs = {
+            'points_per_side': dict_params["points_per_side"],
+            'points_per_batch':dict_params["points_per_batch"],
+            # 'pred_iou_thresh': dict_params["pred_iou_thresh"],
+            # 'stability_score_thresh': dict_params["stability_score_thresh"], 
+            # 'stability_score_offset': dict_params["stability_score_offset"],
+            # 'box_nms_thresh': dict_params["box_nms_thresh"],
+            # 'crop_n_layers': dict_params["crop_n_layers"],
+            # 'crop_nms_thresh': dict_params["crop_nms_thresh"],
+            # 'crop_n_points_downscale_factor': dict_params["crop_n_points_downscale_factor"],
+            # 'min_mask_region_area': dict_params["min_mask_region_area"]
             }
 
         sam = SamGeo(
             checkpoint=checkpoint,
             model_type='vit_h',
             device=device,
-            sam_kwargs=param_grid,
+            sam_kwargs=sam_kwargs,
             )
 
         logger.info(f"Produce and save mask")  
@@ -136,9 +99,8 @@ def objective(trial):
             logger.info(f"...done. A file was written: {file_path}")
 
 
-   ############################################# 
-    # Vectorization 
-    #  
+def filter(OUTPUT_DIR, SHP_ROOF_EGID, SRS, DETECTION, SHP_EXT, written_files):
+
     # Get the rooftops shapes
     ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOF_EGID)
     feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
@@ -149,7 +111,8 @@ def objective(trial):
     else:
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + ROOFS_DIR  + '/' + ROOFS_NAME)
+        # gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + ROOFS_DIR  + '/' + ROOFS_NAME)
+        gdf_roofs = gpd.read_file(ROOFS_DIR  + '/' + ROOFS_NAME)
         logger.info(f"Dissolved shapes by EGID number")
         rooftops = gdf_roofs.dissolve('EGID', as_index=False)
         rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
@@ -199,9 +162,8 @@ def objective(trial):
     logger.info(f"...done. A file was written: {feature_path}")
 
 
-    ############################################# 
-    # Assessments  
-   
+def assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files):
+
     # Open shapefiles
     gdf_gt = gpd.read_file(GT)
     gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
@@ -240,99 +202,15 @@ def objective(trial):
     iou_average = tp_gdf['IOU'].mean()
     logger.info(f"   IOU average = {iou_average:.2f}")
 
+    # Set the final dataframe with tagged prediction
+    logger.info(f"Set the final dataframe")
+
+    tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
+    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'path', 'layer', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
+    tagged_preds_gdf_dict = tagged_preds_gdf_dict.rename(columns={'value': 'mask_value'})
+
+    feature_path = os.path.join(OUTPUT_DIR, f'tagged_predictions.gpkg')
+    tagged_preds_gdf_dict.to_file(feature_path, driver='GPKG', index=False)
+    written_files.append(feature_path)
 
     return f1
-
-
-
-
-if __name__ == "__main__":
-
-# -------------------------------------
-    # Start chronometer
-    tic = time.time()
-    logger.info('Starting...')
-
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point clouds to 2D polygons (STDL.proj-rooftops)")
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
-
-    logger.info(f"Using {args.config_file} as config file.")
- 
-    with open(args.config_file) as fp:
-        cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
-
-    # Load input parameters
-    WORKING_DIR = cfg['working_dir']
-    IMAGE_DIR = cfg['image_dir']
-    SHP_ROOF = cfg['shp_roofs_dir']
-    SHP_ROOF_EGID = cfg['shp_roofs_egid_dir']
-    GT = cfg['gt']
-    OUTPUT_DIR = cfg['output_dir']    
-    DETECTION = cfg['detection']
-    SHP_EXT = cfg['vector_extension']
-    SRS = cfg['srs']
-    CROP = cfg['image_crop']['enable']
-    if CROP == True:
-        SIZE = cfg['image_crop']['size']
-    else:
-        CROP = None
-    DL_CKP = cfg['SAM']['dl_checkpoints']
-    CKP_DIR = cfg['SAM']['checkpoints_dir']
-    CKP = cfg['SAM']['checkpoints']
-    BATCH = cfg['SAM']['batch']
-    FOREGROUND = cfg['SAM']['foreground']
-    UNIQUE = cfg['SAM']['unique']
-    # EK = cfg['SAM']['erosion_kernel']
-    MASK_MULTI = cfg['SAM']['mask_multiplier']
-    N_TRIALS = cfg['SAM']['n_trials']
-    PPS = cfg['SAM']['param_grid']['points_per_side']
-    PPB = cfg['SAM']['param_grid']['points_per_batch']
-    IOU_THD = cfg['SAM']['param_grid']['pred_iou_thresh']
-    SST = cfg['SAM']['param_grid']['stability_score_thresh']
-    SSO = cfg['SAM']['param_grid']['stability_score_offset']
-    BOX_MNS_THD = cfg['SAM']['param_grid']['box_nms_thresh']
-    CROP_N_LAYERS = cfg['SAM']['param_grid']['crop_n_layers']
-    CROP_MNS_THD = cfg['SAM']['param_grid']['crop_nms_thresh']
-    CROP_N_POINTS_DS_FACTOR = cfg['SAM']['param_grid']['crop_n_points_downscale_factor']
-    MIN_MASK_REGION_AREA = cfg['SAM']['param_grid']['min_mask_region_area']
-
-
-    os.chdir(WORKING_DIR)
-
-    # Create an output directory in case it doesn't exist
-    fct_com.ensure_dir_exists(OUTPUT_DIR)
-
-    written_files = []
-
-    # Set the parameter grid of hyperparameters to test
-    logger.info(f"Set hyperparemeters grid")
-    param_grid = {"points_per_side": PPS,
-                  "points_per_batch": PPB,
-                  "pred_iou_thresh": IOU_THD,
-                  "stability_score_thresh": SST,
-                  "stability_score_offset": SSO,
-                   "box_nms_thresh": BOX_MNS_THD,
-                   "crop_n_layers": CROP_N_LAYERS,
-                   "crop_nms_thresh": CROP_MNS_THD,
-                   "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR,
-                   "min_mask_region_area": MIN_MASK_REGION_AREA
-                 }
-
-    # Define optuna study for hyperparameters optimisation
-    study = optuna.create_study(directions=['maximize'],sampler=optuna.samplers.GridSampler(param_grid))
-    study.optimize(objective, n_trials=N_TRIALS)
-    logger.info(f"Best parameters")
-    study.best_params
-
-    print()
-    logger.info("The following files were written. Let's check them out!")
-    for written_file in written_files:
-        logger.info(written_file)
-
-    # Stop chronometer  
-    toc = time.time()
-    logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
-
-    sys.stderr.flush()

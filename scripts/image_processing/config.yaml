@@ -60,7 +60,7 @@ assess_detection.py:
 
 
 # 6 - Hyperparamters optimization
-model_evaluation.py:
+SAM_optimization.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   image_dir:  input/tiles_opti/
   shp_roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
@@ -84,7 +84,7 @@ model_evaluation.py:
     n_trials: 5                           # Number of trial to perform to find the optimized hyperparamters 
     param_grid:                           # Define hyperameters values to test 
       points_per_side: [32, 64, 128]
-      points_per_batch: [32, 64, 128]
+      points_per_batch: [64]
       pred_iou_thresh: [0.85,0.88]
       stability_score_thresh: [0.95]
       stability_score_offset: [1.0]

@@ -108,7 +108,6 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
-
 def get_fractional_sets(the_preds_gdf, the_labels_gdf):
 
     preds_gdf = the_preds_gdf.copy()
