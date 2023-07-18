@@ -13,8 +13,7 @@ tiles_generation.py:
 mask_for_buildings.py:
   transparency: true
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  roofs_dir: /mnt/data-02/cherny/git/proj-rooftops/data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  layer: labelling subset
+  shp_roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
 
 # 3 - Segment Anything Method

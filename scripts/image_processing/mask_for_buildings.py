@@ -46,8 +46,7 @@ logger.info('Defining constants...')
 TRANSPARENCY=cfg['transparency']
 
 WORKING_DIR=cfg['working_dir']
-SHP_ROOFS=cfg['roofs_dir']
-LAYER=cfg['layer']
+SHP_ROOFS=cfg['shp_roofs']
 IMAGE_FOLDER=cfg['image_dir']
 
 os.chdir(WORKING_DIR)
@@ -55,8 +54,6 @@ os.chdir(WORKING_DIR)
 logger.info('Importing data...')
 roofs=gpd.read_file(SHP_ROOFS)
 tiles=glob(os.path.join(IMAGE_FOLDER, '*.tif'))
-if '\\' in tiles[0]:
-     tiles=[tile.replace('\\', '/') for tile in tiles]
 
 logger.info('Processing vector data...')
 roofs=roofs.buffer(0)
@@ -71,9 +68,9 @@ for tile in tqdm(tiles, desc='Producing the masks', total=len(tiles)):
             mask_image, mask_transform = mask(src, geoms_list)
             mask_meta=src.meta
 
-        mask_meta.update({'transform': mask_transform})
+        mask_meta.update({'transform': mask_transform, 'crs': rasterio.CRS.from_epsg(2056)})
         filepath=os.path.join(fct_misc.ensure_dir_exists(os.path.join(IMAGE_FOLDER, 'masked_images')),
-                            tile.split('/')[-1].split('.')[0] + '_masked.tif')
+                            os.path.splitext(os.path.basename(tile))[0] + '_masked.tif')
         
         with rasterio.open(filepath, 'w', **mask_meta) as dst:
             dst.write(mask_image)
@@ -89,10 +86,10 @@ for tile in tqdm(tiles, desc='Producing the masks', total=len(tiles)):
         mask_image = rasterize(shapes=polygons, out_shape=im_size)
 
         mask_meta = src.meta.copy()
-        mask_meta.update({'count': 1, 'dtype': 'uint8', 'nodata':99})
+        mask_meta.update({'count': 1, 'dtype': 'uint8', 'nodata': 99, 'crs': rasterio.CRS.from_epsg(2056)})
 
         filepath=os.path.join(fct_misc.ensure_dir_exists(os.path.join(IMAGE_FOLDER, 'mask')),
-                                tile.split('/')[-1].split('.')[0] + '_mask.tif')    
+                                os.path.splitext(os.path.basename(tile))[0] + '_mask.tif')    
 
         with rasterio.open(filepath, 'w', **mask_meta) as dst:
             dst.write(mask_image, 1)
