@@ -155,8 +155,6 @@ numpy==1.24.2
     #   shapely
     #   snuggs
     #   torchvision
-open3d==0.17.0
-    # via -r requirements.in
 packaging==23.0
     # via
     #   geopandas

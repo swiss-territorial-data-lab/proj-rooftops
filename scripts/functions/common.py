@@ -22,7 +22,7 @@ def bbox(bounds):
 
 
 
-def crop(source,size, output):
+def crop(source, size, output):
 
     with rasterio.open(source) as src:
 

@@ -20,7 +20,7 @@ mask_for_buildings.py:
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   image_dir:  input/tile_list/
-  shape_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
+  shp_roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   output_dir: output/SAM/GT/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   image_crop:                       # Activate the option to crop the input image according to pixel coordinates
@@ -28,7 +28,7 @@ SAM_rooftops.py:
     size: [0,1026,0,1026] 
   SAM:
     dl_checkpoints: False            # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
-    checkpoints_dir: model/
+    checkpoints_dir: model
     checkpoints: 'sam_vit_h_4b8939.pth'  # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch: false
     foreground: true
