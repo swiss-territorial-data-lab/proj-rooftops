@@ -79,7 +79,7 @@ if __name__ == "__main__":
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
         gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
-        gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
+        gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
         logger.info(f"Dissolved shapes by EGID number")
         rooftops = gdf_roofs.dissolve('EGID', as_index=False)
         rooftops.to_file(feature_path)

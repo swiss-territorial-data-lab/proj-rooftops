@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     DETECTION_DIR = cfg['detection_dir']
-    ROOFS_DIR = cfg['roofs_dir']
+    SHP_ROOFS = cfg['shp_roofs']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
@@ -61,19 +61,21 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS_DIR)
-    feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
+    ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
+
+    new_filename=os.path.splitext(ROOFS_NAME)[0]  + "_EGID.shp"
+    feature_path = os.path.join(ROOFS_DIR, new_filename)
 
     if os.path.exists(feature_path):
-        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
+        logger.info(f"File {new_filename} already exists")
         rooftops = gpd.read_file(feature_path)
     else:
-        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
+        logger.info(f"File {new_filename} does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + ROOFS_DIR  + '/' + ROOFS_NAME)
+        gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR,  ROOFS_NAME))
         logger.info(f"Dissolved shapes by EGID number")
         rooftops = gdf_roofs.dissolve('EGID', as_index=False)
-        rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
+        rooftops.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
         rooftops.to_file(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
@@ -82,14 +84,11 @@ if __name__ == "__main__":
     logger.info(f"Read shapefiles' name")
     tiles=glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
     print(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
-    if '\\' in tiles[0]:
-        tiles=[tile.replace('\\', '/') for tile in tiles]
 
     vector_layer = gpd.GeoDataFrame() 
 
     for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
 
-        logger.info(f"Read shapefile: {os.path.basename(tile)}")
         objects = gpd.read_file(tile)
 
         # Set CRS
@@ -102,18 +101,16 @@ if __name__ == "__main__":
 
         fct_misc.test_crs(shape_objects, shape_egid)
 
-        logger.info(f"Filter detection by EGID location")
         selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
         selection['area'] = selection.area 
-        final_gdf = selection.drop(['index_right', 'OBJECTID', 'ALTI_MIN', 'ALTI_MAX', 'DATE_LEVE','SHAPE_AREA', 'SHAPE_LEN'], axis=1)
+        final_gdf = selection.drop(['index_right'], axis=1)
         feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}_segment_selection.gpkg")
         final_gdf.to_file(feature_path)
         written_files.append(feature_path)  
-        logger.info(f"...done. A file was written: {feature_path}")
         
         # Merge/Combine multiple shapefiles into one
-        logger.info(f"Merge shapefiles together in a single vector layer")
-        vector_layer = gpd.pd.concat([vector_layer, final_gdf])
+        vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
+    
     feature_path = os.path.join(OUTPUT_DIR, "SAM_vector_layer.gpkg")
     vector_layer.to_file(feature_path)
     written_files.append(feature_path)  
