@@ -32,14 +32,15 @@ if __name__ == "__main__":
     tic = time.time()
     logger.info('Starting...')
 
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
+    # # Argument and parameter specification
+    # parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
+    # parser.add_argument('config_file', type=str, help='Framework configuration file')
+    # args = parser.parse_args()
 
-    logger.info(f"Using {args.config_file} as config file.")
+    # logger.info(f"Using {args.config_file} as config file.")
  
-    with open(args.config_file) as fp:
+    # with open(args.config_file) as fp:
+    with open('scripts/image_processing/config.yaml') as fp:
         cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
 
 
@@ -133,7 +134,7 @@ if __name__ == "__main__":
 
     tagged_preds_gdf = []
     tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'path', 'layer', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
+    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
     tagged_preds_gdf_dict = tagged_preds_gdf_dict.rename(columns={'value': 'mask_value'})
     # tagged_preds_gdf_dict = tagged_preds_gdf_dict.reindex(columns=['fid','EGID', 'mask_value', 'ID_DET', 'area_DET', 'ID_GT', 'area_GT', 'IOU', 'tag', 'geometry'])
 

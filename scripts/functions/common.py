@@ -151,8 +151,6 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
     val_fp = fp_gdf_temp['value'].unique().tolist()
     tp_gdf = tp_gdf[~tp_gdf['value'].isin(val_fp)]
 
-    tp_gdf.drop(columns=['ID_GT'], inplace=True)
-    
 
     # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes
     fp_gdf = left_join[left_join.ID_GT.isna()].copy()
