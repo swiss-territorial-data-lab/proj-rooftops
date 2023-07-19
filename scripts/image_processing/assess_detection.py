@@ -32,15 +32,14 @@ if __name__ == "__main__":
     tic = time.time()
     logger.info('Starting...')
 
-    # # Argument and parameter specification
-    # parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
-    # parser.add_argument('config_file', type=str, help='Framework configuration file')
-    # args = parser.parse_args()
+    # Argument and parameter specification
+    parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
+    parser.add_argument('config_file', type=str, help='Framework configuration file')
+    args = parser.parse_args()
 
-    # logger.info(f"Using {args.config_file} as config file.")
+    logger.info(f"Using {args.config_file} as config file.")
  
-    # with open(args.config_file) as fp:
-    with open('scripts/image_processing/config.yaml') as fp:
+    with open(args.config_file) as fp:
         cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
 
 
