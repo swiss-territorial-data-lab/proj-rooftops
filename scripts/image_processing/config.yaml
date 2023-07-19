@@ -38,13 +38,12 @@ SAM_rooftops.py:
 
 # 4 - Create an image mask keeping buildings
 produce_vector_layer.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  detection_dir: processed\test_review\SAM\GT\segmented_images
-  shp_roofs: initial\vector\SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  detection_dir: output/SAM/GT/segmented_images/
+  shp_roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   srs: "EPSG:2056"                       # Projection of the input file
-  output_dir: processed\test_review\SAM\GT
-
+  output_dir: output/SAM/GT/
 
 # 5 - Evaluate the results
 assess_detection.py:  
