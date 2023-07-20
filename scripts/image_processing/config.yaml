@@ -64,7 +64,7 @@ SAM_optimization.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   image_dir:  input/tiles_opti/
   shp_roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  shp_roofs_egid_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
+  # shp_roofs_egid_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   gt: data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
   output_dir: output/SAM/opti/
   detection: 'SAM_vector_layer'
@@ -81,15 +81,17 @@ SAM_optimization.py:
     foreground: true
     unique: true
     mask_multiplier: 255
-    n_trials: 5                           # Number of trial to perform to find the optimized hyperparamters 
-    param_grid:                           # Define hyperameters values to test 
+  optimization:
+    n_trials: 2                           # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    sampler: 'GridSampler'                 # Choices: 1:TPESampler; 2:GridSampler 
+    param_grid:                           # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [32, 64, 128]
-      points_per_batch: [64]
-      pred_iou_thresh: [0.85,0.88]
-      stability_score_thresh: [0.95]
-      stability_score_offset: [1.0]
-      box_nms_thresh: [0.7]             
-      crop_n_layers: [0]
-      crop_nms_thresh: [0.7]
-      crop_n_points_downscale_factor: [1]
-      min_mask_region_area: [0]
+      points_per_batch: [32, 64, 128]
+      pred_iou_thresh: [0.85, 0.88, 0.9]
+      stability_score_thresh: [0.85, 0.9, 0.95]
+      stability_score_offset: [0.5, 1.0, 5.0]
+      box_nms_thresh: [0.1, 1.0, 5.0]             
+      crop_n_layers: [0, 2, 5]
+      crop_nms_thresh: [1.0]
+      crop_n_points_downscale_factor: [1, 2, 5]
+      min_mask_region_area: [0, 50, 100]

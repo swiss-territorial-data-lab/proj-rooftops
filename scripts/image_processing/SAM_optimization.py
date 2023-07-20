@@ -27,11 +27,10 @@ from loguru import logger
 import pandas as pd
 import matplotlib.pyplot as plt
 import optuna
-from samgeo import SamGeo
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-import functions.common as fct_com
+import functions.fct_com as fct_com
 import functions.fct_SAM as fct_SAM
 
 logger=fct_com.format_logger(logger)
@@ -46,23 +45,25 @@ def objective(trial):
 
     logger.info(f"Call objective function for hyperparameters optimization")
 
-    PPS = trial.suggest_float('points_per_side', 0, 200)
-    PPB = trial.suggest_float('points_per_batch', 0, 200)
-    # IOU_THD = trial.suggest_float('pred_iou_thresh', 0, 1)
-    # SST = trial.suggest_float('stability_score_thresh', 0, 1)
-    # SSO = trial.suggest_float('stability_score_offset', 0, 1)
-    # BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0, 1)
-    # CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 1)
-    # CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0, 1)
-    # CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 50)
-    # MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 10)
+    # Suggest value range to test (range value not taken into account for GridSampler method)
+    PPS = trial.suggest_int('points_per_side', 0, 200, step=20)
+    # PPB = trial.suggest_int('points_per_batch', 0, 200, step=20)
+    IOU_THD = trial.suggest_float('pred_iou_thresh', 0, 1, step=0.5)
+    SST = trial.suggest_float('stability_score_thresh', 0, 1, step=0.5)
+    SSO = trial.suggest_float('stability_score_offset', 0, 1, step=0.5)
+    # BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0, 5, step=1.0)
+    # CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 10, step=1)
+    # CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0, 5, step=0.5)
+    # CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 10, step=1)
+    # MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 500, step=20)
 
+    # Create a dictionnary of the tested parameters value for a given trial
     dict_params = {
             "points_per_side": PPS,
-            "points_per_batch": PPB,
-            # "pred_iou_thresh": IOU_THD, 
-            # "stability_score_thresh": SST,
-            # "stability_score_offset": SSO, 
+            # "points_per_batch": PPB,
+            "pred_iou_thresh": IOU_THD, 
+            "stability_score_thresh": SST,
+            "stability_score_offset": SSO, 
             # "box_nms_thresh": BOX_MNS_THD,
             # "crop_n_layers": CROP_N_LAYERS, 
             # "crop_nms_thresh": CROP_MNS_THD,
@@ -70,9 +71,9 @@ def objective(trial):
             # "min_mask_region_area": MIN_MASK_REGION_AREA
             }
     
-    # SAM mask + vectorization
-    fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
-    fct_SAM.filter(OUTPUT_DIR, SHP_ROOF_EGID, SRS, DETECTION, SHP_EXT, written_files)
+    # SAM mask + vectorization + filtering + assessment
+    fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOFS, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
+    fct_SAM.filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files)
     f1 = fct_SAM.assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files)
 
     return f1
@@ -100,8 +101,8 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
-    SHP_ROOF = cfg['shp_roofs_dir']
-    SHP_ROOF_EGID = cfg['shp_roofs_egid_dir']
+    SHP_ROOFS = cfg['shp_roofs_dir']
+    # SHP_ROOFS_EGID = cfg['shp_roofs_egid_dir']
     GT = cfg['gt']
     OUTPUT_DIR = cfg['output_dir']    
     DETECTION = cfg['detection']
@@ -121,18 +122,18 @@ if __name__ == "__main__":
     UNIQUE = cfg['SAM']['unique']
     # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
-    N_TRIALS = cfg['SAM']['n_trials']
-    PPS = cfg['SAM']['param_grid']['points_per_side']
-    PPB = cfg['SAM']['param_grid']['points_per_batch']
-    IOU_THD = cfg['SAM']['param_grid']['pred_iou_thresh']
-    SST = cfg['SAM']['param_grid']['stability_score_thresh']
-    SSO = cfg['SAM']['param_grid']['stability_score_offset']
-    BOX_MNS_THD = cfg['SAM']['param_grid']['box_nms_thresh']
-    CROP_N_LAYERS = cfg['SAM']['param_grid']['crop_n_layers']
-    CROP_MNS_THD = cfg['SAM']['param_grid']['crop_nms_thresh']
-    CROP_N_POINTS_DS_FACTOR = cfg['SAM']['param_grid']['crop_n_points_downscale_factor']
-    MIN_MASK_REGION_AREA = cfg['SAM']['param_grid']['min_mask_region_area']
-
+    N_TRIALS = cfg['optimization']['n_trials']
+    SAMPLER = cfg['optimization']['sampler']
+    PPS = cfg['optimization']['param_grid']['points_per_side']
+    PPB = cfg['optimization']['param_grid']['points_per_batch']
+    IOU_THD = cfg['optimization']['param_grid']['pred_iou_thresh']
+    SST = cfg['optimization']['param_grid']['stability_score_thresh']
+    SSO = cfg['optimization']['param_grid']['stability_score_offset']
+    BOX_MNS_THD = cfg['optimization']['param_grid']['box_nms_thresh']
+    CROP_N_LAYERS = cfg['optimization']['param_grid']['crop_n_layers']
+    CROP_MNS_THD = cfg['optimization']['param_grid']['crop_nms_thresh']
+    CROP_N_POINTS_DS_FACTOR = cfg['optimization']['param_grid']['crop_n_points_downscale_factor']
+    MIN_MASK_REGION_AREA = cfg['optimization']['param_grid']['min_mask_region_area']
 
     os.chdir(WORKING_DIR)
 
@@ -144,21 +145,26 @@ if __name__ == "__main__":
 
     logger.info(f"Optimization of SAM hyperparemeters")
     # Set the parameter grid of hyperparameters to test
-    logger.info(f"Set hyperparameters grid")
-    param_grid = {"points_per_side": PPS,
-                "points_per_batch": PPB,
-                # "pred_iou_thresh": IOU_THD,
-                # "stability_score_thresh": SST,
-                # "stability_score_offset": SSO,
+
+
+    # Define optuna study for hyperparameters optimisation
+    if SAMPLER == 'GridSampler':
+        logger.info(f"Set hyperparameters grid search")
+        # The explicit value provided will be used for parameter optimization
+        search_space = {"points_per_side": PPS,
+                # "points_per_batch": PPB,
+                "pred_iou_thresh": IOU_THD,
+                "stability_score_thresh": SST,
+                "stability_score_offset": SSO,
                 # "box_nms_thresh": BOX_MNS_THD,
                 # "crop_n_layers": CROP_N_LAYERS,
                 # "crop_nms_thresh": CROP_MNS_THD,
                 # "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR,
                 # "min_mask_region_area": MIN_MASK_REGION_AREA
                 }
-
-    # Define optuna study for hyperparameters optimisation
-    study = optuna.create_study(directions=['maximize'],sampler=optuna.samplers.GridSampler(param_grid))   
+        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameter optimization')   
+    elif SAMPLER == 'TPESampler':
+        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameter optimization') 
     study.optimize(objective, n_trials=N_TRIALS)
 
 
@@ -181,13 +187,13 @@ if __name__ == "__main__":
 
     fig_edf = optuna.visualization.matplotlib.plot_edf(study)
     feature_path = os.path.join(OUTPUT_PLOTS, 'edf.png')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.savefig(feature_path)
     written_files.append(feature_path)
 
     fig_history = optuna.visualization.matplotlib.plot_optimization_history(study)
     feature_path = os.path.join(OUTPUT_PLOTS, 'history.png')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.savefig(feature_path)
     written_files.append(feature_path)
 
@@ -200,30 +206,30 @@ if __name__ == "__main__":
     # plt.show()
     
 
-    # Save best hyprparameters
+    # Save the best hyprparameters
     logger.info(f"Best hyperparameters")
-    # study.best_params
-
-    best_trial = str(study.best_trial)
-    best_val = int(study.best_value)
-    best_points_per_side = float(study.best_params['points_per_side'])
-    best_points_per_batch = float(study.best_params['points_per_batch'])
-    # best_pred_iou_thresh = float(study.best_params['pred_iou_thresh'])
-    # best_stability_score_thresh = float(study.best_params['stability_score_thresh'])
-    # best_box_nms_thresh = float(study.best_params['box_nms_thresh'])
-    # best_crop_n_layers = int(study.best_params['crop_n_layers'])
-    # best_crop_nms_thresh = float(study.best_params['crop_nms_thresh'])
-    # best_crop_n_points_downscale_factor = int(study.best_params['crop_n_points_downscale_factor'])
-    # best_min_mask_region_area = int(study.best_params['min_mask_region_area'])
+    best_trial = study.best_trial
+    best_params = study.best_params
+    best_val = study.best_value
+    best_points_per_side = study.best_params['points_per_side']
+    # best_points_per_batch = study.best_params['points_per_batch']
+    best_pred_iou_thresh = study.best_params['pred_iou_thresh']
+    best_stability_score_thresh = study.best_params['stability_score_thresh']
+    # best_box_nms_thresh = study.best_params['box_nms_thresh']
+    # best_crop_n_layers = study.best_params['crop_n_layers']
+    # best_crop_nms_thresh = study.best_params['crop_nms_thresh']
+    # best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
+    # best_min_mask_region_area = study.best_params['min_mask_region_area']
 
     #     
     logger.info('Create dictionary of the best hyperparameters')
     best_hp_dict = {'best_trial' : best_trial,
+                    'best_param' : best_params,
                     'best_value' : best_val,
                     'best_points_per_side' : best_points_per_side,
-                    'best_points_per_batch': best_points_per_batch,
-                    # 'best_pred_iou_thresh': best_pred_iou_thresh,
-                    # 'best_stability_score_thresh': best_stability_score_thresh,
+                    # 'best_points_per_batch': best_points_per_batch,
+                    'best_pred_iou_thresh': best_pred_iou_thresh,
+                    'best_stability_score_thresh': best_stability_score_thresh,
                     # 'best_box_nms_thresh': best_box_nms_thresh,
                     # 'best_crop_n_layers': best_crop_n_layers,
                     # 'best_crop_nms_thresh': best_crop_nms_thresh,
@@ -237,7 +243,6 @@ if __name__ == "__main__":
     written_files.append(feature_path) 
 
 
- 
     print()
     logger.info("The following files were written. Let's check them out!")
     for written_file in written_files:

@@ -9,7 +9,7 @@ import pandas as pd
 import geopandas as gpd
 from samgeo import SamGeo
 sys.path.insert(1, 'scripts')
-import functions.common as fct_com
+import functions.fct_com as fct_com
 
 
 def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files):
@@ -51,10 +51,10 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
 
         sam_kwargs = {
             'points_per_side': dict_params["points_per_side"],
-            'points_per_batch':dict_params["points_per_batch"],
-            # 'pred_iou_thresh': dict_params["pred_iou_thresh"],
-            # 'stability_score_thresh': dict_params["stability_score_thresh"], 
-            # 'stability_score_offset': dict_params["stability_score_offset"],
+            # 'points_per_batch': dict_params["points_per_batch"],
+            'pred_iou_thresh': dict_params["pred_iou_thresh"],
+            'stability_score_thresh': dict_params["stability_score_thresh"], 
+            'stability_score_offset': dict_params["stability_score_offset"],
             # 'box_nms_thresh': dict_params["box_nms_thresh"],
             # 'crop_n_layers': dict_params["crop_n_layers"],
             # 'crop_nms_thresh': dict_params["crop_nms_thresh"],
@@ -99,10 +99,10 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
             logger.info(f"...done. A file was written: {file_path}")
 
 
-def filter(OUTPUT_DIR, SHP_ROOF_EGID, SRS, DETECTION, SHP_EXT, written_files):
+def filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files):
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOF_EGID)
+    ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
     feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
     if os.path.exists(feature_path):
