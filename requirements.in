@@ -1,7 +1,6 @@
 GDAL==3.0.4
 fiona
 geopandas
-laspy
 loguru
 matplotlib
 numpy
