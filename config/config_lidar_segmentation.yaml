@@ -20,14 +20,16 @@ plane_segmentation.py:
   dataname: "2499000_1115000_EGID1013180"
   visu: 'True'
 
-# 3-2D vectorisation of segmented 3D point cloud 
-polygonize.py:
-  input_folder: "../output/PCD_segmentation/"
-  output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1117000_EGID1013180"
+# 3 - 2D vectorisation of segmented 3D point cloud 
+vectorization.py:  
+  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
+  input_dir: "output/PCD_segmentation"
+  output_dir: "output/PCD_segmentation"
+  pcd_name: "2499000_1117000"
+  egid: 1013180
   epsg: 2056
   area_threshold: 50
-  visu: 'False'
+  visualisation: "False"
 
 # 4-Evaluate the results
 assess_results.py: 
