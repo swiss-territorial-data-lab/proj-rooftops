@@ -6,25 +6,14 @@
 #      Clemence Herny 
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
-#      Copyright (c) 2020 Republic and Canton of Geneva
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import os, sys
 import time
 import argparse
 import yaml
+from loguru import logger
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -32,14 +21,13 @@ import laspy
 import open3d as o3d
 import whitebox
 wbt = whitebox.WhiteboxTools()
-from loguru import logger
 
-
-# the following allows us to import modules from within this file's parent folder
-sys.path.insert(0, '.')
+# # the following allows us to import modules from within this file's parent folder
+# sys.path.insert(0, '.')
 
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
+
 
 if __name__ == "__main__":
 
@@ -58,14 +46,14 @@ if __name__ == "__main__":
         cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
 
     # Load input parameters
-    WORKING_DIR = cfg['working_folder']
-    INPUT_DATA_DIR = cfg['input_data_folder']
-    INPUT_SHP_DIR = cfg['input_shape_folder']
-    OUTPUT_DIR = cfg['output_folder']
-    DATA_NAME = cfg['dataname']
-    DATA_TYPE = cfg['pcd_type']
+    WORKING_DIR = cfg['working_dir']
+    PCD_DIR = cfg['pcd_dir']
+    SHP_DIR = cfg['shp_dir']
+    OUTPUT_DIR = cfg['output_dir']
+    PCD_NAME = cfg['pcd_name']
+    PCD_EXT = cfg['pcd_ext']
     EGID = cfg['egid']
-    SHP_NAME = cfg['shpname']
+    SHP_ROOFS = cfg['shp_roofs']
     FILTER_CLASS = cfg['filters']['filter_class']
     CLASS_NUMBER = cfg['filters']['class_number']
     FILTER_ROOF = cfg['filters']['filter_roof']
@@ -73,7 +61,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/')
+    output_dir = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + PCD_NAME + '/')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -81,12 +69,12 @@ if __name__ == "__main__":
 
     # Prepare the point cloud 
 
-    data = DATA_NAME + "." + DATA_TYPE
+    data = PCD_NAME + "." + PCD_EXT
     data_path = os.path.join(output_dir, data)
     
-    if DATA_TYPE == 'las':    
+    if PCD_EXT == 'las':    
         # Open and read las file 
-        input_data = os.path.join(WORKING_DIR  + '/' + INPUT_DATA_DIR + '/' + DATA_NAME + '/' + DATA_NAME + "." + DATA_TYPE)
+        input_data = os.path.join(WORKING_DIR  + '/' + PCD_DIR + '/' + PCD_NAME + '/' + PCD_NAME + "." + PCD_EXT)
 
         las = laspy.read(input_data)
         # las.header
@@ -100,15 +88,15 @@ if __name__ == "__main__":
         # Clip point cloud with shapefile 
         logger.info('Read shapefile...')
 
-        feature_path = os.path.join(WORKING_DIR  + '/' + INPUT_SHP_DIR + '/'  + SHP_NAME[:-4]  + "_EGID.shp")
+        feature_path = os.path.join(WORKING_DIR  + '/' + SHP_DIR + '/'  + SHP_ROOFS[:-4]  + "_EGID.shp")
 
         if os.path.exists(feature_path):
-            logger.info(f"File {SHP_NAME[:-4]}_EGID.shp already exists")
+            logger.info(f"File {SHP_ROOFS[:-4]}_EGID.shp already exists")
             dissolved = gpd.read_file(feature_path)
         else:
-            logger.info(f"File {SHP_NAME[:-4]}_EGID.shp does not exist")
+            logger.info(f"File {SHP_ROOFS[:-4]}_EGID.shp does not exist")
             logger.info(f"Create it")
-            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + INPUT_SHP_DIR  + '/' + SHP_NAME)
+            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + SHP_DIR  + '/' + SHP_ROOFS)
             logger.info(f"Dissolved shapes by EGID number")
             dissolved = gdf_roofs.dissolve('EGID', as_index=False)
             dissolved.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
@@ -118,12 +106,12 @@ if __name__ == "__main__":
 
         logger.info(f"Select the shape for EGID {EGID}")        
         shape = dissolved.loc[dissolved['EGID'] == EGID]
-        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + DATA_NAME + '/' + SHP_NAME[: -4]  + "_EGID" + str(EGID) + ".shp")
+        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + PCD_NAME + '/' + SHP_ROOFS[: -4]  + "_EGID" + str(EGID) + ".shp")
         shape.to_file(shape_data)
         written_files.append(shape_data)  
         logger.info(f"...done. A file was written: {shape_data}")
 
-        output_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/'  + DATA_NAME + '/' + DATA_NAME + "_clip." + DATA_TYPE)
+        output_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/'  + PCD_NAME + '/' + PCD_NAME + "_clip." + PCD_EXT)
 
         # las clip
         logger.info(f"Clip LiDAR point cloud with shapefile")   
@@ -157,7 +145,7 @@ if __name__ == "__main__":
     # geom.colors = o3d.utility.Vector3dVector(colors/65535)
     o3d.visualization.draw_geometries([geom])
 
-    feature = DATA_NAME + '_filter.csv'        
+    feature = PCD_NAME + '_filter.csv'        
     feature_path = os.path.join(output_dir, feature)
     df = pd.DataFrame(pcd_filter, columns =['X', 'Y', 'Z'] )
     df.to_csv(feature_path)

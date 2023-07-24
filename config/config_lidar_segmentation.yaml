@@ -1,18 +1,13 @@
-#####################################################################
-###########     configuration file proj-rooftops     ############ 
-#####################################################################
-
-
-# 1-Prepare the lidar point cloud
+# 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_folder: "/mnt/data-02/cherny/git/proj-rooftops"
-  input_data_folder: "data/LiDAR"
-  input_shape_folder: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/"
-  output_folder: "output/PCD_segmentation"
-  dataname: "2499000_1115000"
-  pcd_type: "las"
+  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
+  pcd_dir: "data/LiDAR"
+  shp_dir: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/"
+  output_dir: "output/PCD_segmentation/clean_branch"
+  pcd_name: "2500000_1117000"
+  pcd_ext: "las"
   egid: 1013180
-  shpname: "CAD_BATIMENT_HORSOL_TOIT.shp"
+  shp_roofs: "CAD_BATIMENT_HORSOL_TOIT.shp"
   filters:
     filter_class: 'True'
     class_number: 6
