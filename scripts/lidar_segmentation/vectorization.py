@@ -36,7 +36,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point cloud to 2D polygon (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description='The script allows to transform 3D segmented point cloud to 2D polygon (STDL.proj-rooftops)')
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -65,11 +65,11 @@ if __name__ == "__main__":
     written_files = []
 
     logger.info("Read point cloud data file")
-    input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_all.csv")
+    input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_segmented.csv")
     pcd_df = pd.read_csv(input_dir)
 
     # Create a plane dataframe
-    plane_df = pcd_df[pcd_df['type']=='plane']
+    plane_df = pcd_df[pcd_df['type'] == 'plane']
     plane = np.unique(plane_df['group'])
     print("")
     logger.info(f"Number of plane(s): {np.max(plane) + 1}")
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     logger.info(f"Vectorize plane")
     plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, 'plane', VISU)
   
-    # Load remaining cluster in a dataframe 
+    # Load clusters in a dataframe 
     cluster_df = pcd_df[pcd_df['type'] == 'cluster']
     cluster = np.unique(cluster_df['group'])
     cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
@@ -89,16 +89,20 @@ if __name__ == "__main__":
     logger.info(f"Vectorize object")
     cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, 'object', VISU)
 
-
     # Filtering: identify and remove plane element with an area below threshold value to be added to the object gdf
     # An object can be classified as a plane in 'plane_segmentation.py' script. We can add an area thd value for which the plane can be considered to belong to a rooftop object
     small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_THRESHOLD]
     plane_vec_gdf = plane_vec_gdf.drop(small_plane_gdf.index)
+
     # If it exists, add cluster previously classified as plane to the object class 
     if small_plane_gdf.empty:
         pass
     else:
-        logger.info(f"Add {len(small_plane_gdf)} object(s) to the object geodataframe") 
+        print("")
+        logger.info(f"Area filtering performed on plane objects (small object will be considered as object and not as plane)") 
+        for i in range(len(small_plane_gdf)):       
+            logger.info(f"Area = {(small_plane_gdf['area'].iloc[i]):.2f} m2 <= area threshold value : {AREA_THRESHOLD} m2") 
+        logger.info(f"Add {len(small_plane_gdf)} object(s) from the plane gdf to the object gdf") 
         cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
         cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
 
@@ -121,10 +125,7 @@ if __name__ == "__main__":
         # plt.show()
 
     # Build free area dataframe
-    free_df = pd.DataFrame()
-    free_df['area'] = plane_vec_gdf['area']
-    free_df['occupation'] = 'free'
-    free_df['geometry'] = diff_geom
+    free_df = pd.DataFrame({'area': plane_vec_gdf['area'],'occupation': 'free','geometry': diff_geom})
 
     # Build occupied area dataframe
     objects_df = cluster_vec_gdf.drop(['class'], axis=1) 

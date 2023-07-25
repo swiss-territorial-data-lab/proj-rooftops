@@ -14,11 +14,25 @@ prepare_data.py:
     filter_roof: 'True'
 
 # 2-Point Cloud plane segmentation and clustering
-plane_segmentation.py: 
-  input_folder: "../output/PCD_segmentation/"
-  output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1115000_EGID1013180"
-  visu: 'True'
+pcd_segmentation.py: 
+  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
+  input_dir: "output/PCD_segmentation"
+  output_dir: "output/PCD_segmentation"
+  pcd_name: "2499000_1117000"
+  egid: 1013180
+  segmentation:
+    plane:
+      number_plane: 2
+      distance_threshold: 0.1
+      ransac: 3
+      iteration: 1000
+      eps: 1.0
+      min_points: 5
+    cluster:
+      eps: 0.5
+      min_points: 5
+
+  visualisation: "True"
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
