@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
@@ -20,11 +20,14 @@ import geopandas as gpd
 import laspy
 import open3d as o3d
 import whitebox
+# whitebox.download_wbt(linux_musl=True, reset=True)        # Uncomment if issue with GLIBC library
 wbt = whitebox.WhiteboxTools()
 
-# # the following allows us to import modules from within this file's parent folder
-# sys.path.insert(0, '.')
 
+sys.path.insert(1, 'scripts')
+import functions.fct_misc as fct_misc
+
+logger = fct_misc.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -36,7 +39,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script prepares dataset to process the rooftops project (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script prepares the point cloud dataset to be processed (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -48,107 +51,109 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     PCD_DIR = cfg['pcd_dir']
-    SHP_DIR = cfg['shp_dir']
     OUTPUT_DIR = cfg['output_dir']
     PCD_NAME = cfg['pcd_name']
     PCD_EXT = cfg['pcd_ext']
-    EGID = cfg['egid']
     SHP_ROOFS = cfg['shp_roofs']
+    EGID = cfg['egid']
     FILTER_CLASS = cfg['filters']['filter_class']
     CLASS_NUMBER = cfg['filters']['class_number']
     FILTER_ROOF = cfg['filters']['filter_roof']
+    DISTANCE_BUFFER = cfg['filters']['distance_buffer']
+    VISU = cfg['visualisation']
 
     os.chdir(WORKING_DIR)
 
+    file_name = PCD_NAME + '_EGID' + str(EGID)
+    output_dir = os.path.join(WORKING_DIR, OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + PCD_NAME + '/')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    fct_misc.ensure_dir_exists(output_dir)
 
     written_files = []
 
-    # Prepare the point cloud 
+    # Get info on the pcd
 
-    data = PCD_NAME + "." + PCD_EXT
-    data_path = os.path.join(output_dir, data)
-    
-    if PCD_EXT == 'las':    
-        # Open and read las file 
-        input_data = os.path.join(WORKING_DIR  + '/' + PCD_DIR + '/' + PCD_NAME + '/' + PCD_NAME + "." + PCD_EXT)
+    # Open and read las file 
+    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_NAME, PCD_NAME + "." + PCD_EXT)
+    logger.info('Read the point cloud data...')
+    las = laspy.read(pcd_path)
+    # las.header
+    logger.info("   - 3D Point cloud name: " + PCD_NAME + "." + PCD_EXT)
+    logger.info("   - Number of points: " + str(las.header.point_count))
+    logger.info("   - Point Cloud available infos: " + str(list(las.point_format.dimension_names)))
+    # logger.info("   - Classes: " + str(set(list(las.classification))))
 
-        las = laspy.read(input_data)
-        # las.header
-        logger.info("3D Point cloud name: " + data)
-        logger.info("Number of points: " + str(las.header.point_count))
-        logger.info("Point Cloud available infos: ")
-        logger.info(list(las.point_format.dimension_names))
-        logger.info("Classes: ")
-        logger.info(set(list(las.classification)))
+    # Get the rooftops shapes
+    ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
+    feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
-        # Clip point cloud with shapefile 
-        logger.info('Read shapefile...')
+    if os.path.exists(feature_path):
+        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
+        rooftops = gpd.read_file(feature_path)
+    else:
+        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
+        logger.info(f"Create it")
+        gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
+        gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
+        logger.info(f"Dissolved shapes by EGID number")
+        rooftops = gdf_roofs.dissolve('EGID', as_index=False)
+        rooftops.to_file(feature_path)
+        written_files.append(feature_path)  
+        logger.info(f"...done. A file was written: {feature_path}")
 
-        feature_path = os.path.join(WORKING_DIR  + '/' + SHP_DIR + '/'  + SHP_ROOFS[:-4]  + "_EGID.shp")
+    # Select the building shape  
+    logger.info(f"Select the shape for EGID {EGID}")        
+    shape = rooftops.loc[rooftops['EGID'] == EGID]
+    shape_path = os.path.join(output_dir, file_name + ".shp")
+    shape.to_file(shape_path)
+    written_files.append(shape_path)  
+    logger.info(f"...done. A file was written: {shape_path}")
 
-        if os.path.exists(feature_path):
-            logger.info(f"File {SHP_ROOFS[:-4]}_EGID.shp already exists")
-            dissolved = gpd.read_file(feature_path)
-        else:
-            logger.info(f"File {SHP_ROOFS[:-4]}_EGID.shp does not exist")
-            logger.info(f"Create it")
-            gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + SHP_DIR  + '/' + SHP_ROOFS)
-            logger.info(f"Dissolved shapes by EGID number")
-            dissolved = gdf_roofs.dissolve('EGID', as_index=False)
-            dissolved.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
-            dissolved.to_file(feature_path)
-            written_files.append(feature_path)  
-            logger.info(f"...done. A file was written: {feature_path}")
+    # Perform .las clip with shapefile    
+    logger.info(f"Clip point cloud data with shapefile")   
+    clip_path = os.path.join(output_dir, file_name + "." + PCD_EXT)
+    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
+    written_files.append(clip_path)  
+    logger.info(f"...done. A file was written: {clip_path}")
 
-        logger.info(f"Select the shape for EGID {EGID}")        
-        shape = dissolved.loc[dissolved['EGID'] == EGID]
-        shape_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/' + PCD_NAME + '/' + SHP_ROOFS[: -4]  + "_EGID" + str(EGID) + ".shp")
-        shape.to_file(shape_data)
-        written_files.append(shape_data)  
-        logger.info(f"...done. A file was written: {shape_data}")
+    # Open and read clipped .las file 
+    logger.info(f"Read the point cloud data for EGID {EGID}")  
+    las = laspy.read(clip_path)
 
-        output_data = os.path.join(WORKING_DIR  + '/' + OUTPUT_DIR + '/'  + PCD_NAME + '/' + PCD_NAME + "_clip." + PCD_EXT)
-
-        # las clip
-        logger.info(f"Clip LiDAR point cloud with shapefile")   
-        wbt.clip_lidar_to_polygon(input_data, shape_data, output_data)
-        written_files.append(output_data)  
-        logger.info(f"...done. A file was written: {output_data}")
-
-        # las altitude filter
-        logger.info(f"Filter LiDAR points above the min altitude of the roof (by EGID)")  
-        alti_roof = dissolved.loc[dissolved['EGID'] == EGID, 'ALTI_MIN'].iloc[0] - 2.0             # -1 as a below buffer 
-        logger.info(f"Min altitude of the roof (+ buffer): {(alti_roof):.2f} m")
-
-        # open las file with laspy
-        las = laspy.read(output_data)
-
-        # Filter point cloud by class value 
-        if FILTER_CLASS == 'True':
-            las.points = las.points[las.classification == CLASS_NUMBER]
-            logger.info("Classes: ")
-            logger.info(set(list(las.classification)))
+    # Filter point cloud data by class value 
+    if FILTER_CLASS == 'True':
+        logger.info(f"Filter the point cloud data by class number: {CLASS_NUMBER}")  
+        las.points = las.points[las.classification == CLASS_NUMBER]
+        # logger.info("Classes: ")
+        # logger.info(set(list(las.classification)))
         
-        # Convert lidar data to numpy array
-        point_data = np.stack((las.x, las.y, las.z)).transpose()
-        # colors = np.stack((las.red, las.green, las.blue)).transpose()
-    # Filter point cloud with min roof altitude (remove point below the roof) 
-    pcd_filter = point_data[point_data[:,2] > alti_roof]
+    # Convert point cloud data to numpy array
+    pcd_points = np.stack((las.x, las.y, las.z)).transpose()
 
-    # Conversion of numpy array to Open3D format and visualisation
-    geom = o3d.geometry.PointCloud()
-    geom.points = o3d.utility.Vector3dVector(pcd_filter)
-    # geom.colors = o3d.utility.Vector3dVector(colors/65535)
-    o3d.visualization.draw_geometries([geom])
+    # Conversion of numpy array to Open3D format + visualisation
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(pcd_points)
+    if VISU == 'True':
+        o3d.visualization.draw_geometries([pcd])
 
-    feature = PCD_NAME + '_filter.csv'        
-    feature_path = os.path.join(output_dir, feature)
-    df = pd.DataFrame(pcd_filter, columns =['X', 'Y', 'Z'] )
-    df.to_csv(feature_path)
+    # Filter point cloud with min roof altitude (remove points below the roof) 
+    if FILTER_ROOF == "True":
+        logger.info(f"Filter points below the min roof altitude (by EGID)")  
+        alti_roof = rooftops.loc[rooftops['EGID'] == EGID, 'ALTI_MIN'].iloc[0] - DISTANCE_BUFFER
+        logger.info(f"Min altitude of the roof (+ buffer): {(alti_roof):.2f} m") 
+        pcd_filter = pcd_points[pcd_points[:, 2] > alti_roof]
+
+    # Conversion of numpy array to Open3D format + visualisation
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(pcd_filter)
+    if VISU == 'True':
+        o3d.visualization.draw_geometries([pcd])
+
+    # Save the processed point cloud data
+    logger.info(f"Save the processed point cloud data")  
+    pcd_df = pd.DataFrame(pcd_filter, columns = ['X', 'Y', 'Z'] )
+    feature_path = os.path.join(output_dir, file_name + '.csv')
+    pcd_df.to_csv(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
 

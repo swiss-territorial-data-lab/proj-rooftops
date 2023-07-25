@@ -46,10 +46,8 @@ def vectorize_concave(df, array, epsg, alpha, type, visu):
         # Build the final dataframe
         area = poly.area
         logger.info(f"   - Group: {array[i]}, area: {(area):.2f} m2")
-        pcd_df = pd.DataFrame({'class':[type]})
-        pcd_df['area'] = area
-        pcd_df['geometry'] = poly
-        
+        pcd_df = pd.DataFrame({'class': [type], 'area': [area], 'geometry': [poly]})
+
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
     
     polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
@@ -57,22 +55,27 @@ def vectorize_concave(df, array, epsg, alpha, type, visu):
     return polygon_gdf
 
 
-def vectorize_convex(df, array, type, visu):
-    
-    df_object = pd.DataFrame({'class':[type]})
-    df_poly = pd.DataFrame()
+def vectorize_convex(df, array, epsg, type, visu):
+
     logger.info(f"Compute 2D vector from points groups of type {type}:")
+
+    # Intialize polygon dataframe 
+    polygon_df = pd.DataFrame()
     idx = []
+
+    # Iterrate over all the provided group of points
     for i in range(len(array)):
+
+        # 
         points = df[df['group'] == array[i]]
-        points = points.drop(['Unnamed: 0','Z','group','type'], axis=1) 
+        points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
         points = points.to_numpy()
 
         hull = ConvexHull(points)
-        area = hull.volume
+        # area = hull.volume
 
         if visu == 'True':
-            fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 3))
+            fig, (ax1, ax2) = plt.subplots(ncols = 2, figsize = (10, 3))
             for ax in (ax1, ax2):
                 ax.plot(points[:, 0], points[:, 1], '.', color='k')
                 if ax == ax1:
@@ -81,19 +84,26 @@ def vectorize_convex(df, array, type, visu):
                     ax.set_title('Convex hull')
                     for simplex in hull.simplices:
                         ax.plot(points[simplex, 0], points[simplex, 1], 'c')
-                    ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec='r', color='none', lw=1, markersize=10)
+                    ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec = 'r', color = 'none', lw = 1, markersize = 10)
             plt.show()
 
         polylist = []
         for idx in hull.vertices: #Indices of points forming the vertices of the convex hull.
-            polylist.append(points[idx]) #Append this index point to list
-        logger.info(f"Group: {array[i]}, number of vertices: {len(polylist)}, area: {(area):.2f}")
-        poly = Polygon(polylist)
-        df_object['area'] = area # Assuming the OP's x,y coordinates
-        df_object['geometry'] = poly
-        df_poly = df_poly.append(df_object, ignore_index=True)
+            polylist.append(points[idx])
 
-    return df_poly
+        # Transform list to polygon geometry
+        poly = Polygon(polylist)
+
+        # Build the final dataframe
+        area = poly.area
+        logger.info(f"   - Group: {array[i]}, number of vertices: {len(polylist)}, area: {(area):.2f} m2")
+        pcd_df = pd.DataFrame({'class': [type], 'area': [area], 'geometry': [poly]})
+
+        polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
+    
+    polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
+
+    return polygon_gdf
 
 
 def union(poly1, poly2):

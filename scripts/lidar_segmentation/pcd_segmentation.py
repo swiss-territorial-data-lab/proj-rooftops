@@ -22,7 +22,7 @@ import open3d as o3d
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 
-logger=fct_misc.format_logger(logger)
+logger = fct_misc.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # Read pcd file and get points array
     logger.info("Read point cloud data file")
-    input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_filter.csv")
+    input_dir = os.path.join(INPUT_DIR, file_name, file_name + ".csv")
     pcd_df = pd.read_csv(input_dir)
     pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1) 
     pts = pcd_df.to_numpy()

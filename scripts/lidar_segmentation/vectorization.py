@@ -24,7 +24,7 @@ sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 import functions.fct_lidar_segmentation as fct_seg
 
-logger=fct_misc.format_logger(logger)
+logger = fct_misc.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -78,7 +78,8 @@ if __name__ == "__main__":
     # Plane vectorization
     logger.info(f"Vectorize plane")
     plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA, 'plane', VISU)
-  
+    # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane, EPSG, 'plane', VISU) 
+
     # Load clusters in a dataframe 
     cluster_df = pcd_df[pcd_df['type'] == 'cluster']
     cluster = np.unique(cluster_df['group'])
@@ -89,6 +90,7 @@ if __name__ == "__main__":
     # Cluster vectorisation
     logger.info(f"Vectorize object")
     cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA, 'object', VISU)
+    # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG, 'object', VISU)
 
     # Filtering: identify and remove plane element with an area below threshold value to be added to the object gdf
     # An object can be classified as a plane in 'plane_segmentation.py' script. We can add an area thd value for which the plane can be considered to belong to a rooftop object

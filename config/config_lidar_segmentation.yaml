@@ -2,16 +2,17 @@
 prepare_data.py:
   working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
   pcd_dir: "data/LiDAR"
-  shp_dir: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/"
-  output_dir: "output/PCD_segmentation/clean_branch"
-  pcd_name: "2500000_1117000"
+  output_dir: "output/PCD_segmentation/clean"
+  pcd_name: "2499000_1117000"
   pcd_ext: "las"
+  shp_roofs: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
   egid: 1013180
-  shp_roofs: "CAD_BATIMENT_HORSOL_TOIT.shp"
   filters:
-    filter_class: 'True'
-    class_number: 6
-    filter_roof: 'True'
+    filter_class: "False"
+    class_number: 6                 # 6: Building class
+    filter_roof: "True"             # Remove all the point below the roof altitude
+    distance_buffer: 2.0            #m, buffer value
+  visualisation: "True"
 
 # 2-Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
