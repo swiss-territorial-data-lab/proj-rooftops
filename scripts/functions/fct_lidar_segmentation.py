@@ -10,7 +10,7 @@ from descartes import PolygonPatch
 import alphashape
 
 
-def vectorize_concave(df, array, epsg, type, visu):
+def vectorize_concave(df, array, epsg, alpha, type, visu):
 
     logger.info(f"Compute 2D vector from points groups of type {type}:")
 
@@ -27,8 +27,8 @@ def vectorize_concave(df, array, epsg, type, visu):
 
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         # alpha = alphashape.optimizealpha(points)
-        # logger.info(f"alpha value = {alpha}")
-        alpha_shape = alphashape.alphashape(points, alpha = 2.0)
+        # logger.info(f"   - alpha shape value = {alpha}")
+        alpha_shape = alphashape.alphashape(points, alpha = alpha)
 
         # The bounding points produced can be vizualize for control
         if visu == 'True':

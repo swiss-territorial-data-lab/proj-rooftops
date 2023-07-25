@@ -153,6 +153,21 @@ if __name__ == "__main__":
         pcd.paint_uniform_color([0.6, 0.6, 0.6])
         o3d.visualization.draw_geometries([segments[i] for i in range(NB_PLANE)] + [remaining_pts])
 
+    # Save the parameter values used for pcd segmentation
+    parameters_df = pd.DataFrame({'number_plane': [NB_PLANE], 
+                                'distance_threshold': [DISTANCE_THRESHOLD],
+                                'ransac': [RANSAC], 
+                                'iteration': [ITE], 
+                                'eps_plane': [EPS_PLANE],
+                                'min_points_plane': [MIN_POINTS_PLANE],                                
+                                'eps_cluster': [EPS_CLUSTER],
+                                'min_points_cluster': [MIN_POINTS_CLUSTER]   
+                                })
+    feature_path = os.path.join(output_dir, file_name + '_parameters.csv')
+    parameters_df.to_csv(feature_path)
+    written_files.append(feature_path)  
+    logger.info(f"...done. A file was written: {feature_path}")
+
     print()
     logger.info("The following files were written. Let's check them out!")
     for written_file in written_files:

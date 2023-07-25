@@ -53,6 +53,7 @@ if __name__ == "__main__":
     EGID = cfg['egid']
     EPSG = cfg['epsg']
     AREA_THRESHOLD = cfg['area_threshold']
+    ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
     os.chdir(WORKING_DIR)
@@ -76,7 +77,7 @@ if __name__ == "__main__":
 
     # Plane vectorization
     logger.info(f"Vectorize plane")
-    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, 'plane', VISU)
+    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA, 'plane', VISU)
   
     # Load clusters in a dataframe 
     cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 
     # Cluster vectorisation
     logger.info(f"Vectorize object")
-    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, 'object', VISU)
+    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA, 'object', VISU)
 
     # Filtering: identify and remove plane element with an area below threshold value to be added to the object gdf
     # An object can be classified as a plane in 'plane_segmentation.py' script. We can add an area thd value for which the plane can be considered to belong to a rooftop object

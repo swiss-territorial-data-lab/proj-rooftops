@@ -31,7 +31,6 @@ pcd_segmentation.py:
     cluster:
       eps: 0.5
       min_points: 5
-
   visualisation: "True"
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
@@ -42,7 +41,8 @@ vectorization.py:
   pcd_name: "2499000_1117000"
   egid: 1013180
   epsg: 2056
-  area_threshold: 50
+  area_threshold: 50                                    #m2, Segmented polygon area threshold. Below this value the vectorized polygon in will be classified as object and not plane  
+  alpha_shape: 2.0                                      # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: "False"
 
 # 4-Evaluate the results
