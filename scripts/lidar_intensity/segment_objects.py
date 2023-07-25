@@ -4,19 +4,13 @@ from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
 
-import pandas as pd
 import geopandas as gpd
 import numpy as np
 import rasterio
-from osgeo import gdal
-from osgeo import gdal_array
-from shapely.geometry import shape, mapping
-from rasterio.features import shapes
+
 from rasterio.mask import mask
 
-from scipy.ndimage import binary_dilation
 from skimage.segmentation import felzenszwalb, quickshift, slic, watershed
-from rdp import rdp
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct
@@ -27,7 +21,7 @@ logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
     cfg = load(fp, Loader=FullLoader)['segment_objects.py']
 
-EBUG=False
+DEBUG=True
 
 WORKING_DIR=cfg['working_dir']
 INPUT_DIR_IMAGES=cfg['input_dir_images']
@@ -55,12 +49,13 @@ im_list=glob(os.path.join(INPUT_DIR_IMAGES, '*.tif'))
 free_roofs=roofs[roofs['status']=='not occupied'].reset_index(drop=True)
 free_roofs=free_roofs[['OBJECTID', 'EGID', 'geometry']]
 
-free_roofs=free_roofs.loc[0:20]
+if DEBUG:
+    free_roofs=free_roofs.loc[:20]
 
 logger.info(f'{free_roofs.shape[0]} roofs are estimed unoccupied.')
 
-tiles_per_roof=gpd.sjoin(free_roofs, tiles, how='left')
-tiles_per_roof.reset_index(inplace=True)
+tiles_per_roof=gpd.sjoin(free_roofs, tiles, how='inner')
+tiles_per_roof.reset_index(inplace=True, drop=True)
 tiles_per_roof.rename(columns={'fme_basena': 'tile_id'}, inplace=True)
 
 tiles_per_roof['tilepath']=[fct.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
