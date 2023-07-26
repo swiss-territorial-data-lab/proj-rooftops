@@ -20,9 +20,9 @@ import matplotlib.pyplot as plt
 import open3d as o3d
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_com as fct_com
 
-logger = fct_misc.format_logger(logger)
+logger = fct_com.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     file_name = PCD_NAME + '_EGID' + str(EGID)
     output_dir = os.path.join(OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(output_dir)
+    fct_com.ensure_dir_exists(output_dir)
 
     written_files = []
 

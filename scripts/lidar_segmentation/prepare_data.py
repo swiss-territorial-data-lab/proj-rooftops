@@ -23,11 +23,10 @@ import whitebox
 # whitebox.download_wbt(linux_musl=True, reset=True)        # Uncomment if issue with GLIBC library
 wbt = whitebox.WhiteboxTools()
 
-
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_com as fct_com
 
-logger = fct_misc.format_logger(logger)
+logger = fct_com.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -67,14 +66,14 @@ if __name__ == "__main__":
     file_name = PCD_NAME + '_EGID' + str(EGID)
     output_dir = os.path.join(WORKING_DIR, OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(output_dir)
+    fct_com.ensure_dir_exists(output_dir)
 
     written_files = []
 
-    # Get info on the pcd
 
+    # Get info on the pcd !!! Not mandatory, can be deleted !!!
     # Open and read las file 
-    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_NAME, PCD_NAME + "." + PCD_EXT)
+    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_NAME + "." + PCD_EXT)
     logger.info('Read the point cloud data...')
     las = laspy.read(pcd_path)
     # las.header
@@ -82,6 +81,7 @@ if __name__ == "__main__":
     logger.info("   - Number of points: " + str(las.header.point_count))
     logger.info("   - Point Cloud available infos: " + str(list(las.point_format.dimension_names)))
     # logger.info("   - Classes: " + str(set(list(las.classification))))
+
 
     # Get the rooftops shapes
     ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # Perform .las clip with shapefile    
     logger.info(f"Clip point cloud data with shapefile")   
     clip_path = os.path.join(output_dir, file_name + "." + PCD_EXT)
-    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
+    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)          # wbt requires absolute paths as input
     written_files.append(clip_path)  
     logger.info(f"...done. A file was written: {clip_path}")
 

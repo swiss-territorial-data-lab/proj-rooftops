@@ -21,10 +21,10 @@ import matplotlib.pyplot as plt
 from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_com as fct_com
 import functions.fct_lidar_segmentation as fct_seg
 
-logger = fct_misc.format_logger(logger)
+logger = fct_com.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     file_name = PCD_NAME + '_EGID' + str(EGID)
     output_dir = os.path.join(OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(output_dir)
+    fct_com.ensure_dir_exists(output_dir)
 
     written_files = []
 
@@ -128,18 +128,18 @@ if __name__ == "__main__":
         # plt.show()
 
     # Build free area dataframe
-    free_df = pd.DataFrame({'area': plane_vec_gdf['area'],'occupation': 'free','geometry': diff_geom})
+    free_df = pd.DataFrame({'area': plane_vec_gdf['area'],'occupation': 0,'geometry': diff_geom})
 
     # Build occupied area dataframe
     objects_df = cluster_vec_gdf.drop(['class'], axis=1) 
-    objects_df['occupation'] = 'object'
+    objects_df['occupation'] = 1
 
     # Build occupation geodataframe
     logger.info(f"Create a binary (free, object) occupation vector file")
     occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
     occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
 
-    feature_path = os.path.join(output_dir, PCD_NAME + "_occupation.gpkg")
+    feature_path = os.path.join(output_dir, file_name + "_occupation.gpkg")
     occupation_gdf.to_file(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")

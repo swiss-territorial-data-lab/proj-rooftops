@@ -1,8 +1,8 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
   working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
-  pcd_dir: "data/LiDAR"
-  output_dir: "output/PCD_segmentation/clean"
+  pcd_dir: "data/LiDAR/2019"
+  output_dir: "output/PCD_segmentation"
   pcd_name: "2499000_1117000"
   pcd_ext: "las"
   shp_roofs: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
@@ -14,7 +14,7 @@ prepare_data.py:
     distance_buffer: 2.0            #m, buffer value
   visualisation: "True"
 
-# 2-Point Cloud plane segmentation and clustering
+# 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
   working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
   input_dir: "output/PCD_segmentation"
@@ -48,9 +48,9 @@ vectorization.py:
 
 # 4-Evaluate the results
 assess_results.py: 
-  input_folder: "../output/PCD_segmentation/"
-  output_folder: "../output/PCD_segmentation/"
-  dataname: "2499000_1117000_EGID1013180"
-  shpname: "2499000_1117000_EGID1013180_occupation.gpkg"
-  gt_shapefile: "../data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg"
+  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
+  input_dir: "output/PCD_segmentation"
+  output_dir: "output/PCD_segmentation"
+  gt: "data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg"
+  pcd_name: "2499000_1117000"
   egid: 1013180
