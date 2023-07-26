@@ -10,6 +10,8 @@ import rasterio
 
 from rasterio.mask import mask
 
+from skimage.color import gray2rgb
+from skimage.graph import rag_mean_color, cut_normalized
 from skimage.segmentation import felzenszwalb, quickshift, slic, watershed
 
 sys.path.insert(1, 'scripts')
@@ -22,6 +24,7 @@ with open('config/config.yaml') as fp:
     cfg = load(fp, Loader=FullLoader)['segment_objects.py']
 
 DEBUG=True
+SAVE_NORMALIZED_INTESITY=False
 
 WORKING_DIR=cfg['working_dir']
 INPUT_DIR_IMAGES=cfg['input_dir_images']
@@ -34,7 +37,7 @@ LAYER=cfg['roofs_layer']
 METHOD=cfg['method']
 
 os.chdir(WORKING_DIR)
-OUTPUT_PATH='processed/roofs/256_normalization/segm_test.gpkg'
+OUTPUT_PATH='processed/roofs/merged_colors/segm_test.gpkg'
 _ = fct.ensure_dir_exists(os.path.dirname(OUTPUT_PATH))
 
 logger.info('Reading files...')
@@ -68,7 +71,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
     for roof_and_tile in needed_tiles.itertuples():
 
         with rasterio.open(roof_and_tile.tilepath, crs='EPSG:2056') as src:
-            im, mask_transform =mask(src, [roof_and_tile.geometry], crop=True, filled=False, nodata=src.nodata)
+            im, mask_transform = mask(src, [roof_and_tile.geometry], crop=True, filled=False, nodata=src.nodata)
             im_profile=src.profile
 
         im_mask=~im.mask[0]
@@ -81,13 +84,17 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
         nan_normalized_intensity = np.divide(
             nan_intensity - np.nanmin(nan_intensity),
             np.nanmax(nan_intensity)-np.nanmin(nan_intensity)
-        )
+        )*255
 
-        normalized_intensity=nan_normalized_intensity.copy()
-        normalized_intensity[normalized_intensity==np.nan]=999
+        normalized_intensity=np.nan_to_num(nan_normalized_intensity, copy=True, nan=999)
+
+        if SAVE_NORMALIZED_INTESITY:
+            im_profile.update(transform=mask_transform, crs='EPSG:2056', width=normalized_intensity.shape[1], height=normalized_intensity.shape[0], nodata=999)
+            with rasterio.open(os.path.join('processed/roofs/normalized_masked_intensity_images', str(roof_and_tile.OBJECTID) + '_normalized_intensity.tif'), 'w', **im_profile) as dst:
+                dst.write(normalized_intensity,1)
 
         if METHOD=='felzenszwalb':
-            scale=1
+            scale=100
             sigma=0.4
             min_size=15
             segm_mask=felzenszwalb(normalized_intensity, scale=scale, sigma=sigma, min_size=min_size, channel_axis=None)
@@ -95,7 +102,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
             LAYER=f'felzenszwalb_{scale}_{sigma}_{min_size}'
 
         elif METHOD=='quickshift':
-            ratio=0
+            ratio=1
             kernel_size=5
             max_dist=10
             segm_mask=quickshift(normalized_intensity, ratio=ratio, kernel_size=kernel_size, max_dist=max_dist, convert2lab=False)
@@ -103,23 +110,30 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
             LAYER=f'quickshift_{ratio}_{kernel_size}_{max_dist}'
 
         elif METHOD=='slic':
-            n_segments=1000
-            compactness=10
+            n_segments=20
+            compactness=0.01
             max_num_iter=10
             sigma=0
-            enforce_connectivity=True
-            min_size_factor=0.1
-            slic_zero=True
+            enforce_connectivity=False
+            min_size_factor=0.5
+            slic_zero=False
             start_label=1
-            segm_mask=slic(normalized_intensity, n_segments=n_segments, compactness=compactness, max_num_iter=max_num_iter,
+            segmented_slic_image=slic(normalized_intensity, n_segments=n_segments, compactness=compactness, max_num_iter=max_num_iter,
                            sigma=sigma, enforce_connectivity=enforce_connectivity, min_size_factor=min_size_factor, slic_zero=slic_zero,
                            start_label=start_label, mask=im_mask, channel_axis=None)
             
-            LAYER=f'slic_{n_segments}_{compactness}_{max_num_iter}_{sigma}_{enforce_connectivity}_{min_size_factor}_{slic_zero}_{start_label}'
+            # cf. https://stackoverflow.com/questions/58812104/skimage-rag-merging-for-gray-images
+            sigma_rag=50
+            image_three_bands=gray2rgb(normalized_intensity)
+            graph_slic=rag_mean_color(image_three_bands, segmented_slic_image, mode='similarity', sigma=sigma_rag)
+            segm_mask=cut_normalized(segmented_slic_image, graph_slic)
+            
+            LAYER=f'slic_{n_segments}_{compactness}_{max_num_iter}_{sigma}_{enforce_connectivity}_{min_size_factor}' +\
+                        f'_{slic_zero}_{start_label}_{sigma_rag}'
 
         elif METHOD=='watershed':
-            markers=None
-            compactness=0
+            markers=200
+            compactness=0.001
             watershed_line=False
             segm_mask=watershed(normalized_intensity, mask=im_mask, markers=markers, compactness=compactness, watershed_line=watershed_line)
 
@@ -129,6 +143,8 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
             logger.error('No method corresponds to the chose one.')
             sys.exit(1)
 
-        im_profile.update(transform=mask_transform, crs='EPSG:2056', width=segm_mask.shape[1], height=segm_mask.shape[0])
+        im_profile.update(transform=mask_transform, crs='EPSG:2056', width=segm_mask.shape[1], height=segm_mask.shape[0], nodata=0)
         with rasterio.open(os.path.join(os.path.dirname(OUTPUT_PATH), str(roof_and_tile.OBJECTID) + '_' + LAYER + '.tif'), 'w', **im_profile) as dst:
             dst.write(segm_mask,1)
+
+logger.success(f'The file was written in {OUTPUT_PATH}.')
