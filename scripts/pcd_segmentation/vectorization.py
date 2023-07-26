@@ -22,7 +22,7 @@ from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
 import functions.fct_com as fct_com
-import functions.fct_lidar_segmentation as fct_seg
+import functions.fct_pcdseg as fct_seg
 
 logger = fct_com.format_logger(logger)
 logger.remove()

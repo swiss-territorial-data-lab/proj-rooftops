@@ -39,7 +39,8 @@ Adapt the paths and input values of the configuration files accordingly.
 ## Improvements
 
 - The workflow works for a single building, it should be generalized to a list a building
-- The lidar tiles must be automatically associated to the building EGID. Merging of lidar data will be necessary for building spanning over several tiles
+- Either the workflow is processing EGID by EGID either the workflow could process several EGID at the same time. There is LiDAR segmentation tools in whitebox-tools that we can look at as example. I did a test with "lidar_segmentation" (https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarSegmentation) on QGIS and it was working well.
+- If we process EGID by EGID, the lidar tiles must be automatically associated to the building EGID. Merging of lidar data will be necessary for building spanning over several tiles
 - The hyper parameters value must be optimized for several buildings
 - The assessment script can be improved 
 - Compressed LiDAR data can be stored on S3 and the script can fetch directly from there. 
