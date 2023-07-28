@@ -43,6 +43,8 @@ def test_crs(crs1, crs2 = "EPSG:2056"):
 def ensure_dir_exists(dirpath):
     '''
     Test if a directory exists. If not, make it.
+
+    - dirpath: path to the directory
     return: the path to the verified directory.
     '''
 

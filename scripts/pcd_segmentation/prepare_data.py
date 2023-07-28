@@ -48,36 +48,41 @@ if __name__ == "__main__":
         cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
 
     # Load input parameters
+    INPUTS=cfg['inputs']
+    FILTERS=cfg['filters']
+
     WORKING_DIR = cfg['working_dir']
     PCD_DIR = cfg['pcd_dir']
     OUTPUT_DIR = cfg['output_dir']
-    PCD_NAME = cfg['pcd_name']
-    PCD_EXT = cfg['pcd_ext']
-    SHP_ROOFS = cfg['shp_roofs']
-    EGID = cfg['egid']
-    FILTER_CLASS = cfg['filters']['filter_class']
-    CLASS_NUMBER = cfg['filters']['class_number']
-    FILTER_ROOF = cfg['filters']['filter_roof']
-    DISTANCE_BUFFER = cfg['filters']['distance_buffer']
+
+    PCD_FILENAME=INPUTS['pcd_filename']
+    PCD_NAME = os.path.splitext(PCD_FILENAME)[0]
+    PCD_EXT = os.path.splitext(PCD_FILENAME)[1]
+    SHP_ROOFS = INPUTS['shp_roofs']
+    EGID = FILTERS['egid']
+    FILTER_CLASS = FILTERS['filter_class']
+    CLASS_NUMBER = FILTERS['class_number']
+    FILTER_ROOF = FILTERS['filter_roof']
+    DISTANCE_BUFFER = FILTERS['distance_buffer']
+
     VISU = cfg['visualisation']
 
-    os.chdir(WORKING_DIR)
+    os.chdir(WORKING_DIR) # WARNING: wbt requires absolute paths as input
 
-    file_name = PCD_NAME + '_EGID' + str(EGID)
-    output_dir = os.path.join(WORKING_DIR, OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_com.ensure_dir_exists(output_dir)
+    file_name = PCD_NAME + '_EGID' + str(EGID)
+    output_dir = fct_com.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR, file_name))
 
     written_files = []
 
 
     # Get info on the pcd !!! Not mandatory, can be deleted !!!
     # Open and read las file 
-    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_NAME + "." + PCD_EXT)
+    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_FILENAME)
     logger.info('Read the point cloud data...')
     las = laspy.read(pcd_path)
     # las.header
-    logger.info("   - 3D Point cloud name: " + PCD_NAME + "." + PCD_EXT)
+    logger.info("   - 3D Point cloud name: " + PCD_FILENAME)
     logger.info("   - Number of points: " + str(las.header.point_count))
     logger.info("   - Point Cloud available infos: " + str(list(las.point_format.dimension_names)))
     # logger.info("   - Classes: " + str(set(list(las.classification))))
@@ -93,10 +98,10 @@ if __name__ == "__main__":
     else:
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
-        gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
+        gdf_roofs = gpd.read_file(os.path.join(ROOFS_DIR, ROOFS_NAME))
+        gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
         logger.info(f"Dissolved shapes by EGID number")
-        rooftops = gdf_roofs.dissolve('EGID', as_index=False)
+        rooftops = gdf_roofs.dissolve('EGID', as_index=False, aggfunc='min')
         rooftops.to_file(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
@@ -111,8 +116,8 @@ if __name__ == "__main__":
 
     # Perform .las clip with shapefile    
     logger.info(f"Clip point cloud data with shapefile")   
-    clip_path = os.path.join(output_dir, file_name + "." + PCD_EXT)
-    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)          # wbt requires absolute paths as input
+    clip_path = os.path.join(output_dir, file_name + PCD_EXT)
+    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
     written_files.append(clip_path)  
     logger.info(f"...done. A file was written: {clip_path}")
 
@@ -121,7 +126,7 @@ if __name__ == "__main__":
     las = laspy.read(clip_path)
 
     # Filter point cloud data by class value 
-    if FILTER_CLASS == 'True':
+    if FILTER_CLASS:
         logger.info(f"Filter the point cloud data by class number: {CLASS_NUMBER}")  
         las.points = las.points[las.classification == CLASS_NUMBER]
         # logger.info("Classes: ")
@@ -133,11 +138,11 @@ if __name__ == "__main__":
     # Conversion of numpy array to Open3D format + visualisation
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pcd_points)
-    if VISU == 'True':
+    if VISU:
         o3d.visualization.draw_geometries([pcd])
 
     # Filter point cloud with min roof altitude (remove points below the roof) 
-    if FILTER_ROOF == "True":
+    if FILTER_ROOF:
         logger.info(f"Filter points below the min roof altitude (by EGID)")  
         alti_roof = rooftops.loc[rooftops['EGID'] == EGID, 'ALTI_MIN'].iloc[0] - DISTANCE_BUFFER
         logger.info(f"Min altitude of the roof (+ buffer): {(alti_roof):.2f} m") 
@@ -146,7 +151,7 @@ if __name__ == "__main__":
     # Conversion of numpy array to Open3D format + visualisation
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pcd_filter)
-    if VISU == 'True':
+    if VISU:
         o3d.visualization.draw_geometries([pcd])
 
     # Save the processed point cloud data

@@ -1,18 +1,18 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
-  pcd_dir: "data/LiDAR/2019"
-  output_dir: "output/PCD_segmentation"
-  pcd_name: "2499000_1117000"
-  pcd_ext: "las"
-  shp_roofs: "data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
-  egid: 1013180
+  working_dir: "/home/gsalamin/Documents/project_data/rooftops"
+  pcd_dir: "initial/LiDAR/2019"
+  inputs:
+    pcd_filename: "2499000_1117000.las"
+    shp_roofs: "initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
+  output_dir: "processed/PCD_segmentation"
   filters:
-    filter_class: "False"
+    egid: 1013180
+    filter_class: False
     class_number: 6                 # 6: Building class
-    filter_roof: "True"             # Remove all the point below the roof altitude
+    filter_roof: True             # Remove all the point below the roof altitude
     distance_buffer: 2.0            #m, buffer value
-  visualisation: "True"
+  visualisation: True
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
