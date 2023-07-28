@@ -25,8 +25,6 @@ import functions.fct_com as fct_com
 import functions.fct_pcdseg as fct_seg
 
 logger = fct_com.format_logger(logger)
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
 
 if __name__ == "__main__":

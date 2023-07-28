@@ -27,8 +27,6 @@ sys.path.insert(1, 'scripts')
 import functions.fct_com as fct_com
 
 logger = fct_com.format_logger(logger)
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
 
 if __name__ == "__main__":
