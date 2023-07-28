@@ -1,24 +1,24 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: "/home/gsalamin/Documents/project_data/rooftops"
-  pcd_dir: "initial/LiDAR/2019"
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  pcd_dir: initial/LiDAR/2019
   inputs:
-    pcd_filename: "2499000_1117000.las"
-    shp_roofs: "initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp"
-  output_dir: "processed/PCD_segmentation"
+    pcd_filename: 2499000_1117000.las
+    shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: processed/PCD_segmentation
   filters:
     egid: 1013180
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
     distance_buffer: 2.0            #m, buffer value
-  visualisation: True
+  visualisation: false
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
-  input_dir: "output/PCD_segmentation"
-  output_dir: "output/PCD_segmentation"
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  input_dir: processed/PCD_segmentation
+  output_dir: processed/PCD_segmentation
   pcd_name: "2499000_1117000"
   egid: 1013180
   segmentation:
@@ -32,25 +32,25 @@ pcd_segmentation.py:
     cluster:
       eps: 0.5
       min_points: 5
-  visualisation: "True"
+  visualisation: false
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
-  input_dir: "output/PCD_segmentation"
-  output_dir: "output/PCD_segmentation"
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops
+  input_dir: output/PCD_segmentation
+  output_dir: output/PCD_segmentation
   pcd_name: "2499000_1117000"
   egid: 1013180
   epsg: 2056
   area_threshold: 50                                    #m2, Segmented polygon area threshold. Below this value the vectorized polygon in will be classified as object and not plane  
   alpha_shape: 2.0                                      # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
-  visualisation: "False"
+  visualisation: False
 
 # 4-Evaluate the results
 assess_results.py: 
-  working_dir: "/mnt/data-02/cherny/git/proj-rooftops"
-  input_dir: "output/PCD_segmentation"
-  output_dir: "output/PCD_segmentation"
-  gt: "data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg"
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops
+  input_dir: output/PCD_segmentation
+  output_dir: output/PCD_segmentation
+  gt: data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg
   pcd_name: "2499000_1117000"
   egid: 1013180

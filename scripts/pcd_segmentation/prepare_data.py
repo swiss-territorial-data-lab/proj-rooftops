@@ -133,12 +133,6 @@ if __name__ == "__main__":
     # Convert point cloud data to numpy array
     pcd_points = np.stack((las.x, las.y, las.z)).transpose()
 
-    # Conversion of numpy array to Open3D format + visualisation
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(pcd_points)
-    if VISU:
-        o3d.visualization.draw_geometries([pcd])
-
     # Filter point cloud with min roof altitude (remove points below the roof) 
     if FILTER_ROOF:
         logger.info(f"Filter points below the min roof altitude (by EGID)")  
