@@ -44,6 +44,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     INPUT_DIR = cfg['input_dir']
     OUTPUT_DIR = cfg['output_dir']
+
     GT = cfg['gt']
     PCD_NAME = cfg['pcd_name']
     EGID = cfg['egid']
@@ -51,9 +52,8 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     file_name = PCD_NAME + '_EGID' + str(EGID)
-    output_dir = os.path.join(OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_com.ensure_dir_exists(output_dir)
+    output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
 
     DETECTION = os.path.join(INPUT_DIR, file_name, file_name + "_occupation.gpkg")
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     gdf_detec = gpd.read_file(DETECTION)
     gdf_detec = gdf_detec[gdf_detec['occupation'] == 1]
-    gdf_detec['ID_DET'] = gdf_detec.index
+    gdf_detec['ID_DET'] = gdf_detec.id
     gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
     logger.info(f"Read detection file: {len(gdf_detec)} shapes")
 
@@ -76,14 +76,7 @@ if __name__ == "__main__":
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-
-    tp_gdf, fp_gdf, fn_gdf = fct_com.get_fractional_sets(
-                            gdf_detec, gdf_gt)
-
-    # Tag predictions   
-    tp_gdf['tag'] = 'TP'
-    fp_gdf['tag'] = 'FP'
-    fn_gdf['tag'] = 'FN'
+    tp_gdf, fp_gdf, fn_gdf = fct_com.get_fractional_sets(gdf_detec, gdf_gt)
 
     # Compute metrics
     precision, recall, f1 = fct_com.get_metrics(tp_gdf, fp_gdf, fn_gdf)
@@ -105,9 +98,8 @@ if __name__ == "__main__":
     tagged_preds_gdf = []
     tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
 
-    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET'], axis = 1)
-    # tagged_preds_gdf_dict = tagged_preds_gdf_dict.rename(columns={'value': 'mask_value'})
-    tagged_preds_gdf_dict = tagged_preds_gdf_dict.reindex(columns=['EGID', 'mask_value', 'ID_DET', 'area_DET', 'ID_GT', 'area_GT', 'IOU', 'tag', 'geometry'])
+    tagged_preds_gdf_dict.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET'], axis = 1, inplace=True)
+    tagged_preds_gdf_dict.reset_index(drop=True, inplace=True)
 
     feature_path = os.path.join(output_dir, file_name + '_tagged_predictions.gpkg')
     tagged_preds_gdf_dict.to_file(feature_path, driver='GPKG', index=False)

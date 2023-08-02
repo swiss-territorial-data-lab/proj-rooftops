@@ -136,6 +136,7 @@ if __name__ == "__main__":
     logger.info(f"Create a binary (free, object) occupation vector file")
     occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
     occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
+    occupation_gdf['id']=occupation_gdf.index
 
     feature_path = os.path.join(output_dir, file_name + "_occupation.gpkg")
     occupation_gdf.to_file(feature_path)
