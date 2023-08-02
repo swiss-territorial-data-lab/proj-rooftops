@@ -10,28 +10,32 @@ from descartes import PolygonPatch
 import alphashape
 
 
-def vectorize_concave(df, array, epsg, alpha, type, visu):
+def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
-    logger.info(f"Compute 2D vector from points groups of type {type}:")
+    object_type=df['type'].unique()[0]
+    if len(df.type.unique())>1:
+        logger.warning('Several different types were passsed to the function "vectorize_concave".')
+    logger.info(f"Compute 2D vector from points groups of type '{object_type}':")
 
     # Intialize polygon dataframe 
     polygon_df = pd.DataFrame()
-
     # Iterrate over all the provided group of points
-    for i in range(len(array)):
+    for group in plan_groups:
 
-        # 
-        points = df[df['group'] == array[i]]
+        points = df[df['group'] == group]
         points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
         points = points.to_numpy()
 
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
-        # alpha = alphashape.optimizealpha(points)
-        # logger.info(f"   - alpha shape value = {alpha}")
+        if not alpha_ini:
+            alpha = alphashape.optimizealpha(points)
+            logger.info(f"   - alpha shape value = {alpha}")
+        else:
+            alpha=alpha_ini
         alpha_shape = alphashape.alphashape(points, alpha = alpha)
 
         # The bounding points produced can be vizualize for control
-        if visu == 'True':
+        if visu:
             fig, ax = plt.subplots()
             ax.scatter(*zip(*points))
             # ax.add_patch(PolygonPatch(alpha_shape, alpha = 0.2))  # Used to work... not working at the moment, need to be fixed
@@ -45,8 +49,8 @@ def vectorize_concave(df, array, epsg, alpha, type, visu):
 
         # Build the final dataframe
         area = poly.area
-        logger.info(f"   - Group: {array[i]}, area: {(area):.2f} m2")
-        pcd_df = pd.DataFrame({'class': [type], 'area': [area], 'geometry': [poly]})
+        logger.info(f"   - Group: {group}, area: {(area):.2f} m2")
+        pcd_df = pd.DataFrame({'class': [object_type], 'area': [area], 'geometry': [poly]})
 
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
     
@@ -55,26 +59,30 @@ def vectorize_concave(df, array, epsg, alpha, type, visu):
     return polygon_gdf
 
 
-def vectorize_convex(df, array, epsg, type, visu):
+def vectorize_convex(df, plan_groups, epsg=2056, visu=False):
 
-    logger.info(f"Compute 2D vector from points groups of type {type}:")
+    object_type=df['type'].unique()[0]
+    if len(df.type.unique())>1:
+        logger.warning('Several different types were passsed to the function "vectorize_concave".')
+
+    logger.info(f"Compute 2D vector from points groups of type {object_type}:")
 
     # Intialize polygon dataframe 
     polygon_df = pd.DataFrame()
     idx = []
 
     # Iterrate over all the provided group of points
-    for i in range(len(array)):
+    for group in plan_groups:
 
         # 
-        points = df[df['group'] == array[i]]
+        points = df[df['group'] == group]
         points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
         points = points.to_numpy()
 
         hull = ConvexHull(points)
         # area = hull.volume
 
-        if visu == 'True':
+        if visu:
             fig, (ax1, ax2) = plt.subplots(ncols = 2, figsize = (10, 3))
             for ax in (ax1, ax2):
                 ax.plot(points[:, 0], points[:, 1], '.', color='k')
@@ -96,21 +104,14 @@ def vectorize_convex(df, array, epsg, type, visu):
 
         # Build the final dataframe
         area = poly.area
-        logger.info(f"   - Group: {array[i]}, number of vertices: {len(polylist)}, area: {(area):.2f} m2")
-        pcd_df = pd.DataFrame({'class': [type], 'area': [area], 'geometry': [poly]})
+        logger.info(f"   - Group: {group}, number of vertices: {len(polylist)}, area: {(area):.2f} m2")
+        pcd_df = pd.DataFrame({'class': [object_type], 'area': [area], 'geometry': [poly]})
 
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
     
     polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
     return polygon_gdf
-
-
-def union(poly1, poly2):
-
-    new_poly = unary_union([poly1, poly2])
-
-    return new_poly
 
 
 def IOU(pol1_xy, pol2_xy):

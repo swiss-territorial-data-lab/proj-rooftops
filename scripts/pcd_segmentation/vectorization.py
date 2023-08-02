@@ -47,6 +47,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     INPUT_DIR = cfg['input_dir']
     OUTPUT_DIR = cfg['output_dir']
+    
     PCD_NAME = cfg['pcd_name']
     EGID = cfg['egid']
     EPSG = cfg['epsg']
@@ -57,13 +58,12 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     file_name = PCD_NAME + '_EGID' + str(EGID)
-    output_dir = os.path.join(OUTPUT_DIR, file_name)
     # Create an output directory in case it doesn't exist
-    fct_com.ensure_dir_exists(output_dir)
+    output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
 
     written_files = []
 
-    logger.info("Read point cloud data file")
+    logger.info("Read point cloud file")
     input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_segmented.csv")
     pcd_df = pd.read_csv(input_dir)
 
@@ -74,9 +74,9 @@ if __name__ == "__main__":
     logger.info(f"Number of plane(s): {np.max(plane) + 1}")
 
     # Plane vectorization
-    logger.info(f"Vectorize plane")
-    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA, 'plane', VISU)
-    # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane, EPSG, 'plane', VISU) 
+    logger.info(f"Vectorize the planes")
+    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA)
+    # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
     # Load clusters in a dataframe 
     cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -87,46 +87,46 @@ if __name__ == "__main__":
 
     # Cluster vectorisation
     logger.info(f"Vectorize object")
-    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA, 'object', VISU)
-    # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG, 'object', VISU)
+    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA)
+    # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
     # Filtering: identify and remove plane element with an area below threshold value to be added to the object gdf
-    # An object can be classified as a plane in 'plane_segmentation.py' script. We can add an area thd value for which the plane can be considered to belong to a rooftop object
+    # An object can be classified as a plane in 'plane_segmentation.py' script. 
+    # We can add an threshold value on the area under which the plane can be considered to belong to a rooftop object
+    logger.info(f"Area filtering for plane objects. Small planes will be considered as object and not as roof parts.") 
     small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_THRESHOLD]
-    plane_vec_gdf = plane_vec_gdf.drop(small_plane_gdf.index)
+    plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
 
     # If it exists, add cluster previously classified as plane to the object class 
-    if small_plane_gdf.empty:
-        pass
-    else:
+    if not small_plane_gdf.empty:
         print("")
-        logger.info(f"Area filtering performed on plane objects (small object will be considered as object and not as plane)") 
-        for i in range(len(small_plane_gdf)):       
-            logger.info(f"Area = {(small_plane_gdf['area'].iloc[i]):.2f} m2 <= area threshold value : {AREA_THRESHOLD} m2") 
-        logger.info(f"Add {len(small_plane_gdf)} object(s) from the plane gdf to the object gdf") 
+        logger.info(f"Add {len(small_plane_gdf)} object{'s' if len(small_plane_gdf)>1 else ''} from the planes to the objects.") 
         cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
         cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
 
     # Create occupation layer
     print("")
-    logger.info(f"Compute difference (plane - objects) polygon")
+    logger.info(f"Compute difference between planes and objects")
     
-    # # Control: plot plane polygon, uncomment to see
-    # for i in range(len(plane_vec_gdf)): 
-        # boundary = gpd.GeoSeries(unary_union(plane_vec_gdf['geometry'].iloc[i]))
-        # boundary.plot(color = 'red')
-        # plt.show()
+    # Control: plot plane polygon, uncomment to see
+    boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
+    boundary.plot(color = 'red')
+    plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
 
     # Free polygon = Plane polygon(s) - Object polygon(s)
-    for ii in range(len(cluster_vec_gdf)):
-        diff_geom = plane_vec_gdf['geometry'].symmetric_difference(cluster_vec_gdf['geometry'].iloc[ii])
-        # # Control: plot object polygon, uncomment to see            
-        # boundary = gpd.GeoSeries(unary_union(cluster_vec_gdf['geometry'].iloc[ii]))
-        # boundary.plot(color = 'blue')
-        # plt.show()
+    diff_geom=[]
+    i=0
+    for geom in plane_vec_gdf.geometry.to_numpy():
+        diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
+        # Control: plot object polygon, uncomment to see          
+        boundary = gpd.GeoSeries(diff_geom)
+        boundary.plot(color = 'blue')
+        plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
+        i+=1
 
     # Build free area dataframe
-    free_df = pd.DataFrame({'area': plane_vec_gdf['area'],'occupation': 0,'geometry': diff_geom})
+    free_df = gpd.GeoDataFrame({'occupation': 0, 'geometry': diff_geom}, index=range(len(plane_vec_gdf)))
+    free_df['area']=free_df.area
 
     # Build occupied area dataframe
     objects_df = cluster_vec_gdf.drop(['class'], axis=1) 

@@ -36,21 +36,21 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops
-  input_dir: output/PCD_segmentation
-  output_dir: output/PCD_segmentation
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  input_dir: processed/PCD_segmentation
+  output_dir: processed/PCD_segmentation
   pcd_name: "2499000_1117000"
   egid: 1013180
   epsg: 2056
-  area_threshold: 50                                    #m2, Segmented polygon area threshold. Below this value the vectorized polygon in will be classified as object and not plane  
-  alpha_shape: 2.0                                      # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
+  area_threshold: 50        # m2, Segmented polygon area threshold. Below this value the vectorized polygon in will be classified as object and not plane  
+  alpha_shape: 2.0          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
-# 4-Evaluate the results
+# 4 - Evaluate the results
 assess_results.py: 
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops
-  input_dir: output/PCD_segmentation
-  output_dir: output/PCD_segmentation
-  gt: data/GT/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  input_dir: processed/PCD_segmentation
+  output_dir: processed/PCD_segmentation
+  gt: ground_truth/EGID1013180/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1013180.gpkg
   pcd_name: "2499000_1117000"
   egid: 1013180

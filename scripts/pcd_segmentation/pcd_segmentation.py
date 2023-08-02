@@ -101,7 +101,8 @@ if __name__ == "__main__":
         )
         segments[i] = remaining_pts.select_by_index(inliers)
         labels = np.array(segments[i].cluster_dbscan(eps = EPS_PLANE, min_points = MIN_POINTS_PLANE, print_progress = True))
-        best_candidate = np.bincount(labels).argmax()
+        candidates = [len(np.where(labels == j)[0]) for j in np.unique(labels)]
+        best_candidate = int(np.unique(labels)[np.where(candidates == np.max(candidates))[0]])
         logger.info(f"   - The best candidate is: {best_candidate}")
         
         # Select the remaining points in the pcd to find a new plane
