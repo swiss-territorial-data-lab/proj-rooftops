@@ -50,7 +50,8 @@ if __name__ == "__main__":
     
     EGID = cfg['egid']
     EPSG = cfg['epsg']
-    AREA_THRESHOLD = cfg['area_threshold']
+    AREA_MIN_PLANE = cfg['area_threshold']['min']
+    AREA_MAX_OBJECT = cfg['area_threshold']['max']
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
@@ -89,11 +90,9 @@ if __name__ == "__main__":
     cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA)
     # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
-    # Filtering: identify and remove plane element with an area below threshold value to be added to the object gdf
-    # An object can be classified as a plane in 'plane_segmentation.py' script. 
-    # We can add an threshold value on the area under which the plane can be considered to belong to a rooftop object
-    logger.info(f"Area filtering for plane objects. Small planes will be considered as object and not as roof parts.") 
-    small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_THRESHOLD]
+    # Filtering: identify and isolate plane that are too small
+    logger.info(f"Small planes will be considered as object and not as roof parts.") 
+    small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_MIN_PLANE]
     plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
 
     # If it exists, add cluster previously classified as plane to the object class 
@@ -102,6 +101,20 @@ if __name__ == "__main__":
         logger.info(f"Add {len(small_plane_gdf)} object{'s' if len(small_plane_gdf)>1 else ''} from the planes to the objects.") 
         cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
         cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
+    del small_plane_gdf
+
+    # Filtering: identify and isolate plane that are too big
+    logger.info(f"Big objects will be considered as roofs sections and not obstacles.") 
+    large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > AREA_MAX_OBJECT]
+    cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)
+
+    # If it exists, add cluster previously classified as plane to the object class 
+    if not large_objects_gdf.empty:
+        print("")
+        logger.info(f"Add {len(large_objects_gdf)} planes{'s' if len(large_objects_gdf)>1 else ''} from the objects to the roof sections.") 
+        plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
+        plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
+    del large_objects_gdf
 
     # Create occupation layer
     print("")

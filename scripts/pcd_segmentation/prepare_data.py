@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
             # Perform .las clip with shapefile    
             logger.info(f"Clip point cloud data with shapefile")   
-            clip_path = os.path.join(output_dir, tile.fme_basena + 'EGID_' + str(EGID) + PCD_EXT)
+            clip_path = os.path.join(output_dir, tile.fme_basena + '_EGID_' + str(EGID) + PCD_EXT)
             wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
             written_files.append(clip_path)  
             logger.info(f"...done. A file was written: {clip_path}")
