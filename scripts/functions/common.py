@@ -145,7 +145,7 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
     # Keep only max IOU value for each detection mask
     tp_gdf = tp_gdf_temp.groupby(['value'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
     
-    # Detection with IOU lower than threshold value are considered as considered FP and remove from TP list   
+    # Detection with IOU lower than threshold value are considered as FP and removed from TP list   
     threshold_iou = 0.1
     fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold_iou]
     val_fp = fp_gdf_temp['value'].unique().tolist()
@@ -170,6 +170,11 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
     fn_gdf = pd.concat([fn_no_hit_gdf, fn_too_low_hit_gdf])
    
     fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
+
+    # Tag predictions   
+    tp_gdf['tag'] = 'TP'
+    fp_gdf['tag'] = 'FP'
+    fn_gdf['tag'] = 'FN'
     
     return tp_gdf, fp_gdf, fn_gdf
 

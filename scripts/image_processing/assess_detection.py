@@ -79,11 +79,6 @@ if __name__ == "__main__":
     tp_gdf, fp_gdf, fn_gdf = fct.get_fractional_sets(
                             gdf_detec, gdf_gt)
 
-    # Tag predictions   
-    tp_gdf['tag'] = 'TP'
-    fp_gdf['tag'] = 'FP'
-    fn_gdf['tag'] = 'FN'
-
     # Compute metrics
     precision, recall, f1 = fct.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
