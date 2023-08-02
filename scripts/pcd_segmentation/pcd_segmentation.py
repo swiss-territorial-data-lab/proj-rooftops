@@ -46,7 +46,6 @@ if __name__ == "__main__":
     INPUT_DIR = cfg['input_dir']
     OUTPUT_DIR = cfg['output_dir']
 
-    PCD_NAME = cfg['pcd_name']
     EGID = cfg['egid']
 
     SEGMENTATION=cfg['segmentation']
@@ -63,7 +62,7 @@ if __name__ == "__main__":
 
     os.chdir(WORKING_DIR)
 
-    file_name = str(PCD_NAME) + '_EGID' + str(EGID)
+    file_name = 'EGID_' + str(EGID)
     # Create an output directory in case it doesn't exist
     output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
 

@@ -46,12 +46,11 @@ if __name__ == "__main__":
     OUTPUT_DIR = cfg['output_dir']
 
     GT = cfg['gt']
-    PCD_NAME = cfg['pcd_name']
     EGID = cfg['egid']
 
     os.chdir(WORKING_DIR)
 
-    file_name = PCD_NAME + '_EGID' + str(EGID)
+    file_name = 'EGID_' + str(EGID)
     # Create an output directory in case it doesn't exist
     output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
 
@@ -61,6 +60,8 @@ if __name__ == "__main__":
 
     # Open shapefiles
     gdf_gt = gpd.read_file(GT)
+    if 'OBSTACLE' in gdf_gt.columns:
+        gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
     gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
     gdf_gt['ID_GT'] = gdf_gt.index
     gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})

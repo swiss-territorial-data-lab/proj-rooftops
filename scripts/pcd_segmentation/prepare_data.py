@@ -53,9 +53,7 @@ if __name__ == "__main__":
     PCD_DIR = cfg['pcd_dir']
     OUTPUT_DIR = cfg['output_dir']
 
-    PCD_FILENAME=INPUTS['pcd_filename']
-    PCD_NAME = os.path.splitext(PCD_FILENAME)[0]
-    PCD_EXT = os.path.splitext(PCD_FILENAME)[1]
+    PCD_TILES=INPUTS['pcd_tiles']
     SHP_ROOFS = INPUTS['shp_roofs']
     EGID = FILTERS['egid']
     FILTER_CLASS = FILTERS['filter_class']
@@ -65,25 +63,15 @@ if __name__ == "__main__":
 
     VISU = cfg['visualisation']
 
+    PCD_EXT='.las'
+
     os.chdir(WORKING_DIR) # WARNING: wbt requires absolute paths as input
 
     # Create an output directory in case it doesn't exist
-    file_name = PCD_NAME + '_EGID' + str(EGID)
+    file_name = 'EGID_' + str(EGID)
     output_dir = fct_com.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR, file_name))
 
     written_files = []
-
-
-    # Get info on the pcd !!! Not mandatory, can be deleted !!!
-    # Open and read las file 
-    pcd_path = os.path.join(WORKING_DIR, PCD_DIR, PCD_FILENAME)
-    logger.info('Read the point cloud data...')
-    las = laspy.read(pcd_path)
-    # las.header
-    logger.info("   - 3D Point cloud name: " + PCD_FILENAME)
-    logger.info("   - Number of points: " + str(las.header.point_count))
-    logger.info("   - Point Cloud available infos: " + str(list(las.point_format.dimension_names)))
-    # logger.info("   - Classes: " + str(set(list(las.classification))))
 
 
     # Get the rooftops shapes
@@ -107,21 +95,60 @@ if __name__ == "__main__":
     # Select the building shape  
     logger.info(f"Select the shape for EGID {EGID}")        
     shape = rooftops.loc[rooftops['EGID'] == EGID]
+
+    # Write it to use it with WBT
     shape_path = os.path.join(output_dir, file_name + ".shp")
     shape.to_file(shape_path)
     written_files.append(shape_path)  
     logger.info(f"...done. A file was written: {shape_path}")
 
-    # Perform .las clip with shapefile    
-    logger.info(f"Clip point cloud data with shapefile")   
-    clip_path = os.path.join(output_dir, file_name + PCD_EXT)
-    wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
-    written_files.append(clip_path)  
-    logger.info(f"...done. A file was written: {clip_path}")
+    # Select corresponding tiles
+    tile_delimitation=gpd.read_file(PCD_TILES)
+    useful_tiles=tile_delimitation.sjoin(shape, how='right', lsuffix='tile', rsuffix='roof')
+    useful_tiles['filepath']=[os.path.join(PCD_DIR, name + PCD_EXT) for name in useful_tiles.fme_basena.to_numpy()]
 
+    logger.info(f'The EGID is on the tile{"s" if useful_tiles.shape[0]>1 else ""}:')
+    for name in useful_tiles.fme_basena.to_numpy():
+        logger.info(f"   - {name}")
+
+    clipped_inputs=str()
+    for tile in useful_tiles.itertuples():
+        if True:
+            # Get info on the pcd !!! Not mandatory, can be deleted !!!
+            # Open and read las file 
+            pcd_path = os.path.join(WORKING_DIR, tile.filepath)
+            logger.info('Read the point cloud data...')
+            las = laspy.read(pcd_path)
+            # las.header
+            logger.info("   - 3D Point cloud name: " + tile.fme_basena)
+            logger.info("   - Number of points: " + str(las.header.point_count))
+            logger.info("   - Point Cloud available infos: " + str(list(las.point_format.dimension_names)))
+            # logger.info("   - Classes: " + str(set(list(las.classification))))
+
+            # Perform .las clip with shapefile    
+            logger.info(f"Clip point cloud data with shapefile")   
+            clip_path = os.path.join(output_dir, tile.fme_basena + 'EGID_' + str(EGID) + PCD_EXT)
+            wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)
+            written_files.append(clip_path)  
+            logger.info(f"...done. A file was written: {clip_path}")
+
+            clipped_inputs=clipped_inputs + ', ' + clip_path
+
+    # Join the PCD for EGID expanding over serveral tiles
+    if useful_tiles.shape[0]==1:
+        whole_pcd_path=clip_path
+    else:
+        clipped_inputs=clipped_inputs.lstrip(', ')
+        whole_pcd_path=os.path.join(output_dir, file_name + PCD_EXT)
+        wbt.lidar_join(
+            clipped_inputs, 
+            whole_pcd_path,
+        )
+        logger.info(f"...done. A file was written: {clip_path}")
+    
     # Open and read clipped .las file 
     logger.info(f"Read the point cloud data for EGID {EGID}")  
-    las = laspy.read(clip_path)
+    las = laspy.read(whole_pcd_path)
 
     # Filter point cloud data by class value 
     if FILTER_CLASS:
