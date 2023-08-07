@@ -8,7 +8,7 @@ filter_by_attributes.py:
       classement: initial\vector\SHP_DPS_CLASSEMENT\DPS_CLASSEMENT.shp
     industrial_zones: initial\vector\SHP_FTI_PERIMETRE\FTI_PERIMETRE.shp
   parameters:
-    solar_absolute_minimum_area: 2
+    solar_absolute_minimum_area: 2  # The script should be adapted for it to be the absolute minimum area
     house_vs_building: xx   # Distinction not applicable yet -> what the difference? We do not currently have the buildings high
     houses:
       flat_vs_pitched: 20   # angle limit in degree
