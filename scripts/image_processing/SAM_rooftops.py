@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
@@ -22,19 +22,11 @@ import torch
 from rasterio.mask import mask
 from samgeo import SamGeo
 
-
 # the following allows us to import modules from within this file's parent folder
-# sys.path.insert(0, '.')
-
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
-import functions.common as c
 
 logger=fct_misc.format_logger(logger)
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
-
-# Define functions ------------------------------
 
 
 if __name__ == "__main__":
@@ -59,7 +51,7 @@ if __name__ == "__main__":
     IMAGE_DIR=cfg['image_dir']
     OUTPUT_DIR=cfg['output_dir']
     SHP_EXT=cfg['vector_extension']
-    SHP_ROOF=cfg['shp_roofs']
+    ROOFS_SHP=cfg['roofs_shp']
     CROP=cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
@@ -74,6 +66,7 @@ if __name__ == "__main__":
     # EK=cfg['SAM']['erosion_kernel']
     MASK_MULTI=cfg['SAM']['mask_multiplier']
     CUSTOM_SAM=cfg['SAM']['custom_SAM']
+    SHOW=cfg['SAM']['show_masks']
 
     os.chdir(WORKING_DIR)
 
@@ -89,7 +82,7 @@ if __name__ == "__main__":
         tiles=[tile.replace('\\', '/') for tile in tiles]
 
     if CROP:
-        logger.info(f"Images will be cropped with size {SIZE} and write them in {IMAGE_DIR}.")
+        logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
 
     if DL_CKP == True:
         dl_dir = os.path.join(CKP_DIR)
@@ -120,27 +113,29 @@ if __name__ == "__main__":
         checkpoint=checkpoint,
         model_type='vit_h',
         device=device,
-        # erosion_kernel=(3, 3),
-        # mask_multiplier=255,
         sam_kwargs=sam_kwargs,
     )
-      
+
+    logger.info(f"Process images:") 
+    logger.info(f"- Object detection and mask saving")    
+    logger.info(f"- Convert mask to vector")  
+
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
 
-        logger.info(f"Read images: {os.path.basename(tile)}") 
+        # Read image 
         tilepath = tile
         
         # Crop the input image by pixel value
         if CROP:
-            cropped_tilepath = c.crop(tilepath, SIZE, IMAGE_DIR)
+            cropped_tilepath = fct_misc.crop(tilepath, SIZE, IMAGE_DIR)
             written_files.append(cropped_tilepath)  
             tilepath=cropped_tilepath
 
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        roofs=gpd.read_file(SHP_ROOF)
+        roofs=gpd.read_file(ROOFS_SHP)
         shp_egid = roofs[roofs['EGID'] == egid]
 
-        logger.info(f"Produce and save mask")  
+        # Produce and save mask
         file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
@@ -150,11 +145,12 @@ if __name__ == "__main__":
 
         file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
-        sam.show_masks(cmap="binary_r")
-        sam.show_anns(axis="off", alpha=0.7, output=file_path)
-        # plt.show()
+        
+        if SHOW:
+            sam.show_masks(cmap="binary_r")
+            sam.show_anns(axis="off", alpha=0.7, output=file_path)
 
-        logger.info(f"Convert segmentation mask to vector layer")  
+        # Convert segmentation mask to vector layer 
         if SHP_EXT == 'gpkg': 
             file_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.gpkg')       

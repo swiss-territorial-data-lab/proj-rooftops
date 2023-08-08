@@ -21,11 +21,9 @@ import rasterio
 from rasterio.mask import mask
 from rasterio.merge import merge
 
+# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
-
-# the following allows us to import modules from within this file's parent folder
-sys.path.insert(0, '.')
 
 logger=fct_misc.format_logger(logger)
 
