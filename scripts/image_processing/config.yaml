@@ -4,18 +4,11 @@ tiles_generation.py:
   image_dir: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles_shp: input/tile_list/GT_rooftops_EGID_selection_v3_tiles.shp
   gt_egid_shp: input/EGID_list/GT_rooftops_EGID_selection_v3.shp
-  output_dir: input/input-review/tile_list/
-  buffer: 1                #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
+  output_dir: input/tile_list/
+  buffer: 1                 #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False               # Choose if a building mask (by EGID) is applied to image
 
-# 2- Create an image mask keeping buildings
-mask_for_buildings.py:
-  transparency: true
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  shp_roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
-
-# 3 - Segment Anything Method
+# 2 - Segment Anything Method
 SAM_rooftops.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   image_dir:  input/tile_list/
@@ -35,7 +28,7 @@ SAM_rooftops.py:
     mask_multiplier: 255
     custom_SAM: false
 
-# 4 - Create an image mask keeping buildings
+# 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   detection_dir: output/SAM/GT/segmented_images/
@@ -44,13 +37,23 @@ produce_vector_layer.py:
   srs: "EPSG:2056"                       # Projection of the input file
   output_dir: output/SAM/GT/
 
-# 5 - Evaluate the results
+# 4 - Evaluate the results
 assess_detection.py:  
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/ 
   gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
   detection: output/SAM/tests/sensitivity_analysis/SAM_vector_layer.gpkg
   output_dir: output/SAM/tests/sensitivity_analysis/
   egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
+
+
+## Additional scripts/processes
+
+# Create an image mask keeping buildings
+mask_for_buildings.py:
+  transparency: true
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
+  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
+  roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 # Prepare the tiles geometry according to the AOI and zoom level
 prepare_data.py: 

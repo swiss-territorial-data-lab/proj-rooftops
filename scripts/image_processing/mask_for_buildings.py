@@ -46,13 +46,13 @@ logger.info('Defining constants...')
 TRANSPARENCY=cfg['transparency']
 
 WORKING_DIR=cfg['working_dir']
-SHP_ROOFS=cfg['shp_roofs']
+ROOFS_SHP=cfg['roofs_shp']
 IMAGE_FOLDER=cfg['image_dir']
 
 os.chdir(WORKING_DIR)
 
 logger.info('Importing data...')
-roofs=gpd.read_file(SHP_ROOFS)
+roofs=gpd.read_file(ROOFS_SHP)
 tiles=glob(os.path.join(IMAGE_FOLDER, '*.tif'))
 
 logger.info('Processing vector data...')
