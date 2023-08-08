@@ -2,12 +2,11 @@
 tiles_generation.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   image_dir: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  shp_roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  shp_tiles: input/tile_list/GT_rooftops_EGID_selection_v3_tiles.shp
-  shp_gt_egid: input/EGID_list/GT_rooftops_EGID_selection_v3.shp
-  output_dir: input/tile_list/
+  tiles_shp: input/tile_list/GT_rooftops_EGID_selection_v3_tiles.shp
+  gt_egid_shp: input/EGID_list/GT_rooftops_EGID_selection_v3.shp
+  output_dir: input/input-review/tile_list/
   buffer: 1                #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
-  mask: false               # Choose if a building mask (by EGID) is applied to image
+  mask: False               # Choose if a building mask (by EGID) is applied to image
 
 # 2- Create an image mask keeping buildings
 mask_for_buildings.py:
