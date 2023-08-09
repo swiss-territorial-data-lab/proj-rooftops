@@ -14,7 +14,6 @@ import argparse
 import yaml
 from loguru import logger
 from tqdm import tqdm
-
 import pandas as pd
 import geopandas as gpd
 import rasterio
@@ -48,7 +47,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     TILES_SHP = cfg['tiles_shp']
-    GT_EGID_SHP = cfg['gt_egid_shp']
+    ROOFS_SHP = cfg['roofs_shp']
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
     MASK = cfg['mask']
@@ -61,7 +60,7 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(GT_EGID_SHP)
+    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS_SHP)
     feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
     if os.path.exists(feature_path):
@@ -70,9 +69,9 @@ if __name__ == "__main__":
     else:
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
+        roofs_gdf = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
         logger.info(f"Dissolved shapes by EGID number")
-        rooftops = gdf_roofs.dissolve('EGID', as_index=False)
+        rooftops = roofs_gdf.dissolve('EGID', as_index=False)
         rooftops.to_file(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
@@ -81,9 +80,8 @@ if __name__ == "__main__":
     logger.info("Select rooftop's shapes in the AOI")
     tiles = gpd.read_file(TILES_SHP)
 
-    # Get the EGID list from a file
-    egid_list_gdf = gpd.read_file(GT_EGID_SHP)
-    rooftops_list_gdf = egid_list_gdf.copy()
+    # Get the EGID list from file
+    rooftops_list_gdf = rooftops.copy()
     logger.info(f"Number of building to process: {len(rooftops_list_gdf)}")
 
     # Find the image's tiles intersecting the rooftops' shapes  

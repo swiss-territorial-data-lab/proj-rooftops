@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
@@ -12,8 +12,8 @@ import os, sys
 import time
 import argparse
 import yaml
-from loguru import logger
 from glob import glob
+from loguru import logger
 from tqdm import tqdm
 
 import re
@@ -58,29 +58,11 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS_SHP)
-
-    new_filename = os.path.splitext(ROOFS_NAME)[0]  + "_EGID.shp"
-    feature_path = os.path.join(ROOFS_DIR, new_filename)
-
-    if os.path.exists(feature_path):
-        logger.info(f"File {new_filename} already exists")
-        rooftops = gpd.read_file(feature_path)
-    else:
-        logger.info(f"File {new_filename} does not exist")
-        logger.info(f"Create it")
-        roofs_gdf = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR,  ROOFS_NAME))
-        logger.info(f"Dissolved shapes by EGID number")
-        rooftops = roofs_gdf.dissolve('EGID', as_index=False)
-        rooftops.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
-        rooftops.to_file(feature_path)
-        written_files.append(feature_path)  
-        logger.info(f"...done. A file was written: {feature_path}")
+    rooftops = gpd.read_file(ROOFS_SHP)
 
     # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
-    tiles=glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
-    print(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
+    tiles = glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
 
     vector_layer = gpd.GeoDataFrame() 
 

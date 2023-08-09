@@ -1,29 +1,26 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
-#      Copyright (c) 2020 Republic and Canton of Geneva
-#
+
 
 import os, sys
 import time
 import argparse
 import yaml
+from loguru import logger
 import pandas as pd
 import geopandas as gpd
-from loguru import logger
+
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-# import functions.fct_misc as fct_misc
-import functions.common as fct
+import functions.fct_misc as fct_misc
 
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
-
+logger=fct_misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -53,7 +50,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct.ensure_dir_exists(OUTPUT_DIR)
+    fct_misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -75,12 +72,10 @@ if __name__ == "__main__":
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-
-    tp_gdf, fp_gdf, fn_gdf = fct.get_fractional_sets(
-                            gdf_detec, gdf_gt)
+    tp_gdf, fp_gdf, fn_gdf = fct_misc.get_fractional_sets(gdf_detec, gdf_gt)
 
     # Compute metrics
-    precision, recall, f1 = fct.get_metrics(tp_gdf, fp_gdf, fn_gdf)
+    precision, recall, f1 = fct_misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
     TP = len(tp_gdf)
     FP = len(fp_gdf)
@@ -93,35 +88,35 @@ if __name__ == "__main__":
     logger.info(f"   IOU average = {iou_average:.2f}")
 
 
+    # Check if no label has been lost during the results assessment 
     nbr_tagged_labels = TP + FN 
-    filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+    filename = os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
     if nbr_labels != nbr_tagged_labels:
         logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-        logger.info(f'The list of the problematic labels in exported to {filename}.')
+        logger.info(f'The list of the problematic labels is exported to {filename}.')
 
         if nbr_labels > nbr_tagged_labels:
-            tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+            tagged_labels = tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
 
-            untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf = gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
             untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
 
-            layer_name='missing_label_tags'
+            layer_name = 'missing_label_tags'
             untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
             written_files.append(filename)
 
         elif nbr_labels < nbr_tagged_labels:
-            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+            all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
 
-            duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
-            duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
+            duplicated_id_gt = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
             duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
 
-            layer_name='duplicated_label_tags'
+            layer_name = 'duplicated_label_tags'
             duplicated_labels.to_file(filename, layer=layer_name, index=False)
             written_files.append(filename)
-
 
     # Set the final dataframe with tagged prediction
     logger.info(f"Set the final dataframe")
@@ -130,10 +125,8 @@ if __name__ == "__main__":
     tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
     tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
     tagged_preds_gdf_dict = tagged_preds_gdf_dict.rename(columns={'value': 'mask_value'})
-    # tagged_preds_gdf_dict = tagged_preds_gdf_dict.reindex(columns=['fid','EGID', 'mask_value', 'ID_DET', 'area_DET', 'ID_GT', 'area_GT', 'IOU', 'tag', 'geometry'])
 
     feature_path = os.path.join(OUTPUT_DIR, f'tagged_predictions.gpkg')
-    # tagged_preds_gdf[['geometry', 'score', 'tag', 'dataset']].to_file(file_to_write, driver='GPKG', index=False)
     tagged_preds_gdf_dict.to_file(feature_path, driver='GPKG', index=False)
     written_files.append(feature_path)
     
