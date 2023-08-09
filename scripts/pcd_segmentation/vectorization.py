@@ -11,8 +11,9 @@
 import os, sys
 import time
 import argparse
-import yaml
 from loguru import logger
+from tqdm import tqdm
+from yaml import load, FullLoader
 
 import numpy as np
 import pandas as pd
@@ -27,54 +28,60 @@ import functions.fct_pcdseg as fct_seg
 logger = fct_com.format_logger(logger)
 
 
-if __name__ == "__main__":
+# Start chronometer
+tic = time.time()
+logger.info('Starting...')
 
-    # Start chronometer
-    tic = time.time()
-    logger.info('Starting...')
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description='The script allows to transform 3D segmented point cloud to 2D polygon (STDL.proj-rooftops)')
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
 
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description='The script allows to transform 3D segmented point cloud to 2D polygon (STDL.proj-rooftops)')
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
+logger.info(f"Using {args.config_file} as config file.")
 
-    logger.info(f"Using {args.config_file} as config file.")
- 
-    with open(args.config_file) as fp:
-        cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
+with open(args.config_file) as fp:
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-    # Load input parameters
-    WORKING_DIR = cfg['working_dir']
-    INPUT_DIR = cfg['input_dir']
-    OUTPUT_DIR = cfg['output_dir']
-    
-    EGID = cfg['egid']
-    EPSG = cfg['epsg']
-    AREA_MIN_PLANE = cfg['area_threshold']['min']
-    AREA_MAX_OBJECT = cfg['area_threshold']['max']
-    ALPHA = cfg['alpha_shape']
-    VISU = cfg['visualisation']
+# Load input parameters
+WORKING_DIR = cfg['working_dir']
+INPUT_DIR = cfg['input_dir']
+OUTPUT_DIR = cfg['output_dir']
 
-    os.chdir(WORKING_DIR)
+EGIDS = cfg['egids']
+EPSG = cfg['epsg']
+AREA_MIN_PLANE = cfg['area_threshold']['min']
+AREA_MAX_OBJECT = cfg['area_threshold']['max']
+ALPHA = cfg['alpha_shape']
+VISU = cfg['visualisation']
 
-    file_name = 'EGID_' + str(EGID)
-    # Create an output directory in case it doesn't exist
-    output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
+logger.info(f"Planes smaller than {AREA_MIN_PLANE} m2 will be considered as object and not as roof sections.") 
+logger.info(f"Objects larger than {AREA_MAX_OBJECT} m2 will be considered as roof sections and not as objects.") 
 
-    written_files = []
+os.chdir(WORKING_DIR)
 
-    logger.info("Read point cloud file")
+# Create an output directory in case it doesn't exist
+_ = fct_com.ensure_dir_exists(OUTPUT_DIR)
+feature_path = os.path.join(OUTPUT_DIR, "all_EGID_occupation.gpkg")
+
+written_layers = []
+
+# Get the EGIDS of interest
+with open(EGIDS, 'r') as src:
+    egids=src.read()
+egid_list=egids.split("\n")
+
+all_occupation_gdf=gpd.GeoDataFrame()
+for egid in tqdm(egid_list):
+    file_name = 'EGID_' + str(egid)
+
     input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_segmented.csv")
     pcd_df = pd.read_csv(input_dir)
 
     # Create a plane dataframe
     plane_df = pcd_df[pcd_df['type'] == 'plane']
     plane = np.unique(plane_df['group'])
-    print("")
-    logger.info(f"Number of plane(s): {np.max(plane) + 1}")
 
     # Plane vectorization
-    logger.info(f"Vectorize the planes")
     plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA)
     # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
@@ -82,16 +89,12 @@ if __name__ == "__main__":
     cluster_df = pcd_df[pcd_df['type'] == 'cluster']
     cluster = np.unique(cluster_df['group'])
     cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
-    print("")
-    logger.info(f"Number of cluster(s): {np.max(cluster) + 1}")
 
     # Cluster vectorisation
-    logger.info(f"Vectorize object")
     cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA)
     # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
     # Filtering: identify and isolate plane that are too small
-    logger.info(f"Small planes will be considered as object and not as roof parts.") 
     small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_MIN_PLANE]
     plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
 
@@ -104,22 +107,18 @@ if __name__ == "__main__":
     del small_plane_gdf
 
     # Filtering: identify and isolate plane that are too big
-    logger.info(f"Big objects will be considered as roofs sections and not obstacles.") 
     large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > AREA_MAX_OBJECT]
     cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)
 
     # If it exists, add cluster previously classified as plane to the object class 
     if not large_objects_gdf.empty:
         print("")
-        logger.info(f"Add {len(large_objects_gdf)} planes{'s' if len(large_objects_gdf)>1 else ''} from the objects to the roof sections.") 
+        logger.info(f"Add {len(large_objects_gdf)} plane{'s' if len(large_objects_gdf)>1 else ''} from the objects to the roof sections.") 
         plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
         plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
     del large_objects_gdf
 
-    # Create occupation layer
-    print("")
-    logger.info(f"Compute difference between planes and objects")
-    
+    # Create occupation layer    
     # Control: plot plane polygon, uncomment to see
     boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
     boundary.plot(color = 'red')
@@ -145,25 +144,27 @@ if __name__ == "__main__":
     objects_df['occupation'] = 1
 
     # Build occupation geodataframe
-    logger.info(f"Create a binary (free, object) occupation vector file")
     occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
     occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
     occupation_gdf['id']=occupation_gdf.index
 
-    feature_path = os.path.join(output_dir, file_name + "_occupation.gpkg")
-    occupation_gdf.to_file(feature_path)
-    written_files.append(feature_path)  
-    logger.info(f"...done. A file was written: {feature_path}")
+    occupation_gdf.to_file(feature_path, layer=file_name)
+    written_layers.append(file_name)  
 
+    all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_df], ignore_index=True)
 
-    print()
-    logger.info("The following files were written. Let's check them out!")
-    for written_file in written_files:
-        logger.info(written_file)
-    print()
+all_occupation_gdf['pred_id']=all_occupation_gdf.index
+all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs')
+written_layers.append('occupation_for_all_EGIDs')
 
-    # Stop chronometer  
-    toc = time.time()
-    logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+print()
+logger.info(f"The following layers were written in the file '{feature_path}'. Let's check them out!")
+for layer in written_layers:
+    logger.info(layer)
+print()
 
-    sys.stderr.flush()
+# Stop chronometer  
+toc = time.time()
+logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+
+sys.stderr.flush()

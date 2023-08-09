@@ -1,12 +1,16 @@
 from loguru import logger
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+
 import matplotlib.pyplot as plt
+
+from descartes import PolygonPatch
 from scipy.spatial import ConvexHull
+from shapely.errors import GEOSException
 from shapely.geometry import Polygon, MultiPolygon
 from shapely.ops import unary_union
-from descartes import PolygonPatch
 import alphashape
 
 
@@ -14,8 +18,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
     object_type=df['type'].unique()[0]
     if len(df.type.unique())>1:
-        logger.warning('Several different types were passsed to the function "vectorize_concave".')
-    logger.info(f"Compute 2D vector from points groups of type '{object_type}':")
+        logger.warning('Several different types were passed to the function "vectorize_concave".')
 
     # Intialize polygon dataframe 
     polygon_df = pd.DataFrame()
@@ -32,7 +35,10 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
             logger.info(f"   - alpha shape value = {alpha}")
         else:
             alpha=alpha_ini
-        alpha_shape = alphashape.alphashape(points, alpha = alpha)
+        try:
+            alpha_shape = alphashape.alphashape(points, alpha = alpha)
+        except GEOSException:
+            alpha_shape = alphashape.alphashape(points, alpha = 1)
 
         # The bounding points produced can be vizualize for control
         if visu:
@@ -49,7 +55,6 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
         # Build the final dataframe
         area = poly.area
-        logger.info(f"   - Group: {group}, area: {(area):.2f} m2")
         pcd_df = pd.DataFrame({'class': [object_type], 'area': [area], 'geometry': [poly]})
 
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)

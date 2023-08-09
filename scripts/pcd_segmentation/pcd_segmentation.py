@@ -11,8 +11,9 @@
 import os, sys
 import time
 import argparse
-import yaml
 from loguru import logger
+from tqdm import tqdm
+from yaml import load, FullLoader
 
 import numpy as np
 import pandas as pd
@@ -25,56 +26,59 @@ import functions.fct_com as fct_com
 logger = fct_com.format_logger(logger)
 
 
-if __name__ == "__main__":
+# Start chronometer
+tic = time.time()
+logger.info('Starting...')
 
-    # Start chronometer
-    tic = time.time()
-    logger.info('Starting...')
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description='The script allows to segment points in 3D point cloud data (STDL.proj-rooftops)')
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
 
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description='The script allows to segment points in 3D point cloud data (STDL.proj-rooftops)')
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
+logger.info(f"Using {args.config_file} as config file.")
 
-    logger.info(f"Using {args.config_file} as config file.")
- 
-    with open(args.config_file) as fp:
-        cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
+with open(args.config_file) as fp:
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-    # Load input parameters
-    WORKING_DIR = cfg['working_dir']
-    INPUT_DIR = cfg['input_dir']
-    OUTPUT_DIR = cfg['output_dir']
+# Load input parameters
+WORKING_DIR = cfg['working_dir']
+INPUT_DIR = cfg['input_dir']
+OUTPUT_DIR = cfg['output_dir']
 
-    EGID = cfg['egid']
+EGIDS = cfg['egids']
 
-    SEGMENTATION=cfg['segmentation']
-    NB_PLANE = SEGMENTATION['plane']['number_plane']
-    DISTANCE_THRESHOLD = SEGMENTATION['plane']['distance_threshold']
-    RANSAC = SEGMENTATION['plane']['ransac']
-    ITER = SEGMENTATION['plane']['iteration']
-    EPS_PLANE = SEGMENTATION['plane']['eps']
-    MIN_POINTS_PLANE = SEGMENTATION['plane']['min_points']
-    EPS_CLUSTER = SEGMENTATION['cluster']['eps']
-    MIN_POINTS_CLUSTER = SEGMENTATION['cluster']['min_points']
+SEGMENTATION=cfg['segmentation']
+NB_PLANE = SEGMENTATION['plane']['number_plane']
+DISTANCE_THRESHOLD = SEGMENTATION['plane']['distance_threshold']
+RANSAC = SEGMENTATION['plane']['ransac']
+ITER = SEGMENTATION['plane']['iteration']
+EPS_PLANE = SEGMENTATION['plane']['eps']
+MIN_POINTS_PLANE = SEGMENTATION['plane']['min_points']
+EPS_CLUSTER = SEGMENTATION['cluster']['eps']
+MIN_POINTS_CLUSTER = SEGMENTATION['cluster']['min_points']
 
-    VISU = cfg['visualisation']
+VISU = cfg['visualisation']
 
-    os.chdir(WORKING_DIR)
+os.chdir(WORKING_DIR)
 
-    file_name = 'EGID_' + str(EGID)
-    # Create an output directory in case it doesn't exist
-    output_dir = fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, file_name))
+# Create an output directory in case it doesn't exist
+_ = fct_com.ensure_dir_exists(OUTPUT_DIR)
 
-    written_files = []
+written_files = []
 
+# Get the EGIDS of interest
+with open(EGIDS, 'r') as src:
+    egids=src.read()
+egid_list=egids.split("\n")
+
+for egid in tqdm(egid_list):
+
+    file_name = 'EGID_' + str(egid)
     # Read pcd file and get points array
-    logger.info("Read point cloud data file")
     csv_input_path = os.path.join(INPUT_DIR, file_name, file_name + ".csv")
     pcd_df = pd.read_csv(csv_input_path)
     pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1) 
     array_pts = pcd_df.to_numpy()
-    logger.info(f"   - {len(array_pts)} points")
 
     # Conversion of numpy array to Open3D format + visualisation
     pcd = o3d.geometry.PointCloud()
@@ -88,11 +92,10 @@ if __name__ == "__main__":
     segment_models = {}
     # Points in the plane
     segments = {}
-    
+
     remaining_pts = pcd
     planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
- 
-    logger.info(f"Segment and cluster main planes in the pcd")
+
     for i in range(NB_PLANE):
         # Exploration of the best plane candidate + point clustering
         segment_models[i], inliers = remaining_pts.segment_plane(
@@ -115,7 +118,7 @@ if __name__ == "__main__":
         logger.info(f"   - pass {i} / {NB_PLANE} done.")
 
         # # Allow to get the coloured planes        !!! Not essential but need to be merged in one single file with clustered pcd !!!
-        # feature_path = os.path.join(output_dir, file_name + '_plane'+ str(i) + '.ply')
+        # feature_path = os.path.join(OUTPUT_DIR, file_name + '_plane'+ str(i) + '.ply')
         # o3d.io.write_point_cloud(feature_path, segments[i])
         # written_files.append(feature_path)  
         # logger.info(f"...done. A file was written: {feature_path}")
@@ -126,17 +129,15 @@ if __name__ == "__main__":
         planes_df = pd.concat([planes_df, plane_df], ignore_index = True)
 
     # Cluster remaining points (not belonging to a plane) of the pcd after plane segmentation 
-    logger.info(f"Remaining points clustering")
     labels = np.array(remaining_pts.cluster_dbscan(eps = EPS_CLUSTER, min_points = MIN_POINTS_CLUSTER))
     max_label = labels.max()
-    logger.info(f"   - Point cloud has {max_label + 1} clusters")
-    
+
     colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))
     colors[labels < 0] = 0
     remaining_pts.colors = o3d.utility.Vector3dVector(colors[:, :3])
-    
+
     # # Allow to get the coloured clustered pcd       !!! Not essential but need to be merged in one single file with planes !!! 
-    # feature_path = os.path.join(output_dir, file_name + '_remaining_pts.ply')
+    # feature_path = os.path.join(OUTPUT_DIR, file_name + '_remaining_pts.ply')
     # o3d.io.write_point_cloud(feature_path, remaining_pts)
     # written_files.append(feature_path)  
     # logger.info(f"...done. A file was written: {feature_path}")
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     # Merge planes and clusters into a single dataframe 
     pcd_seg_df = pd.DataFrame(pd.concat([planes_df, clusters_df], ignore_index = True))
 
-    feature_path = os.path.join(output_dir, file_name + '_segmented.csv')
+    feature_path = os.path.join(OUTPUT_DIR, file_name + '_segmented.csv')
     pcd_seg_df.to_csv(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
@@ -169,19 +170,19 @@ if __name__ == "__main__":
                                 'eps_cluster': [EPS_CLUSTER],
                                 'min_points_cluster': [MIN_POINTS_CLUSTER]   
                                 })
-    feature_path = os.path.join(output_dir, file_name + '_parameters.csv')
+    feature_path = os.path.join(OUTPUT_DIR, file_name + '_parameters.csv')
     parameters_df.to_csv(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
 
-    print()
-    logger.info("The following files were written. Let's check them out!")
-    for written_file in written_files:
-        logger.info(written_file)
-    print()
+print()
+logger.info("The following files were written. Let's check them out!")
+for written_file in written_files:
+    logger.info(written_file)
+print()
 
-    # Stop chronometer  
-    toc = time.time()
-    logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+# Stop chronometer  
+toc = time.time()
+logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
-    sys.stderr.flush()
+sys.stderr.flush()

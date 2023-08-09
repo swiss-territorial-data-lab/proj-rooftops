@@ -5,13 +5,13 @@ prepare_data.py:
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: EGID_list.txt
   output_dir: processed/PCD_segmentation
   filters:
-    egid: 1001489
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
-    distance_buffer: 2.0            #m, buffer value
+    distance_buffer: 1.0            #m, buffer value
   visualisation: false
 
 # 2 - Point Cloud plane segmentation and clustering
@@ -19,10 +19,10 @@ pcd_segmentation.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egid: 1001489
+  egids: EGID_list.txt
   segmentation:
     plane:
-      number_plane: 1
+      number_plane: 3
       distance_threshold: 0.1
       ransac: 3
       iteration: 1000
@@ -38,7 +38,7 @@ vectorization.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egid: 1001489
+  egids: EGID_list.txt
   epsg: 2056
   area_threshold: 
     min: 5        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
@@ -49,7 +49,7 @@ vectorization.py:
 # 4 - Evaluate the results
 assess_results.py: 
   working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  gt: ground_truth/EGID1001489/CAD_BATIMENT_HORSOL_OCCUPATION_EGID1001489.gpkg
-  egid: 1001489
+  detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
+  gt: ground_truth/EGID_occupation.gpkg
+  egids: EGID_list.txt
