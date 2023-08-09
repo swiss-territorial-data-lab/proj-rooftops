@@ -32,18 +32,18 @@ SAM_rooftops.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  detection_dir: output/SAM/GT/segmented_images/
-  shp_roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  detection_dir: output/SAM/segmented_images/
+  roofs_shp: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   srs: "EPSG:2056"                       # Projection of the input file
-  output_dir: output/SAM/GT/
+  output_dir: output/SAM/
 
 # 4 - Evaluate the results
 assess_detection.py:  
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/ 
   gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  detection: output/SAM/tests/sensitivity_analysis/SAM_vector_layer.gpkg
-  output_dir: output/SAM/tests/sensitivity_analysis/
+  detection: output/SAM/SAM_vector_layer.gpkg
+  output_dir: output/SAM/
   egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
 
 

@@ -19,14 +19,11 @@ from tqdm import tqdm
 import re
 import geopandas as gpd
 
+# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 
-# the following allows us to import modules from within this file's parent folder
-sys.path.insert(0, '.')
-
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
+logger=fct_misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -48,7 +45,7 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     DETECTION_DIR = cfg['detection_dir']
-    SHP_ROOFS = cfg['shp_roofs']
+    ROOFS_SHP = cfg['roofs_shp']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
@@ -61,9 +58,9 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
+    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS_SHP)
 
-    new_filename=os.path.splitext(ROOFS_NAME)[0]  + "_EGID.shp"
+    new_filename = os.path.splitext(ROOFS_NAME)[0]  + "_EGID.shp"
     feature_path = os.path.join(ROOFS_DIR, new_filename)
 
     if os.path.exists(feature_path):
@@ -72,9 +69,9 @@ if __name__ == "__main__":
     else:
         logger.info(f"File {new_filename} does not exist")
         logger.info(f"Create it")
-        gdf_roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR,  ROOFS_NAME))
+        roofs_gdf = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR,  ROOFS_NAME))
         logger.info(f"Dissolved shapes by EGID number")
-        rooftops = gdf_roofs.dissolve('EGID', as_index=False)
+        rooftops = roofs_gdf.dissolve('EGID', as_index=False)
         rooftops.drop(['OBJECTID', 'ALTI_MAX', 'ALTI_MIN', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
         rooftops.to_file(feature_path)
         written_files.append(feature_path)  
@@ -104,14 +101,19 @@ if __name__ == "__main__":
         selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
         selection['area'] = selection.area 
         final_gdf = selection.drop(['index_right'], axis=1)
-        feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}_segment_selection.gpkg")
-        final_gdf.to_file(feature_path)
-        written_files.append(feature_path)  
         
-        # Merge/Combine multiple shapefiles into one
+        # Merge/Combine multiple shapefiles into one gdf
         vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
-    
-    feature_path = os.path.join(OUTPUT_DIR, "SAM_vector_layer.gpkg")
+
+    # Save the vectors for each EGID in layers in a gpkg 
+    feature_path = os.path.join(OUTPUT_DIR, "SAM_egid_vectors.gpkg")
+    for egid in vector_layer.EGID.unique():
+        vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
+    written_files.append(feature_path)  
+    logger.info(f"...done. A file was written: {feature_path}")
+
+    # Save all the vectors in a gpkg 
+    feature_path = os.path.join(OUTPUT_DIR, "SAM_vectors.gpkg")
     vector_layer.to_file(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
