@@ -39,8 +39,8 @@ produce_vector_layer.py:
 
 # 4 - Evaluate the results
 # GT not yet available on the EGID selection
-# Assess script can be run a given EGID for now (i.e. the workflow can be run for EGID 2034760)
-# Data used can be found here: 
+# Assess script can be run for a given EGID so far(i.e. the workflow can be run for EGID 2034760)
+# Data to run the script can be found here: /mnt/s3/proj-rooftops/02_Data/ground_truth/Single_Buildings/EGID2034760/
 # Adapt the path accordingly
 assess_detection.py:  
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/ 
