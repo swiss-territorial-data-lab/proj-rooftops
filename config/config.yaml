@@ -1,8 +1,7 @@
 mask_for_buildings.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
-  layer: labelling subset
-  image_folder: initial/images/true_ortho_2019
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  roofs: input/lidar_intensity/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BATIMENT_HORSOL_TOIT_SP_merge.gpkg
+  image_folder: /mnt/data-02/cherny/git/proj-rooftops/input/TrueOrtho/
 
 
 get_lidar_infos.py:

@@ -1,8 +1,10 @@
 import os, sys
 from loguru import logger
 
+import numpy as np
 import geopandas as gpd
 from shapely.affinity import scale
+from shapely.geometry import Polygon
 
 def format_logger(logger):
     '''Format the logger from loguru
@@ -96,3 +98,16 @@ def get_tilepath_from_id(tile_id, im_list):
         tilepath=matching_path[0]
 
     return tilepath
+
+def poly_from_utm(polygon, transform):
+    poly_pts = []
+    
+    for i in np.array(polygon.exterior.coords):
+        
+        # Convert polygons to the image CRS
+        poly_pts.append(~transform * tuple(i))
+        
+    # Generate a polygon object
+    new_poly = Polygon(poly_pts)
+    
+    return new_poly
