@@ -61,10 +61,9 @@ assess_detection.py:
 
 # 6 - Hyperparamters optimization
 SAM_optimization.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: /mnt/data-03/cherny/git/proj-rooftops/
   image_dir:  input/tiles_opti/
   shp_roofs_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # shp_roofs_egid_dir: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   gt: data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
   output_dir: output/SAM/opti/
   detection: 'SAM_vector_layer'
@@ -82,16 +81,17 @@ SAM_optimization.py:
     unique: true
     mask_multiplier: 255
   optimization:
-    n_trials: 2                           # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
-    sampler: 'GridSampler'                 # Choices: 1:TPESampler; 2:GridSampler 
+    n_trials: 500                           # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    sampler: 'TPESampler'                 # Choices: 1:TPESampler; 2:GridSampler 
     param_grid:                           # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
-      points_per_side: [32, 64, 128]
-      points_per_batch: [32, 64, 128]
-      pred_iou_thresh: [0.85, 0.88, 0.9]
-      stability_score_thresh: [0.85, 0.9, 0.95]
-      stability_score_offset: [0.5, 1.0, 5.0]
+      points_per_side: [160, 160]
+      points_per_batch: [64, 64]
+      pred_iou_thresh: [0.9, 0.9]
+      stability_score_thresh: [0.95,0.95]
+      stability_score_offset: [8.0,8.0]
       box_nms_thresh: [0.1, 1.0, 5.0]             
       crop_n_layers: [0, 2, 5]
-      crop_nms_thresh: [1.0]
-      crop_n_points_downscale_factor: [1, 2, 5]
-      min_mask_region_area: [0, 50, 100]
+      crop_nms_thresh: [5.0,5.0]
+      crop_overlap_ratio: [0, 1]
+      crop_n_points_downscale_factor: [0,0]
+      min_mask_region_area: [50,50]

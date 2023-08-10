@@ -1,11 +1,8 @@
-GDAL==3.0.4
 fiona
 geopandas
-laspy
 loguru
 matplotlib
 numpy
-open3d
 optuna
 rasterio
 tqdm
@@ -13,6 +10,6 @@ pyyaml
 rasterio
 requests
 segment-geospatial
-shapely
+sklearnhapely
 torch @ https://download.pytorch.org/whl/cu113/torch-1.10.2%2Bcu113-cp38-cp38-linux_x86_64.whl
 torchvision @ https://download.pytorch.org/whl/cu113/torchvision-0.11.3%2Bcu113-cp38-cp38-linux_x86_64.whl

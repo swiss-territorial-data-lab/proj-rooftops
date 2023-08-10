@@ -27,6 +27,9 @@ from loguru import logger
 import pandas as pd
 import matplotlib.pyplot as plt
 import optuna
+import torch
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -42,35 +45,37 @@ logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}"
 
 # Objective function for hyperparameters optimization
 def objective(trial):
-
+    # torch.cuda.empty_cache()
     logger.info(f"Call objective function for hyperparameters optimization")
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    PPS = trial.suggest_int('points_per_side', 0, 200, step=20)
-    # PPB = trial.suggest_int('points_per_batch', 0, 200, step=20)
-    IOU_THD = trial.suggest_float('pred_iou_thresh', 0, 1, step=0.5)
-    SST = trial.suggest_float('stability_score_thresh', 0, 1, step=0.5)
-    SSO = trial.suggest_float('stability_score_offset', 0, 1, step=0.5)
-    # BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0, 5, step=1.0)
-    # CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 10, step=1)
-    # CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0, 5, step=0.5)
-    # CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 10, step=1)
-    # MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 500, step=20)
+    PPS = trial.suggest_int('points_per_side', 32, 160, step=32)
+    PPB = trial.suggest_int('points_per_batch', 32, 160, step=32)
+    IOU_THD = trial.suggest_float('pred_iou_thresh', 0.6, 0.95, step=0.05)
+    SST = trial.suggest_float('stability_score_thresh', 0.6, 0.95, step=0.05)
+    SSO = trial.suggest_float('stability_score_offset', 0.0, 6.0, step=1.0)
+    BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0.6, 0.95, step=0.05)
+    CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 1, step=1)
+    CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0.6, 0.95, step=0.05)
+    CROP_OVERLAP_RATIO = trial.suggest_float('crop_overlap_ratio', 0.3, 0.8, step=0.1)
+    CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 10, step=1)
+    MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 200, step=50)
 
     # Create a dictionnary of the tested parameters value for a given trial
     dict_params = {
             "points_per_side": PPS,
-            # "points_per_batch": PPB,
+            "points_per_batch": PPB,
             "pred_iou_thresh": IOU_THD, 
             "stability_score_thresh": SST,
             "stability_score_offset": SSO, 
-            # "box_nms_thresh": BOX_MNS_THD,
-            # "crop_n_layers": CROP_N_LAYERS, 
-            # "crop_nms_thresh": CROP_MNS_THD,
-            # "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR, 
-            # "min_mask_region_area": MIN_MASK_REGION_AREA
+            "box_nms_thresh": BOX_MNS_THD,
+            "crop_n_layers": CROP_N_LAYERS, 
+            "crop_nms_thresh": CROP_MNS_THD,
+            "crop_overlap_ratio": CROP_OVERLAP_RATIO,
+            "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR, 
+            "min_mask_region_area": MIN_MASK_REGION_AREA
             }
-    
+    print(dict_params)
     # SAM mask + vectorization + filtering + assessment
     fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOFS, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
     fct_SAM.filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files)
@@ -132,6 +137,7 @@ if __name__ == "__main__":
     BOX_MNS_THD = cfg['optimization']['param_grid']['box_nms_thresh']
     CROP_N_LAYERS = cfg['optimization']['param_grid']['crop_n_layers']
     CROP_MNS_THD = cfg['optimization']['param_grid']['crop_nms_thresh']
+    CROP_OVERLAP_RATIO = cfg['optimization']['param_grid']['crop_overlap_ratio']
     CROP_N_POINTS_DS_FACTOR = cfg['optimization']['param_grid']['crop_n_points_downscale_factor']
     MIN_MASK_REGION_AREA = cfg['optimization']['param_grid']['min_mask_region_area']
 
@@ -152,19 +158,20 @@ if __name__ == "__main__":
         logger.info(f"Set hyperparameters grid search")
         # The explicit value provided will be used for parameter optimization
         search_space = {"points_per_side": PPS,
-                # "points_per_batch": PPB,
+                "points_per_batch": PPB,
                 "pred_iou_thresh": IOU_THD,
                 "stability_score_thresh": SST,
                 "stability_score_offset": SSO,
-                # "box_nms_thresh": BOX_MNS_THD,
-                # "crop_n_layers": CROP_N_LAYERS,
-                # "crop_nms_thresh": CROP_MNS_THD,
-                # "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR,
-                # "min_mask_region_area": MIN_MASK_REGION_AREA
+                "box_nms_thresh": BOX_MNS_THD,
+                "crop_n_layers": CROP_N_LAYERS,
+                "crop_nms_thresh": CROP_MNS_THD,
+                "crop_overlap_ratio": CROP_OVERLAP_RATIO,
+                "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR,
+                "min_mask_region_area": MIN_MASK_REGION_AREA
                 }
-        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameter optimization')   
+        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameters optimization')   
     elif SAMPLER == 'TPESampler':
-        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameter optimization') 
+        study = optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameters optimization') 
     study.optimize(objective, n_trials=N_TRIALS)
 
 
@@ -181,7 +188,7 @@ if __name__ == "__main__":
 
     fig_contour = optuna.visualization.matplotlib.plot_contour(study)
     feature_path = os.path.join(OUTPUT_PLOTS, 'contour.png')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.savefig(feature_path)
     written_files.append(feature_path)
 
@@ -212,14 +219,15 @@ if __name__ == "__main__":
     best_params = study.best_params
     best_val = study.best_value
     best_points_per_side = study.best_params['points_per_side']
-    # best_points_per_batch = study.best_params['points_per_batch']
+    best_points_per_batch = study.best_params['points_per_batch']
     best_pred_iou_thresh = study.best_params['pred_iou_thresh']
     best_stability_score_thresh = study.best_params['stability_score_thresh']
-    # best_box_nms_thresh = study.best_params['box_nms_thresh']
-    # best_crop_n_layers = study.best_params['crop_n_layers']
-    # best_crop_nms_thresh = study.best_params['crop_nms_thresh']
-    # best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
-    # best_min_mask_region_area = study.best_params['min_mask_region_area']
+    best_box_nms_thresh = study.best_params['box_nms_thresh']
+    best_crop_n_layers = study.best_params['crop_n_layers']
+    best_crop_nms_thresh = study.best_params['crop_nms_thresh']
+    best_crop_overlap_ratio = study.best_params['crop_overlap_ratio']
+    best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
+    best_min_mask_region_area = study.best_params['min_mask_region_area']
 
     #     
     logger.info('Create dictionary of the best hyperparameters')
@@ -227,14 +235,15 @@ if __name__ == "__main__":
                     'best_param' : best_params,
                     'best_value' : best_val,
                     'best_points_per_side' : best_points_per_side,
-                    # 'best_points_per_batch': best_points_per_batch,
+                    'best_points_per_batch': best_points_per_batch,
                     'best_pred_iou_thresh': best_pred_iou_thresh,
                     'best_stability_score_thresh': best_stability_score_thresh,
-                    # 'best_box_nms_thresh': best_box_nms_thresh,
-                    # 'best_crop_n_layers': best_crop_n_layers,
-                    # 'best_crop_nms_thresh': best_crop_nms_thresh,
-                    # 'best_crop_n_points_downscale_factor': best_crop_n_points_downscale_factor,
-                    # 'best_min_mask_region_area': best_min_mask_region_area
+                    'best_box_nms_thresh': best_box_nms_thresh,
+                    'best_crop_n_layers': best_crop_n_layers,
+                    'best_crop_nms_thresh': best_crop_nms_thresh,
+                    'best_crop_overalp_ratio': best_crop_overlap_ratio,
+                    'best_crop_n_points_downscale_factor': best_crop_n_points_downscale_factor,
+                    'best_min_mask_region_area': best_min_mask_region_area
                     }    
 
     df = pd.DataFrame(best_hp_dict, index=[0])

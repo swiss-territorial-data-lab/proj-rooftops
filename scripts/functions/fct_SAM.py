@@ -51,15 +51,16 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
 
         sam_kwargs = {
             'points_per_side': dict_params["points_per_side"],
-            # 'points_per_batch': dict_params["points_per_batch"],
+            'points_per_batch': dict_params["points_per_batch"],
             'pred_iou_thresh': dict_params["pred_iou_thresh"],
             'stability_score_thresh': dict_params["stability_score_thresh"], 
             'stability_score_offset': dict_params["stability_score_offset"],
-            # 'box_nms_thresh': dict_params["box_nms_thresh"],
-            # 'crop_n_layers': dict_params["crop_n_layers"],
-            # 'crop_nms_thresh': dict_params["crop_nms_thresh"],
-            # 'crop_n_points_downscale_factor': dict_params["crop_n_points_downscale_factor"],
-            # 'min_mask_region_area': dict_params["min_mask_region_area"]
+            'box_nms_thresh': dict_params["box_nms_thresh"],
+            'crop_n_layers': dict_params["crop_n_layers"],
+            'crop_nms_thresh': dict_params["crop_nms_thresh"],
+            'crop_overlap_ratio': dict_params["crop_overlap_ratio"],
+            'crop_n_points_downscale_factor': dict_params["crop_n_points_downscale_factor"],
+            'min_mask_region_area': dict_params["min_mask_region_area"]
             }
 
         sam = SamGeo(
