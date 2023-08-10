@@ -53,4 +53,4 @@ assess_results.py:
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   gt: ground_truth/EGID_occupation.gpkg
   egids: EGID_list.txt
-  method: one-to-many
+  method: one-to-one

@@ -66,7 +66,7 @@ if 'OBSTACLE' in gdf_gt.columns:
     gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
 gdf_gt = gdf_gt[(gdf_gt.occupation.astype(int) == 1) & (gdf_gt.EGID.isin(egid_list))]
 gdf_gt['ID_GT'] = gdf_gt.index
-gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
+gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
 nbr_labels=gdf_gt.shape[0]
 logger.info(f"Read GT file: {nbr_labels} shapes")
 
@@ -145,7 +145,7 @@ if nbr_labels != nbr_tagged_labels:
 
         duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
         duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
-        duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
+        duplicated_labels.drop(columns=['geom_GT', 'geom_DET', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
         layer_name='duplicated_label_tags'
         duplicated_labels.to_file(filename, layer=layer_name, index=False)
@@ -154,15 +154,15 @@ if nbr_labels != nbr_tagged_labels:
 
 
 # Set the final dataframe with tagged prediction
-tagged_preds_gdf = []
-tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
+tagged_preds_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
 
-tagged_preds_gdf_dict.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET'], axis = 1, inplace=True)
-tagged_preds_gdf_dict.reset_index(drop=True, inplace=True)
+tagged_preds_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET', 'ID_DET', 'area_DET'], axis = 1, inplace=True)
+tagged_preds_gdf=tagged_preds_gdf.round({'IOU': 2})
+tagged_preds_gdf.reset_index(drop=True, inplace=True)
 
 layer_name='tagged_predictions'
 feature_path = os.path.join(OUTPUT_DIR, 'tagged_predictions.gpkg')
-tagged_preds_gdf_dict.to_file(feature_path, layer=layer_name, index=False)
+tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
 written_files[feature_path]=layer_name
 
 
