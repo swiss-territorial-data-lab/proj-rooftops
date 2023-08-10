@@ -44,8 +44,8 @@ produce_vector_layer.py:
 # Adapt the path accordingly
 assess_detection.py:  
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/ 
-  gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  detection: output/SAM/SAM_vectors.gpkg
+  gt_shp: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
+  detection_shp: output/SAM/SAM_vectors.gpkg
   output_dir: output/SAM/
   egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
 

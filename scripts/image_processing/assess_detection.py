@@ -42,8 +42,8 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    GT = cfg['gt']
-    DETECTION = cfg['detection']
+    GT = cfg['gt_shp']
+    DETECTION = cfg['detection_shp']
     OUTPUT_DIR = cfg['output_dir']
     EGID = cfg['egid']
 
