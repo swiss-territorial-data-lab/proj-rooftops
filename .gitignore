@@ -1,5 +1,8 @@
-
+# Folders
+data*
 output*
+input*
+model*
 **/test*
 
 # Byte-compiled files
