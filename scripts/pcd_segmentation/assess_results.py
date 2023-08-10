@@ -117,13 +117,9 @@ logger.info(f" - Compute mean Jaccard index")
 if TP!=0:
     iou_average = tp_gdf['IOU'].mean()
     logger.info(f"   IOU average = {iou_average:.2f}")
+    
 
-
-two_preds_one_label=len(tp_gdf.loc[tp_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist())
-if two_preds_one_label > 0:
-    logger.warning(f'{two_preds_one_label} labels are associated with more than one prediction considered as TP.')
-
-nbr_tagged_labels = TP + FN -two_preds_one_label
+nbr_tagged_labels = TP + FN
 filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
 if os.path.exists(filename):
     os.remove(filename)
