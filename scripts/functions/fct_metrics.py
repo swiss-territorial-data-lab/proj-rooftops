@@ -6,27 +6,34 @@ from loguru import logger
 
     
 
-def intersection_over_union(pol1_xy, pol2_xy):
-    # Define each polygon
-    polygon1_shape = pol1_xy
-    polygon2_shape = pol2_xy
+def intersection_over_union(polygon1_shape, polygon2_shape):
+    """Determine the intersection area over union area (IOU) of two polygons
 
-    # print(polygon1_shape, polygon2_shape)
-    # Calculate intersection and union, and tne IOU
+    Args:
+        polygon1_shape (geometry): first polygon
+        polygon2_shape (geometry): second polygon
+
+    Returns:
+        int: Unrounded ratio between the intersection and union area
+    """
+
+    # Calculate intersection and union, and the IOU
     polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
     polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
     return polygon_intersection / polygon_union
 
 
 def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
-    '''
-    Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
+    """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can only correspond to one label.
-    
-    - tp_gdf_ini: geodataframe of the potiential true positive detection
-    - threshold: threshold to apply on the IoU
-    return: the tp geodataframe and the geodataframe of the fp due to a low IoU
-    '''
+
+    Args:
+        tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
+        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.
+
+    Returns:
+        geodataframes: geodataframes of the true positive and of the flase positives intersecting labels.
+    """
 
     # Filter detection based on IOU value
     # Keep only max IOU value for each detection
@@ -41,14 +48,16 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
 
 
 def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
-    '''
-    Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
+    """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can only correspond to one label.
-    
-    - tp_gdf_ini: geodataframe of the potiential true positive detection
-    - threshold: threshold to apply on the IoU
-    return: the tp geodataframe and the geodataframe of the fp due to a low IoU
-    '''
+
+    Args:
+        tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
+        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.
+
+    Returns:
+        geodataframes: geodataframes of the true positive and of the flase positives intersecting labels.
+    """
     
     # Compare the global IOU of the detection based on all the matching labels
     sum_detections_gdf=tp_gdf_ini.groupby(['ID_DET'])['IOU'].sum().reset_index()
@@ -71,16 +80,21 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
 
 
 def get_fractional_sets(preds_gdf, labels_gdf, method='one-to-one'):
-    '''
-    Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
+    """Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
     One prediction can either correspond to one (one-to-one) or several (one-to-many) labels.
 
-    - preds_gdf: geodataframe of the prediction with the id "ID_DET"
-    - labels_gdf: geodataframe of the ground truth with the id "ID_GT"
-    - iou_threshold: threshold to apply on the IoU to determine TP and FP
-    - method: string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels
-    return: geodataframes of the TP, FP, and FN separately
-    '''
+    Args:
+        preds_gdf (geodataframe): geodataframe of the prediction with the id "ID_DET"
+        labels_gdf (geodataframe): threshold to apply on the IoU to determine TP and FP
+        method (str, optional): string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels. 
+                Defaults to 'one-to-one'.
+
+    Raises:
+        Exception: CRS mismatch
+
+    Returns:
+        geodataframes: geodataframes of the true positives, false postivies and false negatives
+    """
 
     if len(labels_gdf) == 0:
         fp_gdf = preds_gdf.copy()
@@ -89,7 +103,7 @@ def get_fractional_sets(preds_gdf, labels_gdf, method='one-to-one'):
         return tp_gdf, fp_gdf, fn_gdf
     
     try:
-        assert(preds_gdf.crs == labels_gdf.crs), f"CRS Mismatch: predictions' CRS = {preds_gdf.crs}, labels' CRS = {labels_gdf.crs}"
+        assert(preds_gdf.crs == labels_gdf.crs), f"CRS mismatch: predictions' CRS = {preds_gdf.crs}, labels' CRS = {labels_gdf.crs}"
     except Exception as e:
         raise Exception(e)
 
@@ -144,6 +158,16 @@ def get_fractional_sets(preds_gdf, labels_gdf, method='one-to-one'):
 
 
 def get_metrics(tp_gdf, fp_gdf, fn_gdf):
+    """Determine the metrics based on the TP, FP and FN
+
+    Args:
+        tp_gdf (geodataframe): true positive detections
+        fp_gdf (geodataframe): false positive detections
+        fn_gdf (geodataframe): false negative labels
+
+    Returns:
+        float: precision, recall and f1 score
+    """
     
     TP = len(tp_gdf)
     FP = len(fp_gdf)

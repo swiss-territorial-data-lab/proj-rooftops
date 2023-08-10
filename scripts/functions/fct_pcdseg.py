@@ -19,6 +19,18 @@ from functions.test_alphashape import optimizealpha
 
 
 def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
+    """Vectorize clustered points to a concave polygon
+
+    Args:
+        df (geodataframe): coordinates of the points
+        plan_groups (list): name of the groups
+        epsg (int, optional): EPSG number of the CRS. Defaults to 2056.
+        alpha_ini (float, optional): alpha coefficient for the alpha shape algorithm. Defaults to None.
+        visu (bool, optional): Produce visualisation of the results. Defaults to False.
+
+    Returns:
+        geodataframe: polygons produced with the clustered points.
+    """
 
     object_type=df['type'].unique()[0]
     if len(df.type.unique())>1:
@@ -69,6 +81,17 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
 
 def vectorize_convex(df, plan_groups, epsg=2056, visu=False):
+    """Vectorize clustered points to a convex polygon
+
+    Args:
+        df (geodataframe): coordinates of the points
+        plan_groups (list): name of the groups
+        epsg (int, optional): EPSG number of the CRS. Defaults to 2056.
+        visu (bool, optional): Produce visualisation of the results. Defaults to False.
+
+    Returns:
+        geodataframe: polygons produced with the clustered points.
+    """
 
     object_type=df['type'].unique()[0]
     if len(df.type.unique())>1:
