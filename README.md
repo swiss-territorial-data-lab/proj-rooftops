@@ -69,7 +69,7 @@ The entire workflow can be run with a single building (EGID 2034760)
 Following the end-to-end, the workflow can be run by issuing the following list of actions and commands:
 
     $ cd proj-rooftops
-    $ python3 /scripts/image_processing/tiles_generation.py /scripts/image_processing/config.yaml
-    $ python3 /scripts/image_processing/SAM_rooftops.py /scripts/image_processing/config.yaml
-    $ python3 /scripts/image_processing/produce_vector_layer.py /scripts/image_processing/config.yaml
-    $ python3 /scripts/image_processing/assess_detection.py /scripts/image_processing/config.yaml
+    $ python3 scripts/image_processing/tiles_generation.py config/config-imgseg.yaml
+    $ python3 scripts/image_processing/SAM_rooftops.py config/config-imgseg.yaml
+    $ python3 scripts/image_processing/produce_vector_layer.py config/config-imgseg.yaml
+    $ python3 scripts/image_processing/assess_detection.py config/config-imgseg.yaml
