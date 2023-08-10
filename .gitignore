@@ -3,6 +3,7 @@ data*
 output*
 input*
 model*
+processed*
 **/test*
 
 # Byte-compiled files

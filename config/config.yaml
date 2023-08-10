@@ -11,11 +11,11 @@ get_lidar_infos.py:
 
 
 rasterize_intensity.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: False
   parameters:
-    method: idw
+    method: idw                  # Interpolation method. Supported choices: 1: idw (Inverse Distance Weighting), 2: nnb (Nearest Neighbour Interpolation) 
     res: 0.3
     radius: 0.3
     returns: 'first'
