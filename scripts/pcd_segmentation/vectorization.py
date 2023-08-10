@@ -70,7 +70,7 @@ with open(EGIDS, 'r') as src:
     egids=src.read()
 egid_list=egids.split("\n")
 
-all_occupation_gdf=gpd.GeoDataFrame()
+all_occupation_gdf=gpd.GeoDataFrame(columns=['pred_id', 'occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(EPSG))
 for egid in tqdm(egid_list):
     file_name = 'EGID_' + str(egid)
 
@@ -82,7 +82,7 @@ for egid in tqdm(egid_list):
     plane = np.unique(plane_df['group'])
 
     # Plane vectorization
-    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA)
+    plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG)
     # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
     # Load clusters in a dataframe 
@@ -91,7 +91,7 @@ for egid in tqdm(egid_list):
     cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
 
     # Cluster vectorisation
-    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA)
+    cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG)
     # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
     # Filtering: identify and isolate plane that are too small
@@ -146,15 +146,16 @@ for egid in tqdm(egid_list):
     # Build occupation geodataframe
     occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
     occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
-    occupation_gdf['id']=occupation_gdf.index
+    occupation_gdf['pred_id']=occupation_gdf.index
 
-    occupation_gdf.to_file(feature_path, layer=file_name)
+    occupation_gdf.to_file(feature_path, layer=file_name, index=False)
     written_layers.append(file_name)  
 
+    occupation_gdf['EGID']=egid
     all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_df], ignore_index=True)
 
 all_occupation_gdf['pred_id']=all_occupation_gdf.index
-all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs')
+all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)
 written_layers.append('occupation_for_all_EGIDs')
 
 print()
