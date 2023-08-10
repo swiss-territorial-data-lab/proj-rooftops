@@ -22,10 +22,10 @@ import matplotlib.pyplot as plt
 from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
-import functions.fct_com as fct_com
+import functions.fct_misc as fct_misc
 import functions.fct_pcdseg as fct_seg
 
-logger = fct_com.format_logger(logger)
+logger = fct_misc.format_logger(logger)
 
 
 # Start chronometer
@@ -60,7 +60,7 @@ logger.info(f"Objects larger than {AREA_MAX_OBJECT} m2 will be considered as roo
 os.chdir(WORKING_DIR)
 
 # Create an output directory in case it doesn't exist
-_ = fct_com.ensure_dir_exists(OUTPUT_DIR)
+_ = fct_misc.ensure_dir_exists(OUTPUT_DIR)
 feature_path = os.path.join(OUTPUT_DIR, "all_EGID_occupation.gpkg")
 
 written_layers = []

@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 import open3d as o3d
 
 sys.path.insert(1, 'scripts')
-import functions.fct_com as fct_com
+import functions.fct_misc as fct_misc
 
-logger = fct_com.format_logger(logger)
+logger = fct_misc.format_logger(logger)
 
 
 # Start chronometer
@@ -62,7 +62,7 @@ VISU = cfg['visualisation']
 os.chdir(WORKING_DIR)
 
 # Create an output directory in case it doesn't exist
-_ = fct_com.ensure_dir_exists(OUTPUT_DIR)
+_ = fct_misc.ensure_dir_exists(OUTPUT_DIR)
 
 written_files = []
 

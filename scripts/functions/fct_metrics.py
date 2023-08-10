@@ -4,58 +4,9 @@ import pandas as pd
 import geopandas as gpd
 from loguru import logger
 
-
-def format_logger(logger):
-    '''Format the logger from loguru
-    
-    -logger: logger object from loguru
-    return: formatted logger object
-    '''
-
-    logger.remove()
-    logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
-            level="INFO", filter=lambda record: record["level"].no < 25)
-    logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - <green>{level}</green> - {message}",
-            level="SUCCESS", filter=lambda record: record["level"].no < 30)
-    logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - <yellow>{level}</yellow> - {message}",
-            level="WARNING", filter=lambda record: record["level"].no < 40)
-    logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - <red>{level}</red> - <level>{message}</level>",
-            level="ERROR")
-    return logger
-
-
-def test_crs(crs1, crs2 = "EPSG:2056"):
-    '''
-    Take the crs of two dataframes and compare them. If they are not the same, stop the script.
-    '''
-    if isinstance(crs1, gpd.GeoDataFrame):
-        crs1=crs1.crs
-    if isinstance(crs2, gpd.GeoDataFrame):
-        crs2=crs2.crs
-
-    try:
-        assert(crs1 == crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
-    except Exception as e:
-        print(e)
-        sys.exit(1)
-
-
-def ensure_dir_exists(dirpath):
-    '''
-    Test if a directory exists. If not, make it.
-
-    - dirpath: path to the directory
-    return: the path to the verified directory.
-    '''
-
-    if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
-        print(f"The directory {dirpath} was created.")
-
-    return dirpath
     
 
-def IOU(pol1_xy, pol2_xy):
+def intersection_over_union(pol1_xy, pol2_xy):
     # Define each polygon
     polygon1_shape = pol1_xy
     polygon2_shape = pol2_xy
@@ -67,10 +18,65 @@ def IOU(pol1_xy, pol2_xy):
     return polygon_intersection / polygon_union
 
 
-def get_fractional_sets(the_preds_gdf, the_labels_gdf):
+def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
+    '''
+    Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
+    Each detection can only correspond to one label.
+    
+    - tp_gdf_ini: geodataframe of the potiential true positive detection
+    - threshold: threshold to apply on the IoU
+    return: the tp geodataframe and the geodataframe of the fp due to a low IoU
+    '''
 
-    preds_gdf = the_preds_gdf.copy()
-    labels_gdf = the_labels_gdf.copy()
+    # Filter detection based on IOU value
+    # Keep only max IOU value for each detection
+    tp_gdf = tp_gdf_ini.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
+    
+    # Detection with IOU lower than threshold value are considered as FP and removed from TP list   
+    fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold]
+    id_det_fp = fp_gdf_temp['ID_DET'].unique().tolist()
+    tp_gdf = tp_gdf[~tp_gdf['ID_DET'].isin(id_det_fp)]
+
+    return tp_gdf, fp_gdf_temp
+
+
+def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
+    '''
+    Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
+    Each detection can only correspond to one label.
+    
+    - tp_gdf_ini: geodataframe of the potiential true positive detection
+    - threshold: threshold to apply on the IoU
+    return: the tp geodataframe and the geodataframe of the fp due to a low IoU
+    '''
+    
+    sum_detections_gdf=tp_gdf_ini.groupby(['ID_DET'])['IOU'].sum().reset_index()
+    true_detections_gdf=sum_detections_gdf[sum_detections_gdf['IOU']>threshold]
+    true_detections_index=true_detections_gdf['ID_DET'].unique().tolist()
+
+    tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['geom_GT'].intersection(tp_gdf_ini['geom_DET']).area/tp_gdf_ini['geom_GT'].area, 3)
+    tp_gdf_temp=tp_gdf_ini[(tp_gdf_ini['ID_DET'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
+    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
+    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
+    id_det_tp=tp_gdf['ID_DET'].unique().tolist()
+
+    fp_gdf_temp=tp_gdf_ini[~tp_gdf_ini['ID_DET'].isin(id_det_tp)]
+    fp_gdf_temp = fp_gdf_temp.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
+
+    return tp_gdf, fp_gdf_temp
+
+
+def get_fractional_sets(preds_gdf, labels_gdf, method='one-to-one'):
+    '''
+    Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
+    One prediction can either correspond to one (one-to-one) or several (one-to-many) labels.
+
+    - preds_gdf: geodataframe of the prediction with the id "ID_DET"
+    - labels_gdf: geodataframe of the ground truth with the id "ID_GT"
+    - iou_threshold: threshold to apply on the IoU to determine TP and FP
+    - method: string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels
+    return: geodataframes of the TP, FP, and FN separately
+    '''
 
     if len(labels_gdf) == 0:
         fp_gdf = preds_gdf.copy()
@@ -92,22 +98,18 @@ def get_fractional_sets(the_preds_gdf, the_labels_gdf):
     tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
-    geom1 = (tp_gdf_temp['geom_DET'].to_numpy()).tolist()
-    geom2 = (tp_gdf_temp['geom_GT'].to_numpy()).tolist()
+    geom1 = tp_gdf_temp['geom_DET'].to_numpy().tolist()
+    geom2 = tp_gdf_temp['geom_GT'].to_numpy().tolist()
     iou = []
     for (i, ii) in zip(geom1, geom2):
-        iou.append(IOU(i, ii))
+        iou.append(intersection_over_union(i, ii))
     tp_gdf_temp['IOU'] = iou
 
-    # Filter detection based on IOU value
-    # Keep only max IOU value for each detection
-    tp_gdf = tp_gdf_temp.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
-    
-    # Detection with IOU lower than threshold value are considered as FP and removed from TP list   
-    threshold_iou = 0.1
-    fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold_iou]
-    val_fp = fp_gdf_temp['ID_DET'].unique().tolist()
-    tp_gdf = tp_gdf[~tp_gdf['ID_DET'].isin(val_fp)]
+    iou_threshold=0.1
+    if method=='one-to-many':
+        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
+    else:
+        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, iou_threshold)
 
 
     # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes

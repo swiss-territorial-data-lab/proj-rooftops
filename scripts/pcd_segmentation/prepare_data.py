@@ -25,9 +25,9 @@ import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_com as fct_com
+import functions.fct_misc as fct_misc
 
-logger = fct_com.format_logger(logger)
+logger = fct_misc.format_logger(logger)
 
 
 # Start chronometer
@@ -73,7 +73,7 @@ if FILTER_ROOF:
 os.chdir(WORKING_DIR) # WARNING: wbt requires absolute paths as input
 
 # Create an output directory in case it doesn't exist
-output_dir = fct_com.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
+output_dir = fct_misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
 
 written_files = []
 
