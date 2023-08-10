@@ -120,14 +120,15 @@ if TP!=0:
     
 
 nbr_tagged_labels = TP + FN
+diff_in_labels = nbr_labels - nbr_tagged_labels
 filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
 if os.path.exists(filename):
     os.remove(filename)
-if nbr_labels != nbr_tagged_labels:
+if diff_in_labels != 0:
     logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
     logger.info(f'The list of the problematic labels in exported to {filename}.')
 
-    if nbr_labels > nbr_tagged_labels:
+    if diff_in_labels > 0:
         tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
 
         untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
@@ -136,7 +137,7 @@ if nbr_labels != nbr_tagged_labels:
         layer_name='missing_label_tags'
         untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
 
-    elif nbr_labels < nbr_tagged_labels:
+    elif diff_in_labels < 0:
         all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
         duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()

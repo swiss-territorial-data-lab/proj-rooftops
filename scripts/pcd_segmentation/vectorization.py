@@ -150,6 +150,9 @@ for egid in tqdm(egid_list):
                             reviewed_cluster.drop(index=(cluster.Index), inplace=True)
                             dropped_index.append(second_cluster.index)
 
+    # Drop cluster smaller than 1.5 pixels
+    cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area < 0.015]
+
     # Free polygon = Plane polygon(s) - Object polygon(s)
     diff_geom=[]
     i=0
