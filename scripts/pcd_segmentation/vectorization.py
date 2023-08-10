@@ -22,10 +22,10 @@ import matplotlib.pyplot as plt
 from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
 import functions.fct_pcdseg as fct_seg
+from functions.fct_misc import ensure_dir_exists, format_logger
 
-logger = fct_misc.format_logger(logger)
+logger = format_logger(logger)
 
 
 # Start chronometer
@@ -60,7 +60,7 @@ logger.info(f"Objects larger than {AREA_MAX_OBJECT} m2 will be considered as roo
 os.chdir(WORKING_DIR)
 
 # Create an output directory in case it doesn't exist
-_ = fct_misc.ensure_dir_exists(OUTPUT_DIR)
+_ = ensure_dir_exists(OUTPUT_DIR)
 feature_path = os.path.join(OUTPUT_DIR, "all_EGID_occupation.gpkg")
 
 written_layers = []
@@ -70,7 +70,7 @@ with open(EGIDS, 'r') as src:
     egids=src.read()
 egid_list=egids.split("\n")
 
-all_occupation_gdf=gpd.GeoDataFrame(columns=['pred_id', 'occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(EPSG))
+all_occupation_gdf=gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(EPSG))
 for egid in tqdm(egid_list):
     file_name = 'EGID_' + str(egid)
 
@@ -108,7 +108,7 @@ for egid in tqdm(egid_list):
 
     # Filtering: identify and isolate plane that are too big
     large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > AREA_MAX_OBJECT]
-    cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)
+    cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
 
     # If it exists, add cluster previously classified as plane to the object class 
     if not large_objects_gdf.empty:
@@ -118,22 +118,50 @@ for egid in tqdm(egid_list):
         plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
     del large_objects_gdf
 
-    # Create occupation layer    
-    # Control: plot plane polygon, uncomment to see
-    boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
-    boundary.plot(color = 'red')
-    plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
+    # Create occupation layer
+    if False:
+        # Control: plot plane polygon, uncomment to see
+        boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
+        boundary.plot(color = 'red')
+        plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
+
+    # Remove clusters within another cluster
+    if True:
+        reviewed_cluster=cluster_vec_gdf.copy()
+        dropped_index=[]
+        for cluster in cluster_vec_gdf.itertuples():
+
+            if cluster.Index+1 == cluster_vec_gdf.shape[0]:
+                if cluster_vec_gdf.shape != reviewed_cluster.shape:
+                    logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another objects')
+                    cluster_vec_gdf=reviewed_cluster.copy()
+                break
+
+            elif cluster.index in dropped_index:
+                continue
+
+            for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
+                if cluster.geometry.intersects(second_cluster.geometry):
+                        if second_cluster.geometry.within(cluster.geometry):
+                            reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
+                            dropped_index.append(second_cluster.index)
+
+                        elif cluster.geometry.within(second_cluster.geometry):
+                            reviewed_cluster.drop(index=(cluster.Index), inplace=True)
+                            dropped_index.append(second_cluster.index)
 
     # Free polygon = Plane polygon(s) - Object polygon(s)
     diff_geom=[]
     i=0
     for geom in plane_vec_gdf.geometry.to_numpy():
         diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
-        # Control: plot object polygon, uncomment to see          
-        boundary = gpd.GeoSeries(diff_geom)
-        boundary.plot(color = 'blue')
-        plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
-        i+=1
+
+        if False:
+            # Control: plot object polygon, uncomment to see          
+            boundary = gpd.GeoSeries(diff_geom)
+            boundary.plot(color = 'blue')
+            plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
+            i+=1
 
     # Build free area dataframe
     free_df = gpd.GeoDataFrame({'occupation': 0, 'geometry': diff_geom}, index=range(len(plane_vec_gdf)))
@@ -146,13 +174,12 @@ for egid in tqdm(egid_list):
     # Build occupation geodataframe
     occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
     occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
-    occupation_gdf['pred_id']=occupation_gdf.index
 
     occupation_gdf.to_file(feature_path, layer=file_name, index=False)
     written_layers.append(file_name)  
 
     occupation_gdf['EGID']=egid
-    all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_df], ignore_index=True)
+    all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
 all_occupation_gdf['pred_id']=all_occupation_gdf.index
 all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)

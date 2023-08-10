@@ -36,7 +36,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         if not alpha_ini:
             alpha = optimizealpha(points, upper=10, max_iterations=1000)
-            logger.info(f"   - alpha shape value = {alpha}")
+            # logger.info(f"   - alpha shape value = {alpha}")
         else:
             alpha=alpha_ini
         try:
