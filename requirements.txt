@@ -71,6 +71,8 @@ snuggs==1.4.7
     # via rasterio
 tqdm==4.65.0
     # via -r requirements.in
+whitebox==2.3.1
+    # via -r requirements.in
 zipp==3.15.0
     # via importlib-metadata
 

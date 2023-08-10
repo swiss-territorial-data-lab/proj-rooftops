@@ -20,7 +20,7 @@ logger.info('Starting...')
 logger.info(f"Using config.yaml as config file.")
 
 with open('config/config.yaml') as fp:
-        cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
+        cfg = load(fp, Loader = FullLoader)[os.path.basename(__file__)]
 
 WORKING_DIR = cfg['working_dir']
 ROOFS = cfg['roofs']
@@ -58,6 +58,6 @@ for tile in tqdm(tiles, desc='Producing the masks...'):
     filepath = os.path.join(output_dir,
                             tile.split('/')[-1].split('.')[0] + '_mask.tif')
     with rasterio.open(filepath, 'w', **mask_meta) as dst:
-        dst.write(mask,1)
+        dst.write(mask, 1)
 
 logger.success(f'The masks were written in the folder {output_dir}.')

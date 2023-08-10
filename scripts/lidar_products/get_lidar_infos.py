@@ -3,8 +3,9 @@ from loguru import logger
 from glob import glob
 from yaml import load, FullLoader
 
-from whitebox import WhiteboxTools
-wbt = WhiteboxTools()
+import whitebox
+# whitebox.download_wbt(linux_musl=True, reset=True)        # Uncomment if issue with GLIBC library
+wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct
@@ -13,38 +14,34 @@ logger=fct.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
-    cfg = load(fp, Loader=FullLoader)['get_lidar_infos.py']
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-# Define constants ----------------
 
-WORKING_DIR=cfg['working_dir']
-INPUT_DIR=cfg['input_dir']
-
-OVERWRITE= cfg['overwrite'] if 'overwrite' in cfg.keys() else False
-
-OUTPUT_DIR_HTML=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/lidar_info'))
+WORKING_DIR = cfg['working_dir']
+INPUT_DIR = cfg['input_dir']
+OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
+OUTPUT_DIR_HTML = fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/lidar_info'))
 
 logger.info('Getting the list of files...')
-lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
+lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 
-logger.info('Treating files...')
+logger.info('Processing files...')
 for file in lidar_files:
     
     if '\\' in file:
-        filename=file.split('\\')[-1].rstrip('.las')
-        
+        filename = file.split('\\')[-1].rstrip('.las')       
     else:
-        filename=file.split('/')[-1].rstirp('.las')
+        filename = file.split('/')[-1].rstrip('.las')
 
-    output_path_html=os.path.join(OUTPUT_DIR_HTML, filename + '.html')
+    output_path_html = os.path.join(OUTPUT_DIR_HTML, filename + '.html')
 
     if (not os.path.isfile(output_path_html)) | OVERWRITE:
         wbt.lidar_info(
             file, 
             output_path_html, 
-            density=True, 
-            vlr=True, 
-            geokeys=True,
+            density = True, 
+            vlr = True, 
+            geokeys = True,
         )
 
 logger.success(f'The files were saved in the folder "{OUTPUT_DIR_HTML}".')

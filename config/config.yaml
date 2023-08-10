@@ -5,8 +5,8 @@ mask_for_buildings.py:
 
 
 get_lidar_infos.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: False
 
 
