@@ -24,7 +24,7 @@ OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
 PARAMETERS = cfg['parameters']
 METHOD = PARAMETERS['method'].lower()
-RES = PARAMETERS['res']
+RES = PARAMETERS['resolution']
 RADIUS = PARAMETERS['radius']
 RETURNS = PARAMETERS['returns']
 

@@ -16,14 +16,14 @@ rasterize_intensity.py:
   overwrite: False
   parameters:
     method: idw                  # Interpolation method. Supported choices: 1: idw (Inverse Distance Weighting), 2: nnb (Nearest Neighbour Interpolation) 
-    res: 0.3
+    resolution: 0.3
     radius: 0.3
     returns: 'first'
 
 
 rasterize_roughness.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: True
   make_dem: True
   parameters_dem: 
@@ -40,10 +40,10 @@ rasterize_roughness.py:
 
 
 filter_surfaces_by_attributes.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   input_dir_images: processed/lidar/rasterized_lidar
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
+  roofs: input/lidar_intensity/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 
 filter_for_objects.py:
