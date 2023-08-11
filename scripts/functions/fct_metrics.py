@@ -46,12 +46,16 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     return: the tp geodataframe and the geodataframe of the fp due to a low IoU
     '''
     
+    # Compare the global IOU of the detection based on all the matching labels
     sum_detections_gdf=tp_gdf_ini.groupby(['ID_DET'])['IOU'].sum().reset_index()
     true_detections_gdf=sum_detections_gdf[sum_detections_gdf['IOU']>threshold]
     true_detections_index=true_detections_gdf['ID_DET'].unique().tolist()
 
+    # Check that the label is at least 25% under the prediction.
     tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['geom_GT'].intersection(tp_gdf_ini['geom_DET']).area/tp_gdf_ini['geom_GT'].area, 3)
     tp_gdf_temp=tp_gdf_ini[(tp_gdf_ini['ID_DET'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
+
+    # For each label, only keep the pred with the best IOU.
     sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
     tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
     id_det_tp=tp_gdf['ID_DET'].unique().tolist()
@@ -94,8 +98,8 @@ def get_fractional_sets(preds_gdf, labels_gdf, iou_threshold=0.1, method='one-to
     tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
-    geom1 = tp_gdf_temp['geom_DET'].values.tolist()
-    geom2 = tp_gdf_temp['geom_GT'].values.tolist()
+    geom1 = tp_gdf_temp['geom_DET'].to_numpy()
+    geom2 = tp_gdf_temp['geom_GT'].to_numpy()
     iou = []
     for (i, ii) in zip(geom1, geom2):
         iou.append(intersection_over_union(i, ii))
@@ -123,6 +127,11 @@ def get_fractional_sets(preds_gdf, labels_gdf, iou_threshold=0.1, method='one-to
     fn_gdf = pd.concat([fn_no_hit_gdf, fn_too_low_hit_gdf])
    
     fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
+
+    # Tag predictions   
+    tp_gdf['tag'] = 'TP'
+    fp_gdf['tag'] = 'FP'
+    fn_gdf['tag'] = 'FN'
 
     return tp_gdf, fp_gdf, fn_gdf
 

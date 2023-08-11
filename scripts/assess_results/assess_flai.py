@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
@@ -88,11 +88,6 @@ for threshold in tqdm([i/100 for i in range(10 ,100, 5)], desc='Search for the b
 
     tp_gdf_loop, fp_gdf_loop, fn_gdf_loop = metrics.get_fractional_sets(gdf_detec, gdf_gt, iou_threshold=threshold, method=METHOD)
 
-    # Tag predictions   
-    tp_gdf_loop['tag'] = 'TP'
-    fp_gdf_loop['tag'] = 'FP'
-    fn_gdf_loop['tag'] = 'FN'
-
     # Compute metrics
     precision, recall, f1 = metrics.get_metrics(tp_gdf_loop, fp_gdf_loop, fn_gdf_loop)
 
@@ -114,8 +109,6 @@ TP = tp_gdf.shape[0]
 FP = fp_gdf.shape[0]
 FN = fn_gdf.shape[0]
 
-logger.info(f"   TP = {TP}, FP = {FP}, FN = {FN}")
-logger.info(f"   precision = {best_precision:.2f}, recall = {best_recall:.2f}, f1 = {best_f1:.2f}")
 if METHOD=='one-to-many':
     tp_with_duplicates=tp_gdf.copy()
     dissolved_tp_gdf=tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
@@ -129,19 +122,17 @@ if METHOD=='one-to-many':
 
     tp_gdf=dissolved_tp_gdf.copy()
 
-logger.info(f" - Compute mean Jaccard index")
-iou_average = tp_gdf['IOU'].mean()
-logger.info(f"   IOU average = {iou_average:.2f}")
-
-if METHOD=='one-to-many':
     logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
 
+logger.info(f"   TP = {TP}, FP = {FP}, FN = {FN}")
+logger.info(f"   precision = {best_precision:.2f}, recall = {best_recall:.2f}, f1 = {best_f1:.2f}")
+logger.info(f" - Compute mean Jaccard index")
+if TP!=0:
+    iou_average = tp_gdf['IOU'].mean()
+    logger.info(f"   IOU average = {iou_average:.2f}")
 
-two_preds_one_label=len(tp_gdf.loc[tp_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist())
-if two_preds_one_label > 0:
-    logger.warning(f'{two_preds_one_label} labels are associated with more than one prediction considered as TP.')
 
-nbr_tagged_labels = TP + FN -two_preds_one_label
+nbr_tagged_labels = TP + FN
 filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
 if os.path.exists(filename):
     os.remove(filename)
@@ -157,7 +148,6 @@ if nbr_labels != nbr_tagged_labels:
 
         layer_name='missing_label_tags'
         untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
-        written_files[filename]=layer_name
 
     elif nbr_labels < nbr_tagged_labels:
         all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
@@ -168,7 +158,8 @@ if nbr_labels != nbr_tagged_labels:
 
         layer_name='duplicated_label_tags'
         duplicated_labels.to_file(filename, layer=layer_name, index=False)
-        written_files[filename]=layer_name
+        
+    written_files[filename]=layer_name
 
 
 # Set the final dataframe with tagged prediction
@@ -182,6 +173,6 @@ tagged_preds_gdf.to_file(feature_path, driver='GPKG', index=False, layer=TILE_NA
 written_files[feature_path]=TILE_NAME + '_tags'
 
 print()
-logger.info("The following files were written. Let's check them out!")
+logger.success("The following files were written. Let's check them out!")
 for path in written_files.keys():
-    logger.info(f'  file: {path}, layer: {written_files[path]}')
+    logger.success(f'  file: {path}, layer: {written_files[path]}')
