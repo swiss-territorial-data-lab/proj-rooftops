@@ -21,14 +21,14 @@ pcd_segmentation.py:
   output_dir: processed/PCD_segmentation
   egids: EGID_list.txt
   segmentation:
-    plane:
-      number_plane: 3
+    planes:
+      number_planes: 3
       distance_threshold: 0.1
       ransac: 3
-      iteration: 1000
+      iterations: 1000
       eps: 1.0
       min_points: 5
-    cluster:
+    clusters:
       eps: 0.5
       min_points: 5
   visualisation: false
