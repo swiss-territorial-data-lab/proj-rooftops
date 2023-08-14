@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from loguru import logger
 from glob import glob
 from yaml import load, FullLoader

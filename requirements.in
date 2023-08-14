@@ -4,5 +4,6 @@ laspy
 loguru
 rasterio
 rasterstats
+scikit-image
 tqdm
 whitebox
