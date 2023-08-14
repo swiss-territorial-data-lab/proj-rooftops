@@ -75,7 +75,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         plane = np.unique(plane_df['group'])
 
         # Plane vectorization
-        plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG)
+        plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA, VISU)
         # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
@@ -84,7 +84,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
 
         # Cluster vectorisation
-        cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG)
+        cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA, VISU)
         # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
         # Filtering: identify and isolate plane that are too small
@@ -187,7 +187,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         logger.info(layer)
     print()
 
-    return 0
+    return all_occupation_gdf
 
 
 # ------------------------------------------
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
-    answer=main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+    all_occupation_gdf=main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
 
     # Stop chronometer  
     toc = time()

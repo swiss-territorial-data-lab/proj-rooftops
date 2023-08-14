@@ -63,7 +63,12 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     nbr_labels=gdf_gt.shape[0]
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
-    gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+    if isinstance(DETECTIONS, str):
+        gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+    elif isinstance(DETECTIONS, gpd.GeoDataFrame):
+        gdf_detec = DETECTIONS
+    else:
+        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
     gdf_detec = gdf_detec[gdf_detec['occupation'].astype(int) == 1]
     gdf_detec['ID_DET'] = gdf_detec.pred_id
     gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
