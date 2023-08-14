@@ -1,9 +1,11 @@
-# GDAL
+GDAL==3.7.0
 geopandas
 laspy
 loguru
 rasterio
 rasterstats
+rdp
 scikit-image
+scikit-learn
 tqdm
 whitebox

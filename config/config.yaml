@@ -49,12 +49,14 @@ filter_surfaces_by_attributes.py:
 filter_for_objects.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   input_dir_images: processed/lidar/rasterized_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
   parameters:
     procedure: sd  # possible values: sd or ds
     rdp: True
+  debug_mode: False
+
 
 segment_objects.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
