@@ -2,15 +2,18 @@ import geopandas as gpd
 import pandas as pd
 
 
-def intersection_over_union(pol1_xy, pol2_xy):
-    # Define each polygon
-    polygon1_shape = pol1_xy
-    polygon2_shape = pol2_xy
+def intersection_over_union(polygon1_xy, polygon2_xy):
+    '''
+    Compute IoU value for a pair of shape.
 
-    # print(polygon1_shape, polygon2_shape)
+    - polygon1_xy, polygon2_xy: shape geometry
+    return: IoU of the 2 provided geometries
+    '''
+    
     # Calculate intersection and union, and tne IOU
-    polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
-    polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
+    polygon_intersection = polygon1_xy.intersection(polygon2_xy).area
+    polygon_union = polygon1_xy.area + polygon2_xy.area - polygon_intersection
+    
     return round(polygon_intersection / polygon_union, 3)
 
 
@@ -19,7 +22,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
     Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can only correspond to one label.
     
-    - tp_gdf_ini: geodataframe of the potiential true positive detection
+    - tp_gdf_ini: geodataframe of the potential true positive detection
     - threshold: threshold to apply on the IoU
     return: the tp geodataframe and the geodataframe of the fp due to a low IoU
     '''
@@ -47,20 +50,20 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     '''
     
     # Compare the global IOU of the detection based on all the matching labels
-    sum_detections_gdf=tp_gdf_ini.groupby(['ID_DET'])['IOU'].sum().reset_index()
-    true_detections_gdf=sum_detections_gdf[sum_detections_gdf['IOU']>threshold]
-    true_detections_index=true_detections_gdf['ID_DET'].unique().tolist()
+    sum_detections_gdf = tp_gdf_ini.groupby(['ID_DET'])['IOU'].sum().reset_index()
+    true_detections_gdf = sum_detections_gdf[sum_detections_gdf['IOU'] > threshold]
+    true_detections_index = true_detections_gdf['ID_DET'].unique().tolist()
 
     # Check that the label is at least 25% under the prediction.
-    tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['geom_GT'].intersection(tp_gdf_ini['geom_DET']).area/tp_gdf_ini['geom_GT'].area, 3)
-    tp_gdf_temp=tp_gdf_ini[(tp_gdf_ini['ID_DET'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
+    tp_gdf_ini['label_in_pred'] = round(tp_gdf_ini['geom_GT'].intersection(tp_gdf_ini['geom_DET']).area / tp_gdf_ini['geom_GT'].area, 3)
+    tp_gdf_temp = tp_gdf_ini[(tp_gdf_ini['ID_DET'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
 
     # For each label, only keep the pred with the best IOU.
     sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
-    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
-    id_det_tp=tp_gdf['ID_DET'].unique().tolist()
+    tp_gdf = sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
+    id_det_tp = tp_gdf['ID_DET'].unique().tolist()
 
-    fp_gdf_temp=tp_gdf_ini[~tp_gdf_ini['ID_DET'].isin(id_det_tp)]
+    fp_gdf_temp = tp_gdf_ini[~tp_gdf_ini['ID_DET'].isin(id_det_tp)]
     fp_gdf_temp = fp_gdf_temp.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
 
     return tp_gdf, fp_gdf_temp
@@ -98,14 +101,14 @@ def get_fractional_sets(preds_gdf, labels_gdf, iou_threshold=0.1, method='one-to
     tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
-    geom1 = tp_gdf_temp['geom_DET'].to_numpy()
-    geom2 = tp_gdf_temp['geom_GT'].to_numpy()
+    geom_DET = tp_gdf_temp['geom_DET'].to_numpy()
+    geom_GT = tp_gdf_temp['geom_GT'].to_numpy()
     iou = []
-    for (i, ii) in zip(geom1, geom2):
+    for (i, ii) in zip(geom_DET, geom_GT):
         iou.append(intersection_over_union(i, ii))
     tp_gdf_temp['IOU'] = iou
 
-    if method=='one-to-many':
+    if method == 'one-to-many':
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
     else:
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, iou_threshold)
@@ -118,13 +121,13 @@ def get_fractional_sets(preds_gdf, labels_gdf, iou_threshold=0.1, method='one-to
     # FALSE NEGATIVES -> objects that have been missed by the algorithm
     right_join = gpd.sjoin(labels_gdf, preds_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     
-    id_gt_tp=tp_gdf['ID_GT'].unique().tolist()
-    suppressed_tp=tp_gdf_temp[~tp_gdf_temp['ID_GT'].isin(id_gt_tp)]
+    id_gt_tp = tp_gdf['ID_GT'].unique().tolist()
+    suppressed_tp = tp_gdf_temp[~tp_gdf_temp['ID_GT'].isin(id_gt_tp)]
     id_gt_filter = suppressed_tp['ID_GT'].unique().tolist()
     
-    fn_too_low_hit_gdf = right_join[right_join['ID_GT'].isin(id_gt_filter)]
-    fn_no_hit_gdf = right_join[right_join.ID_DET.isna()].copy()
-    fn_gdf = pd.concat([fn_no_hit_gdf, fn_too_low_hit_gdf])
+    fn_low_overlap_gdf = right_join[right_join['ID_GT'].isin(id_gt_filter)]
+    fn_no_overlap_gdf = right_join[right_join.ID_DET.isna()].copy()
+    fn_gdf = pd.concat([fn_no_overlap_gdf, fn_low_overlap_gdf])
    
     fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
 
