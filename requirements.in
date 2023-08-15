@@ -1,4 +1,4 @@
-GDAL
+pygdal==<GDAL_VERSION>.*
 geopandas
 laspy
 loguru
@@ -6,3 +6,8 @@ rasterio
 rasterstats
 tqdm
 whitebox
+scipy
+pyyaml
+rdp
+matplotlib
+scikit-learn
