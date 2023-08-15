@@ -20,7 +20,11 @@ def plot_optimization_results(study, output_path='.'):
 
     written_files=[]
 
-    fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
+    try:
+        fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
+    except RuntimeError as e:
+        if str(e) == 'RuntimeError: Encountered zero total variance in all trees.':
+            logger.warning('No hyperparameter set was better than another.')
     # optuna.visualization.plot_param_importances(study).show(renderer="browser")
     feature_path = os.path.join(output_path, 'importance.png')
     plt.tight_layout()
@@ -29,7 +33,7 @@ def plot_optimization_results(study, output_path='.'):
 
     fig_contour = optuna.visualization.matplotlib.plot_contour(study)
     feature_path = os.path.join(output_path, 'contour.png')
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig(feature_path)
     written_files.append(feature_path)
 
@@ -64,17 +68,17 @@ def save_best_hyperparameters(study, output_dir='.'):
         str: feature path
     """
 
-    best_trial = study.best_trial
+    best_trial = study.best_trial.number
     best_params = study.best_params
     best_val = study.best_value
 
-    best_hyperparam_dict={'best_trail': best_trial, 'best_param': best_params, f'best_value{"s" if len(best_val)>1 else ""}': best_val}
+    best_hyperparam_dict={'best_trail': best_trial, 'best_value': best_val}
 
     for key in best_params.keys():
         best_hyperparam_dict[key]=best_params[key]
 
     best_hyperparam_df=pd.DataFrame(best_hyperparam_dict, index=[0])
-    feature_path=os.path.join(output_dir, 'best_hyperparams.txt')
+    feature_path=os.path.join(output_dir, 'best_hyperparams.csv')
     best_hyperparam_df.to_csv(feature_path, index=False, header=True)
     
     return feature_path

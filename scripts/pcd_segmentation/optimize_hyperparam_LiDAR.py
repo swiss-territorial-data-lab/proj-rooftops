@@ -29,13 +29,13 @@ def objective(trial):
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
     NUMBER_PLANES = trial.suggest_int('number_planes', 1, 10, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.3, step=0.1)
+    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.35, step=0.1)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
     ITERATIONS = trial.suggest_int('iterations', 1000, 10000, step=1000)
     EPS_PLANES = trial.suggest_float('eps_planes', 0.5, 10, step=0.5)
     MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 100, 1000, step=100)
     EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 10, step=0.5)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 3, 20, step=2)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 3, 21, step=2)
     # AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
     # AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0, 4, step=0.1)
@@ -57,8 +57,6 @@ def objective(trial):
     #     'alpha_shape': ALPHA_SHAPE,
     # }
 
-    print(dict_parameters_pcd_seg)
-    # print(dict_parameters_vect)
 
     pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                   EGIDS,
@@ -120,8 +118,8 @@ written_files = []
 
 logger.info('Optimization of the hyperparameters for Open3d')
 
-study=optuna.create_study(directions=['maximize', 'minimize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=1000)
+study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
+study.optimize(objective, n_trials=10)
 
 logger.info('Plot results')
 written_files.append(fct_opti.plot_optimization_results(study, output_plots))
@@ -130,12 +128,12 @@ logger.info('Save the best hyperparameters')
 written_files.append(fct_opti.save_best_hyperparameters(study))
 
 print()
-logger.info("The following files were written. Let's check them out!")
+logger.success("The following files were written. Let's check them out!")
 for written_file in written_files:
     logger.info(written_file)
 
 # Stop chronometer  
 toc = time.time()
-logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
 sys.stderr.flush()

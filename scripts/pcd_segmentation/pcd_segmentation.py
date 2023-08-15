@@ -64,11 +64,20 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         egids=src.read()
     egid_list=egids.split("\n")
 
+    dict_parameters_pcd_seg={
+        'number_planes':number_planes, 'distance_threshold': distance_threshold, 'ransac': ransac, 'iterations': iterations,
+        'eps_planes': eps_planes, 'min_points_planes': min_points_planes,
+        'eps_clusters': eps_clusters, 'min_points_clusters': min_points_clusters,
+    }
+
+    logger.info('Working with the following parameters:')
+    logger.info(dict_parameters_pcd_seg)
+
     for egid in tqdm(egid_list):
 
         file_name = 'EGID_' + str(egid)
         # Read pcd file and get points array
-        csv_input_path = os.path.join(INPUT_DIR, file_name, file_name + ".csv")
+        csv_input_path = os.path.join(INPUT_DIR, file_name + ".csv")
         pcd_df = pd.read_csv(csv_input_path)
         pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1) 
         array_pts = pcd_df.to_numpy()
@@ -121,23 +130,29 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             plane_df = pd.DataFrame({'X': plane[:, 0],'Y': plane[:, 1],'Z': plane[:, 2], 'group': i, 'type': 'plane'})
             planes_df = pd.concat([planes_df, plane_df], ignore_index = True)
 
-        # Cluster remaining points (not belonging to a plane) of the pcd after plane segmentation 
+            if len(remaining_pts.points)<=ransac:
+                break
+
+        # Cluster remaining points (not belonging to a plane) of the pcd after plane segmentation
         labels = np.array(remaining_pts.cluster_dbscan(eps = eps_clusters, min_points = min_points_clusters))
-        max_label = labels.max()
+        if labels.size == 0:
+            clusters_df = pd.DataFrame({'X': [], 'Y': [], 'Z': [], 'group': [], 'type': []})
+        else: 
+            max_label = labels.max()
 
-        colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))
-        colors[labels < 0] = 0
-        remaining_pts.colors = o3d.utility.Vector3dVector(colors[:, :3])
+            colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))
+            colors[labels < 0] = 0
+            remaining_pts.colors = o3d.utility.Vector3dVector(colors[:, :3])
 
-        # # Allow to get the coloured clustered pcd       !!! Not essential but need to be merged in one single file with planes !!! 
-        # feature_path = os.path.join(OUTPUT_DIR, file_name + '_remaining_pts.ply')
-        # o3d.io.write_point_cloud(feature_path, remaining_pts)
-        # written_files.append(feature_path)  
-        # logger.info(f"...done. A file was written: {feature_path}")
+            # # Allow to get the coloured clustered pcd       !!! Not essential but need to be merged in one single file with planes !!! 
+            # feature_path = os.path.join(OUTPUT_DIR, file_name + '_remaining_pts.ply')
+            # o3d.io.write_point_cloud(feature_path, remaining_pts)
+            # written_files.append(feature_path)  
+            # logger.info(f"...done. A file was written: {feature_path}")
 
-        # Add segmented clusters to a dataframe
-        clusters = np.asarray(remaining_pts.points)
-        clusters_df = pd.DataFrame({'X': clusters[:, 0], 'Y': clusters[:, 1], 'Z': clusters[:, 2], 'group': labels, 'type': 'cluster'})
+            # Add segmented clusters to a dataframe
+            clusters = np.asarray(remaining_pts.points)
+            clusters_df = pd.DataFrame({'X': clusters[:, 0], 'Y': clusters[:, 1], 'Z': clusters[:, 2], 'group': labels, 'type': 'cluster'})
 
         # Merge planes and clusters into a single dataframe 
         pcd_seg_df = pd.DataFrame(pd.concat([planes_df, clusters_df], ignore_index = True))
@@ -153,23 +168,23 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             pcd.paint_uniform_color([0.6, 0.6, 0.6])
             o3d.visualization.draw_geometries([segments[i] for i in range(number_planes)] + [remaining_pts])
 
-        # Save the parameter values used for pcd segmentation
-        parameters_df = pd.DataFrame({'number_plane': [number_planes], 
-                                    'distance_threshold': [distance_threshold],
-                                    'ransac': [ransac], 
-                                    'iteration': [iterations], 
-                                    'eps_plane': [eps_planes],
-                                    'min_points_plane': [min_points_planes],                                
-                                    'eps_cluster': [eps_clusters],
-                                    'min_points_clusters': [min_points_clusters]   
-                                    })
-        feature_path = os.path.join(OUTPUT_DIR, file_name + '_parameters.csv')
-        parameters_df.to_csv(feature_path)
-        written_files.append(feature_path)  
-        logger.info(f"...done. A file was written: {feature_path}")
+    # Save the parameter values used for pcd segmentation
+    parameters_df = pd.DataFrame({'number_plane': [number_planes], 
+                                'distance_threshold': [distance_threshold],
+                                'ransac': [ransac], 
+                                'iteration': [iterations], 
+                                'eps_plane': [eps_planes],
+                                'min_points_plane': [min_points_planes],                                
+                                'eps_cluster': [eps_clusters],
+                                'min_points_clusters': [min_points_clusters]   
+                                })
+    # feature_path = os.path.join(OUTPUT_DIR, file_name + '_parameters.csv')
+    # parameters_df.to_csv(feature_path)
+    # written_files.append(feature_path)  
+    # logger.info(f"...done. A file was written: {feature_path}")
 
     print()
-    logger.info("The following files were written. Let's check them out!")
+    logger.success("The following files were written. Let's check them out!")
     for written_file in written_files:
         logger.info(written_file)
     print()
@@ -219,6 +234,6 @@ if __name__ == "__main__":
     
     # Stop chronometer  
     toc = time()
-    logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+    logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
     sys.stderr.flush()

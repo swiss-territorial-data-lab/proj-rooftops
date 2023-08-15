@@ -67,7 +67,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
     for egid in tqdm(egid_list):
         file_name = 'EGID_' + str(egid)
 
-        input_dir = os.path.join(INPUT_DIR, file_name, file_name + "_segmented.csv")
+        input_dir = os.path.join(INPUT_DIR, file_name + "_segmented.csv")
         pcd_df = pd.read_csv(input_dir)
 
         # Create a plane dataframe
@@ -171,8 +171,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
         occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
 
-        occupation_gdf.to_file(feature_path, layer=file_name, index=False)
-        written_layers.append(file_name)  
+        # occupation_gdf.to_file(feature_path, layer=file_name, index=False)
+        # written_layers.append(file_name)  
 
         occupation_gdf['EGID']=egid
         all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
@@ -182,7 +182,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
     written_layers.append('occupation_for_all_EGIDs')
 
     print()
-    logger.info(f"The following layers were written in the file '{feature_path}'. Let's check them out!")
+    logger.success(f"The following layers were written in the file '{feature_path}'. Let's check them out!")
     for layer in written_layers:
         logger.info(layer)
     print()
@@ -223,6 +223,6 @@ if __name__ == "__main__":
 
     # Stop chronometer  
     toc = time()
-    logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+    logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
     sys.stderr.flush()

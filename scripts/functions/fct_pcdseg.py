@@ -55,6 +55,11 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
             alpha_shape = alphashape.alphashape(points, alpha = alpha)
         except GEOSException:
             alpha_shape = alphashape.alphashape(points, alpha = 1)
+        
+        if alpha_shape.is_empty:
+            logger.info('The created polygon is empty. Performing alpha optimization.')
+            alpha = optimizealpha(points, upper=10, max_iterations=1000)
+            alpha_shape = alphashape.alphashape(points, alpha = alpha)
 
         # The bounding points produced can be vizualize for control
         if visu:
@@ -68,6 +73,9 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
             poly = Polygon(alpha_shape)
         elif alpha_shape.geom_type == 'MultiPolygon':
             poly = MultiPolygon(alpha_shape)
+        else:
+            logger.critical('The created polygon is not a polygon, nor a multi-polygon.')
+            sys.exit(1)
 
         # Build the final dataframe
         area = poly.area
@@ -75,7 +83,10 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
     
-    polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
+    if polygon_df.empty:
+        polygon_gdf=gpd.GeoDataFrame()
+    else:
+        polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
     return polygon_gdf
 
