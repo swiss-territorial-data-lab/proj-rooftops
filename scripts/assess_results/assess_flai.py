@@ -37,6 +37,7 @@ METHOD = cfg['method']
 
 GT = cfg['gt']
 DETECTION = cfg['detection']
+EPSG = cfg['epsg']
 
 TILE_NAME = os.path.basename(DETECTION).split('.')[0]
 TILES = cfg['tiles']
@@ -54,11 +55,15 @@ logger.info('Read and format input data')
 gdf_detec = gpd.read_file(DETECTION)
 gdf_detec['ID_DET'] = gdf_detec['FID']
 gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
+gdf_detec = gdf_detec.to_crs(EPSG)
 logger.info(f"Read detection file: {gdf_detec.shape[0]} shapes")
 
 gdf_gt = gpd.read_file(GT)
 gdf_gt['ID_GT'] = gdf_gt['fid']
 gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
+gdf_gt = gdf_gt.to_crs(EPSG)
+
+misc.test_crs(gdf_detec.crs, gdf_gt.crs)
 
 if gdf_gt['ID_GT'].isnull().values.any():
     logger.error('Some labels have a null identifier.')
@@ -101,7 +106,7 @@ for threshold in tqdm([i / 100 for i in range(10, 100, 5)], desc='Search for the
         best_recall = recall
         best_f1 = f1
 
-        best_threshold=threshold
+        best_threshold = threshold
 
 logger.info(f'The best threshold for the IoU is {best_threshold} for the F1 score.')
 
@@ -169,7 +174,7 @@ if nbr_labels != nbr_tagged_labels:
 logger.info(f"Set the final dataframe")
 
 tagged_preds_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-tagged_preds_gdf = tagged_preds_gdf.drop(['index_right', 'geom_GT', 'FID', 'fid', 'OBSTACLE', 'geom_DET'], axis = 1)
+tagged_preds_gdf = tagged_preds_gdf.drop(['index_right', 'geom_GT', 'FID', 'fid', 'geom_DET'], axis = 1)
 
 feature_path = os.path.join(OUTPUT_DIR, f'tagged_predictions.gpkg')
 tagged_preds_gdf.to_file(feature_path, driver='GPKG', index=False, layer=TILE_NAME + '_tags')

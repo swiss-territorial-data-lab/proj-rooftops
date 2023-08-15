@@ -151,6 +151,6 @@ def get_metrics(tp_gdf, fp_gdf, fn_gdf):
 
     precision = TP / (TP + FP)
     recall    = TP / (TP + FN)
-    f1 = 2*precision*recall/(precision+recall)
+    f1 = 2*precision*recall / (precision+recall)
     
     return precision, recall, f1
