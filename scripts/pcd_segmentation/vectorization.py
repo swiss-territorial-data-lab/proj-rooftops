@@ -29,7 +29,7 @@ logger = format_logger(logger)
 
 # Define functions ----------------------
 
-def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE = 5, AREA_MAX_OBJECT = 25, ALPHA = None, VISU = False):
+def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 5, max_cluster_area = 25, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
     Args:
@@ -38,17 +38,17 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         OUTPUT_DIR (path): output directory
         EGIDS (list): EGIDs of interest
         EPSG (int, optional): reference number of the CRS. Defaults to 2056.
-        AREA_MIN_PLANE (float, optional): minimum area for a plane. Defaults to 5.
-        AREA_MAX_OBJECT (float, optional): maximum area for an object. Defaults to 25.
-        ALPHA (float, optional): alpha value for the shape algorithm, None means that alpha is optimized. Defaults to None.
-        VISU (bool, optional): make the vizualisation. Defaults to False.
+        min_plane_area (float, optional): minimum area for a plane. Defaults to 5.
+        max_cluster_area (float, optional): maximum area for an object. Defaults to 25.
+        alpha_shape (float, optional): alpha value for the shape algorithm, None means that alpha is optimized. Defaults to None.
+        visu (bool, optional): make the vizualisation. Defaults to False.
 
     Returns:
         _type_: _description_
     """
 
-    logger.info(f"Planes smaller than {AREA_MIN_PLANE} m2 will be considered as object and not as roof sections.") 
-    logger.info(f"Objects larger than {AREA_MAX_OBJECT} m2 will be considered as roof sections and not as objects.") 
+    logger.info(f"Planes smaller than {min_plane_area} m2 will be considered as object and not as roof sections.") 
+    logger.info(f"Objects larger than {max_cluster_area} m2 will be considered as roof sections and not as objects.") 
 
     os.chdir(WORKING_DIR)
 
@@ -75,7 +75,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         plane = np.unique(plane_df['group'])
 
         # Plane vectorization
-        plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, ALPHA, VISU)
+        plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
         # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
@@ -84,11 +84,11 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
 
         # Cluster vectorisation
-        cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, ALPHA, VISU)
+        cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
         # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
         # Filtering: identify and isolate plane that are too small
-        small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= AREA_MIN_PLANE]
+        small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= min_plane_area]
         plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
 
         # If it exists, add cluster previously classified as plane to the object class 
@@ -100,7 +100,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
         del small_plane_gdf
 
         # Filtering: identify and isolate plane that are too big
-        large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > AREA_MAX_OBJECT]
+        large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
         cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
 
         # If it exists, add cluster previously classified as plane to the object class 
@@ -126,22 +126,22 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, AREA_MIN_PLANE 
 
                 if cluster.Index+1 == cluster_vec_gdf.shape[0]:
                     if cluster_vec_gdf.shape != reviewed_cluster.shape:
-                        logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another objects')
+                        logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another object.')
                         cluster_vec_gdf=reviewed_cluster.copy()
                     break
 
-                elif cluster.index in dropped_index:
+                elif cluster.Index in dropped_index:
                     continue
 
                 for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
-                    if cluster.geometry.intersects(second_cluster.geometry):
+                    if cluster.geometry.intersects(second_cluster.geometry) & (second_cluster.Index not in dropped_index):
                             if second_cluster.geometry.within(cluster.geometry):
                                 reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
-                                dropped_index.append(second_cluster.index)
+                                dropped_index.append(second_cluster.Index)
 
                             elif cluster.geometry.within(second_cluster.geometry):
                                 reviewed_cluster.drop(index=(cluster.Index), inplace=True)
-                                dropped_index.append(second_cluster.index)
+                                dropped_index.append(second_cluster.Index)
 
         # Drop cluster smaller than 1.5 pixels
         cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.015]

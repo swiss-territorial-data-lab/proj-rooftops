@@ -30,7 +30,7 @@ logger = fct_misc.format_logger(logger)
 
 def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
           EGIDS, 
-          NB_PLANES, DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER):
+          number_planes, distance_threshold, ransac, iterations, eps_planes, min_points_planes, eps_clusters, min_points_clusters, visu=False):
     """Perform the segmentation of the point cloud in planes and clusters in order to find the roof planes.
 
     Args:
@@ -38,14 +38,15 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output direcotry
         EGIDS (list): EGIDs of interest
-        NB_PLANES (int): approximate number of planes to find
-        DISTANCE_THRESHOLD (float): distance to consider for the noise in the ransac algorithm
-        RANSAC (int): number of points to consider for the ransac algorithm
-        ITER (int): number of iteration for the ransac algorithm
-        EPS_PLANE (float): distance to neighbours in a plane
-        MIN_POINTS_PLANE (int): minimum number of points in a plane
-        EPS_CLUSTER (float): distance to neighbours in a cluster
-        MIN_POINTS_CLUSTER (int): minimum number of points in a cluster
+        number_planes (int): approximate number of planes to find
+        distance_threshold (float): distance to consider for the noise in the ransac algorithm
+        ransac (int): number of points to consider for the ransac algorithm
+        iterations (int): number of iteration for the ransac algorithm
+        eps_planes (float): distance to neighbours in a plane
+        min_points_planes (int): minimum number of points in a plane
+        eps_clusters (float): distance to neighbours in a cluster
+        min_points_clusters (int): minimum number of points in a cluster
+        visu (boolean): visualize the results. Default to false
 
     Returns:
         _type_: _description_
@@ -75,7 +76,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         # Conversion of numpy array to Open3D format + visualisation
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(array_pts)
-        if VISU:
+        if visu:
             o3d.visualization.draw_geometries([pcd])
 
         # Point cloud plane segmentation  
@@ -88,13 +89,13 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         remaining_pts = pcd
         planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
 
-        for i in range(NB_PLANES):
+        for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
             segment_models[i], inliers = remaining_pts.segment_plane(
-                distance_threshold = DISTANCE_THRESHOLD, ransac_n = RANSAC, num_iterations = ITER
+                distance_threshold = distance_threshold, ransac_n = ransac, num_iterations = iterations
             )
             segments[i] = remaining_pts.select_by_index(inliers)
-            labels = np.array(segments[i].cluster_dbscan(eps = EPS_PLANE, min_points = MIN_POINTS_PLANE, print_progress = True))
+            labels = np.array(segments[i].cluster_dbscan(eps = eps_planes, min_points = min_points_planes, print_progress = True))
             candidates = [len(np.where(labels == j)[0]) for j in np.unique(labels)]
             best_candidate = int(np.unique(labels)[np.where(candidates == np.max(candidates))[0]])
             logger.info(f"   - The best candidate is: {best_candidate}")
@@ -107,7 +108,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             colors = plt.get_cmap("tab20")(i)
             segments[i].paint_uniform_color(list(colors[:3]))
             logger.info(f"   - plane {i} {segments[i]}")
-            logger.info(f"   - pass {i} / {NB_PLANES} done.")
+            logger.info(f"   - pass {i} / {number_planes} done.")
 
             # # Allow to get the coloured planes        !!! Not essential but need to be merged in one single file with clustered pcd !!!
             # feature_path = os.path.join(OUTPUT_DIR, file_name + '_plane'+ str(i) + '.ply')
@@ -121,7 +122,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             planes_df = pd.concat([planes_df, plane_df], ignore_index = True)
 
         # Cluster remaining points (not belonging to a plane) of the pcd after plane segmentation 
-        labels = np.array(remaining_pts.cluster_dbscan(eps = EPS_CLUSTER, min_points = MIN_POINTS_CLUSTER))
+        labels = np.array(remaining_pts.cluster_dbscan(eps = eps_clusters, min_points = min_points_clusters))
         max_label = labels.max()
 
         colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))
@@ -147,20 +148,20 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         logger.info(f"...done. A file was written: {feature_path}")
 
         # Segmented pcd vizualisation
-        if VISU:
+        if visu:
             pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius = 0.5, max_nn = 16), fast_normal_computation = True)
             pcd.paint_uniform_color([0.6, 0.6, 0.6])
-            o3d.visualization.draw_geometries([segments[i] for i in range(NB_PLANES)] + [remaining_pts])
+            o3d.visualization.draw_geometries([segments[i] for i in range(number_planes)] + [remaining_pts])
 
         # Save the parameter values used for pcd segmentation
-        parameters_df = pd.DataFrame({'number_plane': [NB_PLANES], 
-                                    'distance_threshold': [DISTANCE_THRESHOLD],
-                                    'ransac': [RANSAC], 
-                                    'iteration': [ITER], 
-                                    'eps_plane': [EPS_PLANE],
-                                    'min_points_plane': [MIN_POINTS_PLANE],                                
-                                    'eps_cluster': [EPS_CLUSTER],
-                                    'min_points_cluster': [MIN_POINTS_CLUSTER]   
+        parameters_df = pd.DataFrame({'number_plane': [number_planes], 
+                                    'distance_threshold': [distance_threshold],
+                                    'ransac': [ransac], 
+                                    'iteration': [iterations], 
+                                    'eps_plane': [eps_planes],
+                                    'min_points_plane': [min_points_planes],                                
+                                    'eps_cluster': [eps_clusters],
+                                    'min_points_clusters': [min_points_clusters]   
                                     })
         feature_path = os.path.join(OUTPUT_DIR, file_name + '_parameters.csv')
         parameters_df.to_csv(feature_path)

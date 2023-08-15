@@ -54,3 +54,30 @@ assess_results.py:
   gt: ground_truth/EGID_occupation.gpkg
   egids: EGID_list.txt
   method: one-to-one
+
+
+# 2 & 3 & 4 - Optimization of the hyperparameters
+optimize_hyperparam_LiDAR.py:
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
+  egids: ../../EGID_list.txt
+  gt: ../../ground_truth/EGID_occupation.gpkg
+  detections: all_EGID_occupation.gpkg
+  epsg: 2056
+  parameters:
+    segmentation:
+      planes:
+        number_planes: 3
+        distance_threshold: 0.1
+        ransac: 3
+        iterations: 1000
+        eps: 1.0
+        min_points: 5
+      clusters:
+        eps: 0.5
+        min_points: 5
+    area_threshold: 
+      min: 5        # m2. Below this value the vectorized polygon in will be classified as object and not plane
+      max: 25       # m2. Above this value the vectorized object in will be classified as plane and not object
+    alpha_shape: 2          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
+  method: one-to-one
+  visualisation: None
