@@ -21,9 +21,9 @@ from sklearn.neighbors import KernelDensity
 from sklearn.model_selection import GridSearchCV
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger=fct.format_logger(logger)
+logger=misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -44,7 +44,7 @@ PROCEDURE = cfg['parameters']['procedure']
 RDP = cfg['parameters']['rdp']
 
 os.chdir(WORKING_DIR)
-OUTPUT_DIR = fct.ensure_dir_exists('processed/roofs')
+OUTPUT_DIR = misc.ensure_dir_exists('processed/roofs')
 
 logger.info('Reading files...')
 
@@ -66,7 +66,7 @@ tiles_per_roof = gpd.sjoin(free_roofs, tiles, how='left')
 tiles_per_roof.reset_index(inplace=True)
 tiles_per_roof.rename(columns={'fme_basena': 'tile_id'}, inplace=True)
 
-tiles_per_roof['tilepath'] = [fct.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
+tiles_per_roof['tilepath'] = [misc.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
 tiles_per_roof = tiles_per_roof[~tiles_per_roof['tilepath'].isna()]
 
 objects = gpd.GeoDataFrame()

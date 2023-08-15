@@ -14,9 +14,9 @@ from skimage.graph import rag_mean_color, cut_normalized
 from skimage.segmentation import felzenszwalb, quickshift, slic, watershed
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger=fct.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -38,7 +38,7 @@ LAYER = cfg['roofs_layer']
 METHOD = cfg['method']
 
 os.chdir(WORKING_DIR)
-OUTPUT_PATH = fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/roofs/merged_colors'))
+OUTPUT_PATH = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/roofs/merged_colors'))
 logger.info('Reading files...')
 
 roofs = gpd.read_file(ROOF_OCCUPATION, layer=LAYER)
@@ -60,7 +60,7 @@ tiles_per_roof = gpd.sjoin(free_roofs, tiles, how='inner')
 tiles_per_roof.reset_index(inplace=True, drop=True)
 tiles_per_roof.rename(columns={'fme_basena': 'tile_id'}, inplace=True)
 
-tiles_per_roof['tilepath'] = [fct.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
+tiles_per_roof['tilepath'] = [misc.get_tilepath_from_id(tile_id, im_list) for tile_id in tiles_per_roof['tile_id'].values]
 tiles_per_roof = tiles_per_roof[~tiles_per_roof['tilepath'].isna()]
 
 for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenting roof plans...'):
@@ -88,7 +88,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist(), desc='Segmenti
         normalized_intensity = np.nan_to_num(nan_normalized_intensity, copy=True, nan=999)
 
         if SAVE_NORMALIZED_INTESITY:
-            feature_path = fct.ensure_dir_exists('processed/roofs/normalized_masked_intensity_images')
+            feature_path = misc.ensure_dir_exists('processed/roofs/normalized_masked_intensity_images')
             im_profile.update(transform=mask_transform, crs='EPSG:2056', width=normalized_intensity.shape[1], height=normalized_intensity.shape[0], nodata=999)
             with rasterio.open(os.path.join(feature_path, str(roof_and_tile.OBJECTID) + '_normalized_intensity.tif'), 'w', **im_profile) as dst:
                 dst.write(normalized_intensity, 1)

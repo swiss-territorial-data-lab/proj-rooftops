@@ -9,9 +9,9 @@ import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger=fct.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -39,8 +39,8 @@ if MAKE_RGH:
     MAX_SCALE = PARAMETERS_RGH['max_scale']
     STEP = PARAMETERS_RGH['step']
 
-OUTPUT_DIR_DEM = fct.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/DEM'))
-OUTPUT_DIR_RGH = fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/roughness'))
+OUTPUT_DIR_DEM = misc.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/DEM'))
+OUTPUT_DIR_RGH = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/roughness'))
 
 logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))

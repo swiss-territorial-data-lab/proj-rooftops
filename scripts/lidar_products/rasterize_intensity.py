@@ -9,9 +9,9 @@ import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger = fct.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -29,7 +29,7 @@ RES = PARAMETERS['resolution']
 RADIUS = PARAMETERS['radius']
 RETURNS = PARAMETERS['returns']
 
-OUTPUT_DIR_TIF = fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
+OUTPUT_DIR_TIF = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
 
 logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))

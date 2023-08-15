@@ -14,9 +14,9 @@ from shapely.geometry import shape
 from rasterstats import zonal_stats
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger = fct.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -62,7 +62,7 @@ STAT_LIMITS = {'MOE_i': LIM_MOE, 'std_i': LIM_STD, 'median_r': LIM_ROUGHNESS}
 # Main ---------------
 
 os.chdir(WORKING_DIR)
-OUTPUT_DIR = fct.ensure_dir_exists('processed/roofs')
+OUTPUT_DIR = misc.ensure_dir_exists('processed/roofs')
 
 logger.info('Reading the files and getting the tilepaths...')
 im_list_intensity = glob(os.path.join(INPUT_DIR_IMAGES, 'intensity', '*.tif'))
@@ -86,14 +86,14 @@ if DEBUG:
 
 logger.info('Clipping labels...')
 lidar_tiles.rename(columns={'fme_basena': 'id'}, inplace=True)
-clipped_roofs = fct.clip_labels(large_roofs, lidar_tiles)
+clipped_roofs = misc.clip_labels(large_roofs, lidar_tiles)
 clipped_roofs['tilepath_intensity'] = [
-    fct.get_tilepath_from_id(tile_id, im_list_intensity) 
+    misc.get_tilepath_from_id(tile_id, im_list_intensity) 
     if any(tile_id in tilepath for tilepath in im_list_intensity) else None 
     for tile_id in clipped_roofs['tile_id'].to_numpy().tolist()
 ]
 clipped_roofs['tilepath_roughness'] = [
-    fct.get_tilepath_from_id(tile_id, im_list_roughness) 
+    misc.get_tilepath_from_id(tile_id, im_list_roughness) 
     if any(tile_id in tilepath for tilepath in im_list_roughness) else None 
     for tile_id in clipped_roofs['tile_id'].to_numpy().tolist()
 ]
@@ -112,7 +112,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting nodata area on tiles
 
     if any(tile_id in tilepath for tilepath in im_list_intensity):
 
-        tilepath = fct.get_tilepath_from_id(tile_id, im_list_intensity)
+        tilepath = misc.get_tilepath_from_id(tile_id, im_list_intensity)
 
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             intensity = src.read(1)
@@ -170,7 +170,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
         roofs_on_tile = clipped_roofs_cleaned[clipped_roofs_cleaned['tile_id']==tile_id].reset_index(drop=True)
 
         # Intensity statistics
-        tilepath = fct.get_tilepath_from_id(tile_id, im_list_intensity)
+        tilepath = misc.get_tilepath_from_id(tile_id, im_list_intensity)
         
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             intensity = src.read(1)
@@ -185,7 +185,7 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
                                             'std': 'std_i', 'count': 'count_i'}, inplace=True)
     
         # Roughness statistics
-        tilepath = fct.get_tilepath_from_id(tile_id, im_list_roughness)
+        tilepath = misc.get_tilepath_from_id(tile_id, im_list_roughness)
         
         with rasterio.open(tilepath, crs='EPSG:2056') as src:
             roughness = src.read(1)

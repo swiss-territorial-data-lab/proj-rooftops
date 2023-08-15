@@ -1,7 +1,7 @@
 mask_for_buildings.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   roofs: input/lidar_intensity/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BATIMENT_HORSOL_TOIT_SP_merge.gpkg
-  image_folder: /mnt/data-02/cherny/git/proj-rooftops/input/TrueOrtho/
+  image_folder: input/TrueOrtho/
 
 
 get_lidar_infos.py:
@@ -24,7 +24,7 @@ rasterize_intensity.py:
 rasterize_roughness.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   input_dir: input/lidar_intensity/LiDAR/2019/
-  overwrite: True
+  overwrite: False
   make_dem: True
   parameters_dem: 
     resolution: 0.3
@@ -40,14 +40,14 @@ rasterize_roughness.py:
 
 
 filter_surfaces_by_attributes.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   input_dir_images: processed/lidar/rasterized_lidar
   lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: input/lidar_intensity/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 
 filter_for_objects.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   input_dir_images: processed/lidar/rasterized_lidar/intensity
   lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: processed/roofs/roofs.gpkg
@@ -59,7 +59,7 @@ filter_for_objects.py:
 
 
 segment_objects.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   input_dir_images: processed/lidar/rasterized_lidar/intensity
   lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: processed/roofs/roofs.gpkg

@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import time
 from glob import glob
 from loguru import logger
@@ -10,9 +11,9 @@ import rasterio
 from rasterio.features import rasterize
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger = fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 tic = time.time()
 logger.info('Starting...')
@@ -29,7 +30,7 @@ IMAGE_FOLDER = cfg['image_folder']
 os.chdir(WORKING_DIR)
 
 output_dir = 'processed/tiles/mask'
-fct_misc.ensure_dir_exists(output_dir)
+misc.ensure_dir_exists(output_dir)
 
 logger.info('Loading data...')
 roofs = gpd.read_file(ROOFS)
@@ -49,7 +50,7 @@ for tile in tqdm(tiles, desc='Producing the masks...'):
 
     im_size = (tile_meta['height'], tile_meta['width'])
 
-    polygons = [fct_misc.poly_from_utm(geom, src.meta['transform']) for geom in merged_roofs_geoms.geoms]
+    polygons = [misc.poly_from_utm(geom, src.meta['transform']) for geom in merged_roofs_geoms.geoms]
     mask = rasterize(shapes=polygons, out_shape=im_size)
 
     mask_meta = src.meta.copy()
