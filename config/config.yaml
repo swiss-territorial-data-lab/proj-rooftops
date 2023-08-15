@@ -24,7 +24,7 @@ rasterize_intensity.py:
 rasterize_roughness.py:
   working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   input_dir: input/lidar_intensity/LiDAR/2019/
-  overwrite: False
+  overwrite: True
   make_dem: True
   parameters_dem: 
     resolution: 0.3
