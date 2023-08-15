@@ -1,0 +1,7 @@
+version: "3"
+
+services:
+  proj-rooftops:
+    build: .
+    volumes:
+      - ./workdir:/workdir
