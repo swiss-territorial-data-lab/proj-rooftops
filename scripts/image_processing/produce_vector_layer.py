@@ -8,7 +8,8 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
+import os
+import sys
 import time
 import argparse
 import yaml
@@ -21,9 +22,9 @@ import geopandas as gpd
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger=fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -78,7 +79,7 @@ if __name__ == "__main__":
         shape_egid.buffer(0)
         # shape_egid.geometry = shape_egid.geometry.buffer(1)
 
-        fct_misc.test_crs(shape_objects, shape_egid)
+        misc.test_crs(shape_objects, shape_egid)
 
         selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
         selection['area'] = selection.area 

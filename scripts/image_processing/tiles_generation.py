@@ -8,7 +8,8 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
+import os
+import sys
 import time
 import argparse
 import yaml
@@ -22,9 +23,9 @@ from rasterio.merge import merge
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger=fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -106,7 +107,7 @@ if __name__ == "__main__":
             egid = row.EGID
             egid_list.append(egid)
             bounds = row.geometry.bounds
-            coords = fct_misc.bbox(bounds)
+            coords = misc.bbox(bounds)
             coords_list.append(coords)
 
         bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs = 'epsg:2056', geometry = coords_list).drop_duplicates(subset='EGID')
@@ -163,7 +164,7 @@ if __name__ == "__main__":
             mask_meta=raster.meta
 
             mask_meta.update({'transform': mask_transform})
-            feature_mask_path=os.path.join(fct_misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'masked_images')),
+            feature_mask_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'masked_images')),
                                     f"tile_EGID_{int(egid)}_masked.tif")
                 
             with rasterio.open(feature_mask_path, 'w', **mask_meta) as dst:

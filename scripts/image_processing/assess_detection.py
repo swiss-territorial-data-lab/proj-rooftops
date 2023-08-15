@@ -8,7 +8,8 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
+import os
+import sys
 import time
 import argparse
 import yaml
@@ -18,9 +19,9 @@ import geopandas as gpd
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger=fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
     gdf_gt['ID_GT'] = gdf_gt.index
     gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
-    nbr_labels=len(gdf_gt)
+    nbr_labels = len(gdf_gt)
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
     gdf_detec = gpd.read_file(DETECTION)
@@ -72,10 +73,10 @@ if __name__ == "__main__":
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-    tp_gdf, fp_gdf, fn_gdf = fct_misc.get_fractional_sets(gdf_detec, gdf_gt)
+    tp_gdf, fp_gdf, fn_gdf = misc.get_fractional_sets(gdf_detec, gdf_gt)
 
     # Compute metrics
-    precision, recall, f1 = fct_misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
+    precision, recall, f1 = misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
     TP = len(tp_gdf)
     FP = len(fp_gdf)
