@@ -48,25 +48,25 @@ if __name__ == "__main__":
         cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
     # Load input parameters
-    WORKING_DIR=cfg['working_dir']
-    IMAGE_DIR=cfg['image_dir']
-    OUTPUT_DIR=cfg['output_dir']
-    SHP_EXT=cfg['vector_extension']
-    CROP=cfg['image_crop']['enable']
+    WORKING_DIR = cfg['working_dir']
+    IMAGE_DIR = cfg['image_dir']
+    OUTPUT_DIR = cfg['output_dir']
+    SHP_EXT = cfg['vector_extension']
+    CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
     else:
         CROP = None
-    DL_CKP=cfg['SAM']['dl_checkpoints']
-    CKP_DIR=cfg['SAM']['checkpoints_dir']
-    CKP=cfg['SAM']['checkpoints']
-    BATCH=cfg['SAM']['batch']
-    FOREGROUND=cfg['SAM']['foreground']
-    UNIQUE=cfg['SAM']['unique']
-    # EK=cfg['SAM']['erosion_kernel']
-    MASK_MULTI=cfg['SAM']['mask_multiplier']
-    CUSTOM_SAM=cfg['SAM']['custom_SAM']
-    SHOW=cfg['SAM']['show_masks']
+    DL_CKP = cfg['SAM']['dl_checkpoints']
+    CKP_DIR = cfg['SAM']['checkpoints_dir']
+    CKP = cfg['SAM']['checkpoints']
+    BATCH = cfg['SAM']['batch']
+    FOREGROUND = cfg['SAM']['foreground']
+    UNIQUE = cfg['SAM']['unique']
+    # EK = cfg['SAM']['erosion_kernel']
+    MASK_MULTI = cfg['SAM']['mask_multiplier']
+    CUSTOM_SAM = cfg['SAM']['custom_SAM']
+    SHOW = cfg['SAM']['show_masks']
 
     os.chdir(WORKING_DIR)
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
         # egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
         # roofs = gpd.read_file(ROOFS_SHP)
-        # shp_egid = roofs[roofs['EGID'] == egid]
+        # egid_shp = roofs[roofs['EGID'] == egid]
 
         # Produce and save mask
         file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         sam.generate(tilepath, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
         written_files.append(file_path)  
 
-        file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+        file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
         
         if SHOW:

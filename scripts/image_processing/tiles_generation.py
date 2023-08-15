@@ -70,9 +70,9 @@ if __name__ == "__main__":
     else:
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        roofs_gdf = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
+        roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
         logger.info(f"Dissolved shapes by EGID number")
-        rooftops = roofs_gdf.dissolve('EGID', as_index=False)
+        rooftops = roofs.dissolve('EGID', as_index=False)
         rooftops.to_file(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")

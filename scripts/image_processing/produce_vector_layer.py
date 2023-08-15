@@ -73,15 +73,15 @@ if __name__ == "__main__":
 
         # Set CRS
         objects.crs = SRS
-        shape_objects = objects.dissolve('value', as_index=False)
+        object_shp = objects.dissolve('value', as_index=False)
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        shape_egid  = rooftops[rooftops['EGID'] == egid]
-        shape_egid.buffer(0)
-        # shape_egid.geometry = shape_egid.geometry.buffer(1)
+        egid_shp = rooftops[rooftops['EGID'] == egid]
+        egid_shp.buffer(0)
+        # egid_shp.geometry = egid_shp.geometry.buffer(1)
 
-        misc.test_crs(shape_objects, shape_egid)
+        misc.test_crs(object_shp, egid_shp)
 
-        selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
+        selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
         selection['area'] = selection.area 
         final_gdf = selection.drop(['index_right'], axis=1)
         

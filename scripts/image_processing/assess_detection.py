@@ -56,24 +56,24 @@ if __name__ == "__main__":
     written_files = []
 
     # Open shapefiles
-    gdf_gt = gpd.read_file(GT)
-    gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
-    gdf_gt['ID_GT'] = gdf_gt.index
-    gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
-    nbr_labels = len(gdf_gt)
+    gt_gdf = gpd.read_file(GT)
+    gt_gdf = gt_gdf[gt_gdf['occupation'] == 1]
+    gt_gdf['ID_GT'] = gt_gdf.index
+    gt_gdf = gt_gdf.rename(columns={"area": "area_GT"})
+    nbr_labels = len(gt_gdf)
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
-    gdf_detec = gpd.read_file(DETECTION)
-    gdf_detec = gdf_detec# [gdf_detec['occupation'] == 1]
-    gdf_detec['ID_DET'] = gdf_detec.index
-    gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
-    logger.info(f"Read detection file: {len(gdf_detec)} shapes")
+    detec_gdf = gpd.read_file(DETECTION)
+    detec_gdf = detec_gdf# [detec_gdf['occupation'] == 1]
+    detec_gdf['ID_DET'] = detec_gdf.index
+    detec_gdf = detec_gdf.rename(columns={"area": "area_DET"})
+    logger.info(f"Read detection file: {len(detec_gdf)} shapes")
 
 
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-    tp_gdf, fp_gdf, fn_gdf = misc.get_fractional_sets(gdf_detec, gdf_gt)
+    tp_gdf, fp_gdf, fn_gdf = misc.get_fractional_sets(detec_gdf, gt_gdf)
 
     # Compute metrics
     precision, recall, f1 = misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         if nbr_labels > nbr_tagged_labels:
             tagged_labels = tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
 
-            untagged_gt_gdf = gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf = gt_gdf[~gt_gdf['ID_GT'].isin(tagged_labels)]
             untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
 
             layer_name = 'missing_label_tags'
