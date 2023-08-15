@@ -1,7 +1,7 @@
 # 1 - Tiles generation
 tiles_generation.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
-  image_dir: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
+  working_dir: .
+  image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles_shp: input/img_seg/Tiles_GTselection_v3.shp
   roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
   output_dir: input/img_seg/tiles/
@@ -10,7 +10,7 @@ tiles_generation.py:
 
 # 2 - Segment Anything Method
 SAM_rooftops.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   image_dir:  input/img_seg/tiles/
   output_dir: output/img_seg/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
@@ -30,7 +30,7 @@ SAM_rooftops.py:
 
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/
+  working_dir: .
   detection_dir: output/img_seg/segmented_images/
   roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
@@ -43,7 +43,7 @@ produce_vector_layer.py:
 # Data to run the script can be found here: /mnt/s3/proj-rooftops/02_Data/ground_truth/Single_Buildings/EGID2034760/
 # Adapt the path accordingly
 assess_detection.py:  
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/ 
+  working_dir: .
   gt_shp: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
   detection_shp: output/img_seg/SAM_vectors.gpkg
   output_dir: output/img_seg/
