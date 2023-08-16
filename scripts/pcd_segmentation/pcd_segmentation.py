@@ -17,6 +17,7 @@ from yaml import load, FullLoader
 
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import open3d as o3d
 
@@ -38,7 +39,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output direcotry
         EGIDS (list): EGIDs of interest
-        number_planes (int): approximate number of planes to find
+        number_planes (int): approximate number of planes to find or not int to take the number of planes from the vector file.
         distance_threshold (float): distance to consider for the noise in the ransac algorithm
         ransac (int): number of points to consider for the ransac algorithm
         iterations (int): number of iteration for the ransac algorithm
@@ -60,11 +61,9 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     written_files = []
 
     # Get the EGIDS of interest
-    with open(EGIDS, 'r') as src:
-        egids=src.read()
-    egid_list=egids.split("\n")
+    egids=pd.read_csv(EGIDS)
 
-    for egid in tqdm(egid_list):
+    for egid in tqdm(egids.EGID.to_numpy()):
 
         file_name = 'EGID_' + str(egid)
         # Read pcd file and get points array

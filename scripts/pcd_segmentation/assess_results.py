@@ -49,15 +49,12 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     written_files={}
 
     # Get the EGIDS of interest
-    with open(EGIDS, 'r') as src:
-        egids=src.read()
-    egid_list=[int(egid) for egid in egids.split("\n")]
-
+    egids=pd.read_csv(EGIDS)
     # Open shapefiles
     gdf_gt = gpd.read_file(GT)
     if 'OBSTACLE' in gdf_gt.columns:
         gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
-    gdf_gt = gdf_gt[(gdf_gt.occupation.astype(int) == 1) & (gdf_gt.EGID.isin(egid_list))]
+    gdf_gt = gdf_gt[(gdf_gt.occupation.astype(int) == 1) & (gdf_gt.EGID.isin(egids.EGID.to_numpy()))]
     gdf_gt['ID_GT'] = gdf_gt.index
     gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
     nbr_labels=gdf_gt.shape[0]

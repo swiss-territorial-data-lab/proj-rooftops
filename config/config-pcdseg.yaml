@@ -5,7 +5,7 @@ prepare_data.py:
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGID_list.txt
+    egids: EGIDs.csv
   output_dir: processed/PCD_segmentation
   filters:
     filter_class: False
@@ -19,7 +19,7 @@ pcd_segmentation.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egids: EGID_list.txt
+  egids: EGIDs.csv
   segmentation:
     planes:
       number_planes: 3
@@ -38,7 +38,7 @@ vectorization.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egids: EGID_list.txt
+  egids: EGIDs.csv
   epsg: 2056
   area_threshold: 
     min: 5        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
@@ -52,7 +52,7 @@ assess_results.py:
   output_dir: processed/PCD_segmentation
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   gt: ground_truth/EGID_occupation.gpkg
-  egids: EGID_list.txt
+  egids: EGIDs.csv
   method: one-to-one
 
 

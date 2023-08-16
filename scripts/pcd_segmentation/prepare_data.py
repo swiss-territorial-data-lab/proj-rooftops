@@ -78,9 +78,7 @@ output_dir = fct_misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
 written_files = []
 
 # Get the EGIDS of interest
-with open(EGIDS, 'r') as src:
-    egids=src.read()
-egid_list=egids.split("\n")
+egids=pd.read_csv(EGIDS)
 
 # Get the rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
@@ -92,19 +90,37 @@ if os.path.exists(feature_path):
 else:
     logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
     logger.info(f"Create it")
-    gdf_roofs = gpd.read_file(os.path.join(ROOFS_DIR, ROOFS_NAME))
-    gdf_roofs.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
+    gdf_roof_sections = gpd.read_file(SHP_ROOFS)
+    gdf_roof_sections.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
+
     logger.info(f"Dissolved shapes by EGID number")
-    rooftops = gdf_roofs.dissolve('EGID', as_index=False, aggfunc='min')
+    rooftops_per_EGIDS = gdf_roof_sections.dissolve('EGID', as_index=False, aggfunc='min')
+
+    gdf_roof_sections['area']=gdf_roof_sections.area
+    gdf_considered_sections=gdf_roof_sections[gdf_roof_sections.area > 2].copy()
+    EGID_count=gdf_considered_sections.EGID.value_counts()
+    rooftops=rooftops_per_EGIDS.join(EGID_count, on='EGID')
+    rooftops.rename(columns={'count': 'nbr_planes'}, inplace=True)
+
     rooftops.to_file(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
+
+    del gdf_roof_sections, gdf_considered_sections, EGID_count
+    
+completed_egids=egids.join(rooftops[['EGID', 'nbr_planes']], on = 'EGID', rsuffix='_roof')
+completed_egids.drop(columns=['EGID_roof'], inplace=True)
+
+feature_path=os.path.join(output_dir, 'completed_egids.csv')
+completed_egids.to_csv(feature_path)
+written_files.append(feature_path)  
+logger.info(f"...done. A file was written: {feature_path}")
 
 tile_delimitation=gpd.read_file(PCD_TILES)
 rooftops_on_tiles=tile_delimitation.sjoin(rooftops, how='right', lsuffix='tile', rsuffix='roof')
 
 # Get the per-EGID point cloud
-for egid in tqdm(egid_list):
+for egid in tqdm(egids.EGID.to_numpy()):
 # Select the building shape  
     file_name='EGID_' + str(egid)
     

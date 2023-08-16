@@ -59,12 +59,10 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
     written_layers = []
 
     # Get the EGIDS of interest
-    with open(EGIDS, 'r') as src:
-        egids=src.read()
-    egid_list=egids.split("\n")
+    egids=pd.read_csv(EGIDS)
 
     all_occupation_gdf=gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(EPSG))
-    for egid in tqdm(egid_list):
+    for egid in tqdm(egids.EGID.to_numpy()):
         file_name = 'EGID_' + str(egid)
 
         input_dir = os.path.join(INPUT_DIR, file_name + "_segmented.csv")
