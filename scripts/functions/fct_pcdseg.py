@@ -32,7 +32,12 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
         geodataframe: polygons produced with the clustered points.
     """
 
-    object_type=df['type'].unique()[0]
+    try:
+        object_type=df['type'].unique()[0]
+    except IndexError as e:
+        logger.error('No objects to vectorize. Returning an empty dataframe.')
+        return gpd.GeoDataFrame()
+
     if len(df.type.unique())>1:
         logger.warning('Several different types were passed to the function "vectorize_concave".')
 
@@ -48,18 +53,25 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         if not alpha_ini:
             alpha = optimizealpha(points, upper=10, max_iterations=1000)
+            alpha_shape = alphashape.alphashape(points, alpha = alpha)
             # logger.info(f"   - alpha shape value = {alpha}")
         else:
             alpha=alpha_ini
-        try:
-            alpha_shape = alphashape.alphashape(points, alpha = alpha)
-        except GEOSException:
-            alpha_shape = alphashape.alphashape(points, alpha = 1)
+            optimized_alpha=False
+            try:
+                alpha_shape = alphashape.alphashape(points, alpha = alpha)
+            except GEOSException:
+                try:
+                    # Try a second time before doing the optimization to save time.
+                    alpha_shape = alphashape.alphashape(points, alpha = 1)
+                except GEOSException:
+                    alpha = optimizealpha(points, upper=10, max_iterations=1000)
+                    alpha_shape = alphashape.alphashape(points, alpha = alpha)
+                    optimized_alpha=True
         
-        if alpha_shape.is_empty:
-            logger.info('The created polygon is empty. Performing alpha optimization.')
-            alpha = optimizealpha(points, upper=10, max_iterations=1000)
-            alpha_shape = alphashape.alphashape(points, alpha = alpha)
+            if alpha_shape.is_empty and not optimized_alpha:
+                alpha = optimizealpha(points, upper=10, max_iterations=1000)
+                alpha_shape = alphashape.alphashape(points, alpha = alpha)
 
         # The bounding points produced can be vizualize for control
         if visu:
@@ -73,8 +85,10 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
             poly = Polygon(alpha_shape)
         elif alpha_shape.geom_type == 'MultiPolygon':
             poly = MultiPolygon(alpha_shape)
+        elif alpha_shape.geom_type == 'LineString':
+            continue
         else:
-            logger.critical('The created polygon is not a polygon, nor a multi-polygon.')
+            logger.critical(f'The created polygon has not a managed geometry type : {alpha_shape.geom_type}')
             sys.exit(1)
 
         # Build the final dataframe
@@ -85,6 +99,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
     
     if polygon_df.empty:
         polygon_gdf=gpd.GeoDataFrame()
+        logger.warning('Vectorization retruned an empty dataframe.')
     else:
         polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 

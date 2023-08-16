@@ -57,6 +57,9 @@ def objective(trial):
     #     'alpha_shape': ALPHA_SHAPE,
     # }
 
+    print(dict_parameters_pcd_seg)
+    # print(dict_parameters_vect)
+
 
     pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                   EGIDS,
@@ -119,7 +122,7 @@ written_files = []
 logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=10)
+study.optimize(objective, n_trials=100)
 
 logger.info('Plot results')
 written_files.append(fct_opti.plot_optimization_results(study, output_plots))
@@ -133,7 +136,7 @@ for written_file in written_files:
     logger.info(written_file)
 
 # Stop chronometer  
-toc = time.time()
+toc = time()
 logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
 sys.stderr.flush()

@@ -64,15 +64,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         egids=src.read()
     egid_list=egids.split("\n")
 
-    dict_parameters_pcd_seg={
-        'number_planes':number_planes, 'distance_threshold': distance_threshold, 'ransac': ransac, 'iterations': iterations,
-        'eps_planes': eps_planes, 'min_points_planes': min_points_planes,
-        'eps_clusters': eps_clusters, 'min_points_clusters': min_points_clusters,
-    }
-
-    logger.info('Working with the following parameters:')
-    logger.info(dict_parameters_pcd_seg)
-
     for egid in tqdm(egid_list):
 
         file_name = 'EGID_' + str(egid)

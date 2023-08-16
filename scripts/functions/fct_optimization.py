@@ -20,11 +20,7 @@ def plot_optimization_results(study, output_path='.'):
 
     written_files=[]
 
-    try:
-        fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
-    except RuntimeError as e:
-        if str(e) == 'RuntimeError: Encountered zero total variance in all trees.':
-            logger.warning('No hyperparameter set was better than another.')
+    fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
     # optuna.visualization.plot_param_importances(study).show(renderer="browser")
     feature_path = os.path.join(output_path, 'importance.png')
     plt.tight_layout()
@@ -34,6 +30,7 @@ def plot_optimization_results(study, output_path='.'):
     fig_contour = optuna.visualization.matplotlib.plot_contour(study)
     feature_path = os.path.join(output_path, 'contour.png')
     # plt.tight_layout()
+    plt.figure(figsize=(25, 20))
     plt.savefig(feature_path)
     written_files.append(feature_path)
 

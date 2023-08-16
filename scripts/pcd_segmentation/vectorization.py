@@ -94,7 +94,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # If it exists, add cluster previously classified as plane to the object class 
         if not small_plane_gdf.empty:
             print("")
-            logger.info(f"Add {len(small_plane_gdf)} object{'s' if len(small_plane_gdf)>1 else ''} from the planes to the objects.") 
+            logger.info(f"Add {len(small_plane_gdf)} plane{'s' if len(small_plane_gdf)>1 else ''} to the objects.") 
             cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
             cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
         del small_plane_gdf
@@ -106,7 +106,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # If it exists, add cluster previously classified as plane to the object class 
         if not large_objects_gdf.empty:
             print("")
-            logger.info(f"Add {len(large_objects_gdf)} plane{'s' if len(large_objects_gdf)>1 else ''} from the objects to the roof sections.") 
+            logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf)>1 else ''} to the roof sections.") 
             plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
             plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
         del large_objects_gdf
