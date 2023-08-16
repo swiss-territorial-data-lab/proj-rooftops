@@ -1,29 +1,27 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
-#      Copyright (c) 2020 Republic and Canton of Geneva
-#
 
-import os, sys
+
+import os
+import sys
 import time
 import argparse
 import yaml
+from loguru import logger
 import pandas as pd
 import geopandas as gpd
-from loguru import logger
+
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-# import functions.fct_misc as fct_misc
-import functions.common as fct
+import functions.fct_misc as misc
 
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
-
+logger = misc.format_logger(logger)
 
 
 if __name__ == "__main__":
@@ -45,46 +43,40 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    GT = cfg['gt']
-    DETECTION = cfg['detection']
+    GT = cfg['gt_shp']
+    DETECTION = cfg['detection_shp']
     OUTPUT_DIR = cfg['output_dir']
     EGID = cfg['egid']
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct.ensure_dir_exists(OUTPUT_DIR)
+    misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
     # Open shapefiles
-    gdf_gt = gpd.read_file(GT)
-    gdf_gt = gdf_gt[gdf_gt['occupation'] == 1]
-    gdf_gt['ID_GT'] = gdf_gt.index
-    gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
-    logger.info(f"Read GT file: {len(gdf_gt)} shapes")
+    gt_gdf = gpd.read_file(GT)
+    gt_gdf = gt_gdf[gt_gdf['occupation'] == 1]
+    gt_gdf['ID_GT'] = gt_gdf.index
+    gt_gdf = gt_gdf.rename(columns={"area": "area_GT"})
+    nbr_labels = len(gt_gdf)
+    logger.info(f"Read GT file: {nbr_labels} shapes")
 
-    gdf_detec = gpd.read_file(DETECTION)
-    gdf_detec = gdf_detec# [gdf_detec['occupation'] == 1]
-    gdf_detec['ID_DET'] = gdf_detec.index
-    gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
-    logger.info(f"Read detection file: {len(gdf_detec)} shapes")
+    detec_gdf = gpd.read_file(DETECTION)
+    detec_gdf = detec_gdf# [detec_gdf['occupation'] == 1]
+    detec_gdf['ID_DET'] = detec_gdf.index
+    detec_gdf = detec_gdf.rename(columns={"area": "area_DET"})
+    logger.info(f"Read detection file: {len(detec_gdf)} shapes")
 
 
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-
-    tp_gdf, fp_gdf, fn_gdf = fct.get_fractional_sets(
-                            gdf_detec, gdf_gt)
-
-    # Tag predictions   
-    tp_gdf['tag'] = 'TP'
-    fp_gdf['tag'] = 'FP'
-    fn_gdf['tag'] = 'FN'
+    tp_gdf, fp_gdf, fn_gdf = misc.get_fractional_sets(detec_gdf, gt_gdf)
 
     # Compute metrics
-    precision, recall, f1 = fct.get_metrics(tp_gdf, fp_gdf, fn_gdf)
+    precision, recall, f1 = misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
     TP = len(tp_gdf)
     FP = len(fp_gdf)
@@ -97,17 +89,45 @@ if __name__ == "__main__":
     logger.info(f"   IOU average = {iou_average:.2f}")
 
 
+    # Check if no label has been lost during the results assessment 
+    nbr_tagged_labels = TP + FN 
+    filename = os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+    if os.path.exists(filename):
+        os.remove(filename)
+    if nbr_labels != nbr_tagged_labels:
+        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+        logger.info(f'The list of the problematic labels is exported to {filename}.')
+
+        if nbr_labels > nbr_tagged_labels:
+            tagged_labels = tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+
+            untagged_gt_gdf = gt_gdf[~gt_gdf['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
+
+            layer_name = 'missing_label_tags'
+            untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+            written_files.append(filename)
+
+        elif nbr_labels < nbr_tagged_labels:
+            all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
+
+            duplicated_id_gt = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
+            duplicated_labels.drop(columns=['geom_GT', 'OBSTACLE', 'geom_DET', 'index_right', 'fid', 'FID', 'fme_basena'], inplace=True)
+
+            layer_name = 'duplicated_label_tags'
+            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+            written_files.append(filename)
+
     # Set the final dataframe with tagged prediction
     logger.info(f"Set the final dataframe")
 
     tagged_preds_gdf = []
     tagged_preds_gdf_dict = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'path', 'layer', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
+    tagged_preds_gdf_dict = tagged_preds_gdf_dict.drop(['index_right', 'occupation', 'geom_GT', 'geom_DET'], axis = 1)
     tagged_preds_gdf_dict = tagged_preds_gdf_dict.rename(columns={'value': 'mask_value'})
-    # tagged_preds_gdf_dict = tagged_preds_gdf_dict.reindex(columns=['fid','EGID', 'mask_value', 'ID_DET', 'area_DET', 'ID_GT', 'area_GT', 'IOU', 'tag', 'geometry'])
 
     feature_path = os.path.join(OUTPUT_DIR, f'tagged_predictions.gpkg')
-    # tagged_preds_gdf[['geometry', 'score', 'tag', 'dataset']].to_file(file_to_write, driver='GPKG', index=False)
     tagged_preds_gdf_dict.to_file(feature_path, driver='GPKG', index=False)
     written_files.append(feature_path)
     
