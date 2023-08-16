@@ -16,9 +16,7 @@ from glob import glob
 from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
-import re
 
-import geopandas as gpd
 import torch
 from rasterio.mask import mask
 from samgeo import SamGeo
@@ -129,39 +127,31 @@ if __name__ == "__main__":
         if CROP:
             cropped_tilepath = misc.crop(tilepath, SIZE, IMAGE_DIR)
             written_files.append(cropped_tilepath)  
-            tilepath=cropped_tilepath
-
-        # egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        # roofs = gpd.read_file(ROOFS_SHP)
-        # egid_shp = roofs[roofs['EGID'] == egid]
+            tilepath = cropped_tilepath
 
         # Produce and save mask
-        file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+        file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
         mask = file_path
         sam.generate(tilepath, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
         written_files.append(file_path)  
 
-        file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
-                                tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
-        
         if SHOW:
+            file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+                        tile.split('/')[-1].split('.')[0] + '_annotated.tif')   
             sam.show_masks(cmap="binary_r")
             sam.show_anns(axis="off", alpha=0.7, output=file_path)
+            written_files.append(file_path)
 
         # Convert segmentation mask to vector layer 
+        file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+                    tile.split('/')[-1].split('.')[0] + '_segment' + SHP_EXT)  
         if SHP_EXT == 'gpkg': 
-            file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
-                    tile.split('/')[-1].split('.')[0] + '_segment.gpkg')       
             sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
-
-            written_files.append(file_path)  
-        elif SHP_EXT == 'shp': 
-            file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
-                    tile.split('/')[-1].split('.')[0] + '_segment.shp')        
+        elif SHP_EXT == 'shp':       
             sam.tiff_to_vector(mask, file_path)
-            written_files.append(file_path)  
+        written_files.append(file_path)  
 
     print()
     logger.info("The following files were written. Let's check them out!")

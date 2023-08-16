@@ -5,7 +5,7 @@ tiles_generation.py:
   tiles_shp: input/img_seg/Tiles_GTselection_v3.shp
   roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
   output_dir: input/img_seg/tiles/
-  buffer: 1                 #m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
+  buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
 # 2 - Segment Anything Method
@@ -55,15 +55,15 @@ assess_detection.py:
 # Create an image mask keeping buildings
 mask_for_buildings.py:
   transparency: true
-  working_dir: /mnt/data-02/cherny/git/proj-rooftops/data/
-  image_dir: /mnt/data-02/cherny/git/proj-rooftops/input/tiles/
+  working_dir: data/
+  image_dir: ../input/tiles/
   roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 # Prepare the tiles geometry according to the AOI and zoom level
 prepare_data.py: 
   srs: "EPSG:2056"                       # Projection of the input file
   datasets:
-    labels_shapefile: /mnt/data-02/cherny/git/proj-rooftops/data/AOI.shp
+    labels_shapefile: data/AOI.shp
   output_folder: output/SAM/
   zoom_level: 18    #z, keep between 15 and 18  
 
@@ -71,14 +71,14 @@ prepare_data.py:
 generate_tilesets.py:
   debug_mode: False             #reduced amount of tiles
   datasets:
-    aoi_tiles_geojson: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/tiles.geojson
+    aoi_tiles_geojson: output/SAM/tiles.geojson
     orthophotos_web_service:
       type: XYZ # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
       url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
       # url: https://wms.geo.admin.ch/service
       # layers: ch.swisstopo.swissimage
       # srs: "EPSG:2056"
-  output_folder: /mnt/data-02/cherny/git/proj-rooftops/output/SAM/
+  output_folder: output/SAM/
   tile_size: 512 # per side, in pixels
   overwrite: True
   n_jobs: 10
