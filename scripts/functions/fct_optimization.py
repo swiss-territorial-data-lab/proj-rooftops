@@ -3,7 +3,8 @@ from loguru import logger
 
 import pandas as pd
 
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 import optuna
 
@@ -20,36 +21,34 @@ def plot_optimization_results(study, output_path='.'):
 
     written_files=[]
 
-    fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
+    fig_importance = optuna.visualization.plot_param_importances(study)
     # optuna.visualization.plot_param_importances(study).show(renderer="browser")
-    feature_path = os.path.join(output_path, 'importance.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
+    feature_path = os.path.join(output_path, 'importance.jpeg')
+    fig_importance.write_html(feature_path.replace('jpeg', 'html'))
+    # fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
-    fig_contour = optuna.visualization.matplotlib.plot_contour(study)
+    fig_contour = optuna.visualization.plot_contour(study)
     feature_path = os.path.join(output_path, 'contour.png')
-    # plt.tight_layout()
-    plt.figure(figsize=(25, 20))
-    plt.savefig(feature_path)
+    fig_contour.write_html(feature_path)
     written_files.append(feature_path)
 
-    fig_edf = optuna.visualization.matplotlib.plot_edf(study)
-    feature_path = os.path.join(output_path, 'edf.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
+    fig_edf = optuna.visualization.matploib.plot_edf(study)
+    feature_path = os.path.join(output_path, 'edf.jpeg')
+    fig_importance.write_html(feature_path.replace('jpeg', 'html'))
+    # fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
-    fig_history = optuna.visualization.matplotlib.plot_optimization_history(study)
-    feature_path = os.path.join(output_path, 'history.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
+    fig_history = optuna.visualization.plot_optimization_history(study)
+    feature_path = os.path.join(output_path, 'history.jpeg')
+    fig_importance.write_html(feature_path.replace('jpeg', 'html'))
+    # fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
-    fig_slice = optuna.visualization.matplotlib.plot_slice(study)
-    feature_path = os.path.join(output_path, 'slice.png')
-    # plt.tight_layout()
-    plt.savefig(feature_path)
+    fig_slice = optuna.visualization.plot_slice(study)
+    feature_path = os.path.join(output_path, 'slice.jpeg')
+    fig_importance.write_html(feature_path.replace('jpeg', 'html'))
+    # fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
     return written_files

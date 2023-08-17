@@ -7,6 +7,7 @@ from yaml import load, FullLoader
 import pandas as pd
 import geopandas as gpd
 
+import joblib
 import optuna
 
 sys.path.insert(1, 'scripts')
@@ -28,14 +29,14 @@ def objective(trial):
     """
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    NUMBER_PLANES = trial.suggest_int('number_planes', 1, 10, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.35, step=0.1)
+    NUMBER_PLANES = trial.suggest_int('number_planes', 1, 5, step=1)
+    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.2, step=0.05)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
-    ITERATIONS = trial.suggest_int('iterations', 1000, 10000, step=1000)
-    EPS_PLANES = trial.suggest_float('eps_planes', 0.5, 10, step=0.5)
+    ITERATIONS = trial.suggest_int('iterations', 5000, 10000, step=1000)
+    EPS_PLANES = trial.suggest_float('eps_planes', 5, 10, step=0.5)
     MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 100, 1000, step=100)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 10, step=0.5)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 3, 21, step=2)
+    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.05, 2, step=0.05)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 6, 16, step=2)
     # AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
     # AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0, 4, step=0.1)
@@ -122,10 +123,14 @@ written_files = []
 logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=100)
+study.optimize(objective, n_trials=10)
+
+study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
+joblib.dump(study, study_path)
+written_files.append(study_path)
 
 logger.info('Plot results')
-written_files.append(fct_opti.plot_optimization_results(study, output_plots))
+written_files.extend(fct_opti.plot_optimization_results(study, output_plots))
 
 logger.info('Save the best hyperparameters')
 written_files.append(fct_opti.save_best_hyperparameters(study))

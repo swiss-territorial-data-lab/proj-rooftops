@@ -98,16 +98,17 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         del small_plane_gdf
 
         # Filtering: identify and isolate plane that are too big
-        large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
-        cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
+        if not cluster_vec_gdf.empty:
+            large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
+            cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
 
-        # If it exists, add cluster previously classified as plane to the object class 
-        if not large_objects_gdf.empty:
-            print("")
-            logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf)>1 else ''} to the roof sections.") 
-            plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
-            plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
-        del large_objects_gdf
+            # If it exists, add cluster previously classified as plane to the object class 
+            if not large_objects_gdf.empty:
+                print("")
+                logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf)>1 else ''} to the roof sections.") 
+                plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
+                plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
+            del large_objects_gdf
 
         # Create occupation layer
         if False:
@@ -117,56 +118,63 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
 
         # Remove clusters within another cluster
-        if True:
-            reviewed_cluster=cluster_vec_gdf.copy()
-            dropped_index=[]
-            for cluster in cluster_vec_gdf.itertuples():
+        reviewed_cluster=cluster_vec_gdf.copy()
+        dropped_index=[]
+        for cluster in cluster_vec_gdf.itertuples():
 
-                if cluster.Index+1 == cluster_vec_gdf.shape[0]:
-                    if cluster_vec_gdf.shape != reviewed_cluster.shape:
-                        logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another object.')
-                        cluster_vec_gdf=reviewed_cluster.copy()
-                    break
+            if cluster.Index+1 == cluster_vec_gdf.shape[0]:
+                if cluster_vec_gdf.shape != reviewed_cluster.shape:
+                    logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another object.')
+                    cluster_vec_gdf=reviewed_cluster.copy()
+                break
 
-                elif cluster.Index in dropped_index:
-                    continue
+            elif cluster.Index in dropped_index:
+                continue
 
-                for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
-                    if cluster.geometry.intersects(second_cluster.geometry) & (second_cluster.Index not in dropped_index):
-                            if second_cluster.geometry.within(cluster.geometry):
-                                reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
-                                dropped_index.append(second_cluster.Index)
+            for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
+                if cluster.geometry.intersects(second_cluster.geometry) & (second_cluster.Index not in dropped_index):
+                        if second_cluster.geometry.within(cluster.geometry):
+                            reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
+                            dropped_index.append(second_cluster.Index)
 
-                            elif cluster.geometry.within(second_cluster.geometry):
-                                reviewed_cluster.drop(index=(cluster.Index), inplace=True)
-                                dropped_index.append(second_cluster.Index)
+                        elif cluster.geometry.within(second_cluster.geometry):
+                            reviewed_cluster.drop(index=(cluster.Index), inplace=True)
+                            dropped_index.append(second_cluster.Index)
 
-        # Drop cluster smaller than 1.5 pixels
-        cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.015]
+        if not cluster_vec_gdf.empty:
+            # Drop cluster smaller than 1.5 pixels
+            cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.015]
 
-        # Free polygon = Plane polygon(s) - Object polygon(s)
-        diff_geom=[]
-        i=0
-        for geom in plane_vec_gdf.geometry.to_numpy():
-            diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
+            # Free polygon = Plane polygon(s) - Object polygon(s)
+            diff_geom=[]
+            i=0
+            for geom in plane_vec_gdf.geometry.to_numpy():
+                diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
 
-            if False:
-                # Control: plot object polygon, uncomment to see          
-                boundary = gpd.GeoSeries(diff_geom)
-                boundary.plot(color = 'blue')
-                plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
-                i+=1
+                if False:
+                    # Control: plot object polygon, uncomment to see          
+                    boundary = gpd.GeoSeries(diff_geom)
+                    boundary.plot(color = 'blue')
+                    plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
+                    i+=1
 
-        # Build free area dataframe
-        free_df = gpd.GeoDataFrame({'occupation': 0, 'geometry': diff_geom}, index=range(len(plane_vec_gdf)))
-        free_df['area']=free_df.area
+            # Build free area dataframe
+            free_gdf = gpd.GeoDataFrame({'occupation': 0, 'geometry': diff_geom}, index=range(len(plane_vec_gdf)))
 
-        # Build occupied area dataframe
-        objects_df = cluster_vec_gdf.drop(['class'], axis=1) 
-        objects_df['occupation'] = 1
+            # Build occupied area dataframe
+            objects_gdf = cluster_vec_gdf.drop(['class'], axis=1) 
+            objects_gdf['occupation'] = 1
+        
+        else:
+            free_gdf=plane_vec_gdf.copy()
+            free_gdf['occupation'] = 0
+
+            objects_gdf=cluster_vec_gdf.copy()
+
+        free_gdf['area']=free_gdf.area
 
         # Build occupation geodataframe
-        occupation_df = pd.concat([free_df, objects_df], ignore_index=True)
+        occupation_df = pd.concat([free_gdf, objects_gdf], ignore_index=True)
         occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
 
         # occupation_gdf.to_file(feature_path, layer=file_name, index=False)

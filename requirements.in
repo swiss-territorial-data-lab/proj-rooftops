@@ -6,6 +6,7 @@ alphashape
 descartes
 # fiona
 geopandas
+kaleido
 laspy
 loguru
 matplotlib

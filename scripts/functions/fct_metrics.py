@@ -25,7 +25,7 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
 
 def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
-    Each detection can only correspond to one label.
+    Each detection can correspond to several labels.
 
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
@@ -136,7 +136,7 @@ def get_fractional_sets(preds_gdf, labels_gdf, method='one-to-one'):
     assert(len(fp_gdf[fp_gdf.duplicated()]) == 0)
 
 
-    # FALSE NEGATIVES -> objects that have been missed by the algorithm
+    # FALSE NEGATIVES -> objects that have been missed by the detection algorithm
     right_join = gpd.sjoin(labels_gdf, preds_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     
     id_gt_tp=tp_gdf['ID_GT'].unique().tolist()

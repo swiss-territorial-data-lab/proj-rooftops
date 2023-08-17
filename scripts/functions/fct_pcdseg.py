@@ -85,7 +85,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
             poly = Polygon(alpha_shape)
         elif alpha_shape.geom_type == 'MultiPolygon':
             poly = MultiPolygon(alpha_shape)
-        elif alpha_shape.geom_type == 'LineString':
+        elif alpha_shape.geom_type in ['LineString', 'Point']:
             continue
         else:
             logger.critical(f'The created polygon has not a managed geometry type : {alpha_shape.geom_type}')
