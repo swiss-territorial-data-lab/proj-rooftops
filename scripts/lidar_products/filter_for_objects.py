@@ -143,7 +143,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
 
         # Eliminate noise
         if PROCEDURE == 'ds':
-            dilated_object_loc = binary_dilation(noisy_object_loc, iterations=1).astype('int')
+            dilated_object_loc = binary_dilation(noisy_object_loc, iterations=1).astype('int32')
             gdal_noisy_object_loc = gdal_array.OpenArray(dilated_object_loc)
             band = gdal_noisy_object_loc.GetRasterBand(1)
             gdal.SieveFilter(srcBand=band, maskBand=None, dstBand=band, threshold=15, connectedness=4)
@@ -153,13 +153,14 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
             band = gdal_noisy_object_loc.GetRasterBand(1)
             gdal.SieveFilter(srcBand=band, maskBand=None, dstBand=band, threshold=2, connectedness=8)
             gdal_object_loc = band.ReadAsArray()
-            filtered_object_loc = binary_dilation(gdal_object_loc, iterations=1).astype('int')
+            filtered_object_loc = binary_dilation(gdal_object_loc, iterations=1).astype('int32')
         else:
             logger.error('No applicable procedure passed as parameter.')
             sys.exit(1)
 
         # Polygonize objects
         object_mask = filtered_object_loc == 1
+ 
         geoms = ((shape(s), v) for s, v in shapes(filtered_object_loc, object_mask, transform=im_profile['transform']))
         object_gdf = gpd.GeoDataFrame(geoms, columns=['geometry', 'class'])
         object_gdf.set_crs(crs=im_profile['crs'], inplace=True)
