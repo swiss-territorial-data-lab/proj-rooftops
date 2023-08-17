@@ -2,6 +2,9 @@ version: "3"
 
 services:
   proj-rooftops:
+    container_name: rooftops
     build: .
     volumes:
       - ./workdir:/workdir
+      - /mnt/data-02/cherny/git/proj-rooftops/config/config.yaml:/app/config/config.yaml:ro  # !!! Absolute path. Must be improved
+    # command: python scripts/lidar_products/get_lidar_infos.py 
