@@ -29,45 +29,47 @@ def objective(trial):
     """
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    NUMBER_PLANES = trial.suggest_int('number_planes', 1, 5, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.15, step=0.01)
-    RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
-    ITERATIONS = trial.suggest_int('iterations', 5000, 9000, step=500)
-    EPS_PLANES = trial.suggest_float('eps_planes', 7.5, 11, step=0.5)
-    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 50, 1000, step=50)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.05, 1, step=0.01)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 8, 20, step=1)
-    # AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
-    # AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
-    # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0, 4, step=0.1)
+    # NUMBER_PLANES = trial.suggest_int('number_planes', 1, 5, step=1)
+    # DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.15, step=0.01)
+    # RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
+    # ITERATIONS = trial.suggest_int('iterations', 5000, 9000, step=500)
+    # EPS_PLANES = trial.suggest_float('eps_planes', 7.5, 11, step=0.5)
+    # MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 50, 1000, step=50)
+    # EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 0.75, step=0.005)
+    # MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 8, 20, step=1)
+    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
+    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
+    ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0, 4, step=0.1)
 
-    dict_parameters_pcd_seg={
-        'number_planes':NUMBER_PLANES,
-        'distance_threshold':DISTANCE_THERSHOLD,
-        'ransac': RANSAC,
-        'iterations': ITERATIONS,
-        'eps_planes': EPS_PLANES,
-        'min_points_planes': MIN_POINTS_PLANES,
-        'eps_clusters': EPS_CLUSTERS,
-        'min_points_clusters': MIN_POINTS_CLUSTERS,
-    }
-
-    # dict_parameters_vect={
-    #     'min_plane_area': AREA_MIN_PLANES,
-    #     'max_cluster_area': AREA_MAX_OBJECTS,
-    #     'alpha_shape': ALPHA_SHAPE,
+    # dict_parameters_pcd_seg={
+    #     'number_planes':NUMBER_PLANES,
+    #     'distance_threshold':DISTANCE_THERSHOLD,
+    #     'ransac': RANSAC,
+    #     'iterations': ITERATIONS,
+    #     'eps_planes': EPS_PLANES,
+    #     'min_points_planes': MIN_POINTS_PLANES,
+    #     'eps_clusters': EPS_CLUSTERS,
+    #     'min_points_clusters': MIN_POINTS_CLUSTERS,
     # }
 
-    print(dict_parameters_pcd_seg)
-    # print(dict_parameters_vect)
+    dict_parameters_vect={
+        'min_plane_area': AREA_MIN_PLANES,
+        'max_cluster_area': AREA_MAX_OBJECTS,
+        'alpha_shape': ALPHA_SHAPE,
+    }
+
+    # print(dict_parameters_pcd_seg)
+    print(dict_parameters_vect)
 
 
     pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                   EGIDS,
-                                  **dict_parameters_pcd_seg)
+                                  NBR_PLANES, DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS)
+                                #   **dict_parameters_pcd_seg)
     all_occupation_gdf = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                                     EGIDS, EPSG,
-                                                    alpha_shape=ALPHA_SHAPE)
+                                                    # alpha_shape=ALPHA_SHAPE)
+                                                    **dict_parameters_vect)
     f1, diff_in_labels = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                      all_occupation_gdf, GT,
                                                      EGIDS, METHOD)
@@ -123,7 +125,7 @@ written_files = []
 logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=10)
+study.optimize(objective, n_trials=100)
 
 study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
 joblib.dump(study, study_path)
