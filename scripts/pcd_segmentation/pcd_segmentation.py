@@ -95,7 +95,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             )
             segments[i] = remaining_pts.select_by_index(inliers)
             labels = np.array(segments[i].cluster_dbscan(eps = eps_planes, min_points = min_points_planes, print_progress = True))
-            candidates = [len(np.where(labels == j)[0]) for j in np.unique(labels)]
+            candidates = [len(np.where(labels == j)[0]) for j in np.unique(labels) if j!=-1]
             best_candidate = int(np.unique(labels)[np.where(candidates == np.max(candidates))[0]])
             logger.info(f"   - The best candidate is: {best_candidate}")
             
