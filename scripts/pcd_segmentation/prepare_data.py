@@ -61,6 +61,7 @@ FILTER_ROOF = FILTERS['filter_roof']
 DISTANCE_BUFFER = FILTERS['distance_buffer']
 
 VISU = cfg['visualisation']
+OVERWRITE=cfg['overwrite'] if 'overwrite' in cfg.keys() else True
 
 PCD_EXT='.las'
 
@@ -82,7 +83,7 @@ egids=pd.read_csv(EGIDS)
 
 # Get the rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
-feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
+feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
 if os.path.exists(feature_path):
     logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
@@ -101,6 +102,7 @@ else:
     EGID_count=gdf_considered_sections.EGID.value_counts()
     rooftops=rooftops_per_EGIDS.join(EGID_count, on='EGID')
     rooftops.rename(columns={'count': 'nbr_planes'}, inplace=True)
+    rooftops=rooftops[~rooftops.nbr_planes.isna()].reset_index()
 
     rooftops.to_file(feature_path)
     written_files.append(feature_path)  
@@ -108,8 +110,7 @@ else:
 
     del gdf_roof_sections, gdf_considered_sections, EGID_count
     
-completed_egids=egids.join(rooftops[['EGID', 'nbr_planes']], on = 'EGID', rsuffix='_roof')
-completed_egids.drop(columns=['EGID_roof'], inplace=True)
+completed_egids=pd.merge(egids, rooftops, on='EGID')
 
 feature_path=os.path.join(output_dir, 'completed_egids.csv')
 completed_egids.to_csv(feature_path)
@@ -123,6 +124,10 @@ rooftops_on_tiles=tile_delimitation.sjoin(rooftops, how='right', lsuffix='tile',
 for egid in tqdm(egids.EGID.to_numpy()):
 # Select the building shape  
     file_name='EGID_' + str(egid)
+    final_path=os.path.join(output_dir, file_name + '.csv')
+
+    if (not OVERWRITE) | os.path.exists(final_path):
+        continue
     
     shape = rooftops.loc[rooftops['EGID'] == int(egid)]
 
@@ -178,9 +183,8 @@ for egid in tqdm(egids.EGID.to_numpy()):
 
     # Save the processed point cloud data
     pcd_df = pd.DataFrame(pcd_filter, columns = ['X', 'Y', 'Z'] )
-    feature_path = os.path.join(output_dir, file_name + '.csv')
-    pcd_df.to_csv(feature_path)
-    written_files.append(feature_path)  
+    pcd_df.to_csv(final_path)
+    written_files.append(final_path)  
 
     os.remove(shape_path)
     for extension in ['.cpg', '.dbf', '.prj', '.shx']:
