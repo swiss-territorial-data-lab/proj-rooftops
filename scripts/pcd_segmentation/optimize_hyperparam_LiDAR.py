@@ -33,13 +33,13 @@ def objective(trial):
     # DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.15, step=0.01)
     # RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
     # ITERATIONS = trial.suggest_int('iterations', 5000, 9000, step=500)
-    # EPS_PLANES = trial.suggest_float('eps_planes', 7.5, 11, step=0.5)
-    # MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 50, 1000, step=50)
-    # EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 0.75, step=0.005)
-    # MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 8, 20, step=1)
+    # EPS_PLANES = trial.suggest_float('eps_planes', 8, 15, step=0.5)
+    # MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 250, 1250, step=50)
+    # EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 0.1, step=0.005)
+    # MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 10, 25, step=1)
     AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
     AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
-    ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0, 4, step=0.1)
+    ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 4, step=0.1)
 
     # dict_parameters_pcd_seg={
     #     'number_planes':NUMBER_PLANES,

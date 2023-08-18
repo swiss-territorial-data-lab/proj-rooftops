@@ -30,25 +30,26 @@ def plot_optimization_results(study, output_path='.'):
 
     fig_contour = optuna.visualization.plot_contour(study)
     feature_path = os.path.join(output_path, 'contour.png')
-    fig_contour.write_html(feature_path)
+    fig_contour.write_html(feature_path.replace('jpeg', 'html'))
+    # fig_contour.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_edf = optuna.visualization.plot_edf(study)
     feature_path = os.path.join(output_path, 'edf.jpeg')
     fig_edf.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_importance.write_image(feature_path)
+    # fig_edf.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_history = optuna.visualization.plot_optimization_history(study)
     feature_path = os.path.join(output_path, 'history.jpeg')
     fig_history.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_importance.write_image(feature_path)
+    # fig_history.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_slice = optuna.visualization.plot_slice(study)
     feature_path = os.path.join(output_path, 'slice.jpeg')
     fig_slice.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_importance.write_image(feature_path)
+    # fig_slice.write_image(feature_path)
     written_files.append(feature_path)
 
     return written_files
