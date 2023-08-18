@@ -20,7 +20,7 @@ pcd_segmentation.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egids: EGIDs.csv
+  egids: processed/PCD_segmentation/completed_egids.csv
   segmentation:
     planes:
       # number_planes: 2
@@ -60,7 +60,7 @@ assess_results.py:
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
-  egids: ../../EGIDs.csv
+  egids: completed_egids.csv
   gt: ../../ground_truth/EGID_occupation.gpkg
   detections: all_EGID_occupation.gpkg
   epsg: 2056

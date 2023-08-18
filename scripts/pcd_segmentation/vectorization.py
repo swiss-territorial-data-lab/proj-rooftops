@@ -128,10 +128,11 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
                     cluster_vec_gdf=reviewed_cluster.copy()
                 break
 
-            elif cluster.Index in dropped_index:
-                continue
-
             for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
+                
+                if cluster.Index in dropped_index:
+                    break
+
                 if cluster.geometry.intersects(second_cluster.geometry) & (second_cluster.Index not in dropped_index):
                         if second_cluster.geometry.within(cluster.geometry):
                             reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
@@ -139,7 +140,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
 
                         elif cluster.geometry.within(second_cluster.geometry):
                             reviewed_cluster.drop(index=(cluster.Index), inplace=True)
-                            dropped_index.append(second_cluster.Index)
+                            dropped_index.append(cluster.Index)
 
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels

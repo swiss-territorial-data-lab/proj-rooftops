@@ -31,7 +31,8 @@ logger = fct_misc.format_logger(logger)
 
 def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
           EGIDS, 
-          number_planes, distance_threshold, ransac, iterations, eps_planes, min_points_planes, eps_clusters, min_points_clusters, visu=False):
+          distance_threshold, ransac, iterations, eps_planes, min_points_planes, eps_clusters, min_points_clusters,
+          number_planes=None, visu=False):
     """Perform the segmentation of the point cloud in planes and clusters in order to find the roof planes.
 
     Args:
@@ -39,7 +40,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output direcotry
         EGIDS (list): EGIDs of interest
-        number_planes (int): approximate number of planes to find or not int to take the number of planes from the vector file.
         distance_threshold (float): distance to consider for the noise in the ransac algorithm
         ransac (int): number of points to consider for the ransac algorithm
         iterations (int): number of iteration for the ransac algorithm
@@ -47,6 +47,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         min_points_planes (int): minimum number of points in a plane
         eps_clusters (float): distance to neighbours in a cluster
         min_points_clusters (int): minimum number of points in a cluster
+        number_planes (int): approximate number of planes to find. If 'None' take the number of planes from the vector file. Default to None
         visu (boolean): visualize the results. Default to false
 
     Returns:
@@ -63,9 +64,13 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
 
-    for egid in tqdm(egids.EGID.to_numpy()):
+    if not number_planes:
+        logger.info('The number of planes for each EGID is deduced from the original layer.')
+    number_planes_ini=number_planes
 
-        file_name = 'EGID_' + str(egid)
+    for egid_info in tqdm(egids.itertuples()):
+
+        file_name = 'EGID_' + str(egid_info.EGID)
         # Read pcd file and get points array
         csv_input_path = os.path.join(INPUT_DIR, file_name + ".csv")
         pcd_df = pd.read_csv(csv_input_path)
@@ -88,6 +93,9 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         remaining_pts = pcd
         planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
 
+        if not number_planes_ini:
+            number_planes = int(egid_info.nbr_planes)
+
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
             segment_models[i], inliers = remaining_pts.segment_plane(
@@ -95,8 +103,16 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             )
             segments[i] = remaining_pts.select_by_index(inliers)
             labels = np.array(segments[i].cluster_dbscan(eps = eps_planes, min_points = min_points_planes, print_progress = True))
-            candidates = [len(np.where(labels == j)[0]) for j in np.unique(labels) if j!=-1]
-            best_candidate = int(np.unique(labels)[np.where(candidates == np.max(candidates))[0]])
+            candidates = pd.DataFrame({
+                'value': [j for j in np.unique(labels) if j!=-1],
+                'value_count':[len(np.where(labels == j)[0]) for j in np.unique(labels) if j!=-1]
+            })
+            if len(candidates)==0:
+                break
+            elif len(candidates)==1:
+                best_candidate=candidates.iloc[0,0]
+            else:
+                best_candidate = int(candidates.loc[candidates.value_count==candidates.value_count.max(), 'value'])
             logger.info(f"   - The best candidate is: {best_candidate}")
             
             # Select the remaining points in the pcd to find a new plane
@@ -108,12 +124,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             segments[i].paint_uniform_color(list(colors[:3]))
             logger.info(f"   - plane {i} {segments[i]}")
             logger.info(f"   - pass {i} / {number_planes} done.")
-
-            # # Allow to get the coloured planes        !!! Not essential but need to be merged in one single file with clustered pcd !!!
-            # feature_path = os.path.join(OUTPUT_DIR, file_name + '_plane'+ str(i) + '.ply')
-            # o3d.io.write_point_cloud(feature_path, segments[i])
-            # written_files.append(feature_path)  
-            # logger.info(f"...done. A file was written: {feature_path}")
 
             # Add segmented planes to a dataframe
             plane = np.asarray(segments[i].points)
@@ -133,12 +143,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             colors = plt.get_cmap("tab10")(labels / (max_label if max_label > 0 else 1))
             colors[labels < 0] = 0
             remaining_pts.colors = o3d.utility.Vector3dVector(colors[:, :3])
-
-            # # Allow to get the coloured clustered pcd       !!! Not essential but need to be merged in one single file with planes !!! 
-            # feature_path = os.path.join(OUTPUT_DIR, file_name + '_remaining_pts.ply')
-            # o3d.io.write_point_cloud(feature_path, remaining_pts)
-            # written_files.append(feature_path)  
-            # logger.info(f"...done. A file was written: {feature_path}")
 
             # Add segmented clusters to a dataframe
             clusters = np.asarray(remaining_pts.points)
@@ -207,7 +211,7 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
 
     SEGMENTATION=cfg['segmentation']
-    NB_PLANES = SEGMENTATION['planes']['number_planes']
+    # NB_PLANES = SEGMENTATION['planes']['number_planes']
     DISTANCE_THRESHOLD = SEGMENTATION['planes']['distance_threshold']
     RANSAC = SEGMENTATION['planes']['ransac']
     ITER = SEGMENTATION['planes']['iterations']
@@ -220,7 +224,9 @@ if __name__ == "__main__":
 
     success=main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
          EGIDS, 
-         NB_PLANES, DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER)
+         DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
+        #  NB_PLANES, 
+         )
     
     # Stop chronometer  
     toc = time()
