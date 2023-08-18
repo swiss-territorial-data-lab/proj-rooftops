@@ -22,22 +22,21 @@ def plot_optimization_results(study, output_path='.'):
     written_files=[]
 
     fig_importance = optuna.visualization.plot_param_importances(study)
-    # optuna.visualization.plot_param_importances(study).show(renderer="browser")
     feature_path = os.path.join(output_path, 'importance.jpeg')
-    fig_importance.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_importance.write_image(feature_path)
+    # fig_importance.write_html(feature_path.replace('jpeg', 'html'))
+    fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_contour = optuna.visualization.plot_contour(study)
-    feature_path = os.path.join(output_path, 'contour.png')
+    feature_path = os.path.join(output_path, 'contour.jpeg')
     fig_contour.write_html(feature_path.replace('jpeg', 'html'))
     # fig_contour.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_edf = optuna.visualization.plot_edf(study)
     feature_path = os.path.join(output_path, 'edf.jpeg')
-    fig_edf.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_edf.write_image(feature_path)
+    # fig_edf.write_html(feature_path.replace('jpeg', 'html'))
+    fig_edf.write_image(feature_path)
     written_files.append(feature_path)
 
     fig_history = optuna.visualization.plot_optimization_history(study)

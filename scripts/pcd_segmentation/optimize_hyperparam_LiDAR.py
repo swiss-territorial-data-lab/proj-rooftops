@@ -37,9 +37,9 @@ def objective(trial):
     # MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 250, 1250, step=50)
     # EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 0.1, step=0.005)
     # MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 10, 25, step=1)
-    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 10, step=1)
-    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 10, 30, step=1)
-    ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 4, step=0.1)
+    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 25, step=1)
+    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 26, 45, step=1)
+    ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
     # dict_parameters_pcd_seg={
     #     'number_planes':NUMBER_PLANES,
