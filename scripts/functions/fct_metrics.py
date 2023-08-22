@@ -42,7 +42,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
 def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     '''
     Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
-    Each detection can only correspond to one label.
+    Each detection can correspond to several labels.
     
     - tp_gdf_ini: geodataframe of the potiential true positive detection
     - threshold: threshold to apply on the IoU
