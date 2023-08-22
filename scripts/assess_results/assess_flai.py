@@ -63,8 +63,6 @@ gdf_gt['ID_GT'] = gdf_gt['fid']
 gdf_gt = gdf_gt.rename(columns={"area": "area_GT"})
 gdf_gt = gdf_gt.to_crs(EPSG)
 
-misc.test_crs(gdf_detec.crs, gdf_gt.crs)
-
 if gdf_gt['ID_GT'].isnull().values.any():
     logger.error('Some labels have a null identifier.')
     sys.exit(1)
