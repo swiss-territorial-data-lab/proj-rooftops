@@ -32,11 +32,11 @@ def objective(trial):
     # NUMBER_PLANES = trial.suggest_int('number_planes', 1, 5, step=1)
     DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.15, step=0.01)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
-    ITERATIONS = trial.suggest_int('iterations', 5000, 9000, step=500)
-    EPS_PLANES = trial.suggest_float('eps_planes', 8, 15, step=0.5)
-    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 250, 1250, step=50)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 0.1, step=0.005)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 10, 25, step=1)
+    ITERATIONS = trial.suggest_int('iterations', 5000, 12000, step=1000)
+    EPS_PLANES = trial.suggest_float('eps_planes', 5, 20, step=0.5)
+    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 750, 2000, step=50)
+    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.4, 1, step=0.05)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 15, 30, step=1)
     # AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 25, step=1)
     # AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 26, 45, step=1)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
@@ -64,7 +64,7 @@ def objective(trial):
 
     pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                   EGIDS,
-                                #   NBR_PLANES, DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS)
+                                #   DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS, number_planes=NUMBER_PLANES)
                                   **dict_parameters_pcd_seg)
     all_occupation_gdf = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                                     EGIDS, EPSG,

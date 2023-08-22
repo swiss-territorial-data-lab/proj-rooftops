@@ -126,7 +126,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
     file_name='EGID_' + str(egid)
     final_path=os.path.join(output_dir, file_name + '.csv')
 
-    if (not OVERWRITE) | os.path.exists(final_path):
+    if (not OVERWRITE) & os.path.exists(final_path):
         continue
     
     shape = rooftops.loc[rooftops['EGID'] == int(egid)]

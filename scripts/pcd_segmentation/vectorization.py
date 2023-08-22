@@ -86,16 +86,17 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
         # Filtering: identify and isolate plane that are too small
-        small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= min_plane_area]
-        plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
+        if not plane_vec_gdf.empty:
+            small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= min_plane_area]
+            plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
 
-        # If it exists, add cluster previously classified as plane to the object class 
-        if not small_plane_gdf.empty:
-            print("")
-            logger.info(f"Add {len(small_plane_gdf)} plane{'s' if len(small_plane_gdf)>1 else ''} to the objects.") 
-            cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
-            cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
-        del small_plane_gdf
+            # If it exists, add cluster previously classified as plane to the object class 
+            if not small_plane_gdf.empty:
+                print("")
+                logger.info(f"Add {len(small_plane_gdf)} plane{'s' if len(small_plane_gdf)>1 else ''} to the objects.") 
+                cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
+                cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
+            del small_plane_gdf
 
         # Filtering: identify and isolate plane that are too big
         if not cluster_vec_gdf.empty:
@@ -149,8 +150,9 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             # Free polygon = Plane polygon(s) - Object polygon(s)
             diff_geom=[]
             i=0
-            for geom in plane_vec_gdf.geometry.to_numpy():
-                diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
+            if not plane_vec_gdf.empty:
+                for geom in plane_vec_gdf.geometry.to_numpy():
+                    diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
 
                 if False:
                     # Control: plot object polygon, uncomment to see          
@@ -172,17 +174,19 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
 
             objects_gdf=cluster_vec_gdf.copy()
 
-        free_gdf['area']=free_gdf.area
+        if not plane_vec_gdf.empty:
+            free_gdf['area']=free_gdf.area
 
         # Build occupation geodataframe
         occupation_df = pd.concat([free_gdf, objects_gdf], ignore_index=True)
-        occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
+        if not occupation_df.empty:
+            occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
+            # occupation_gdf.to_file(feature_path, layer=file_name, index=False)
+            # written_layers.append(file_name)  
 
-        # occupation_gdf.to_file(feature_path, layer=file_name, index=False)
-        # written_layers.append(file_name)  
+            occupation_gdf['EGID']=egid
+            all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
-        occupation_gdf['EGID']=egid
-        all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
     all_occupation_gdf['pred_id']=all_occupation_gdf.index
     all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)
