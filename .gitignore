@@ -1,10 +1,12 @@
+# Files
+**/*/test*.ipynb
+
 # Folders
 data/*
 output/*
 input/*
 model/*
 tests/*
-WBT/*
 
 
 # Byte-compiled / optimized / DLL files
