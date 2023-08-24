@@ -29,7 +29,7 @@ logger = format_logger(logger)
 
 # Define functions ----------------------
 
-def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 5, max_cluster_area = 25, alpha_shape = None, visu = False):
+def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
     Args:
@@ -73,6 +73,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         plane = np.unique(plane_df['group'])
 
         # Plane vectorization
+        if plane_df.empty:
+            logger.error('No planes to vectorize')
         plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
         # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
@@ -82,6 +84,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
 
         # Cluster vectorisation
+        if cluster_df.empty:
+            logger.error('No clusters to vectorize')
         cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
         # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 

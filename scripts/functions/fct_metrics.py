@@ -37,12 +37,20 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
 
     # Filter detection based on IOU value
     # Keep only max IOU value for each detection
-    tp_gdf = tp_gdf_ini.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
+    tp_grouped_gdf = tp_gdf_ini.groupby(['ID_DET'], group_keys=False).apply(lambda g:g[g.IOU==g.IOU.max()])
     
     # Detection with IOU lower than threshold value are considered as FP and removed from TP list   
-    fp_gdf_temp = tp_gdf[tp_gdf['IOU'] < threshold]
+    fp_gdf_temp = tp_grouped_gdf[tp_grouped_gdf['IOU'] < threshold]
     id_det_fp = fp_gdf_temp['ID_DET'].unique().tolist()
-    tp_gdf = tp_gdf[~tp_gdf['ID_DET'].isin(id_det_fp)]
+    tp_gdf_temp = tp_grouped_gdf[~tp_grouped_gdf['ID_DET'].isin(id_det_fp)]
+
+    # For each label, only keep the pred with the best IOU.
+    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
+    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
+
+    # Save the dropped preds due to multiple detections of the same label.
+    id_det_not_dropped = tp_gdf.ID_DET.unique()
+    fp_gdf_temp = pd.concat([fp_gdf_temp, sorted_tp_gdf_temp[~sorted_tp_gdf_temp.ID_DET.isin(id_det_not_dropped)]], ignore_index=True)
 
     return tp_gdf, fp_gdf_temp
 

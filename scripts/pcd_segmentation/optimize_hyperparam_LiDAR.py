@@ -68,8 +68,9 @@ def objective(trial):
                                   **dict_parameters_pcd_seg)
     all_occupation_gdf = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                                     EGIDS, EPSG,
-                                                    alpha_shape=ALPHA_SHAPE)
-                                                    # **dict_parameters_vect)
+                                                    alpha_shape=ALPHA_SHAPE
+                                                    # **dict_parameters_vect
+    )
     f1, diff_in_labels = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                      all_occupation_gdf, GT,
                                                      EGIDS, METHOD)

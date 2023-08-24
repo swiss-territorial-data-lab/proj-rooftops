@@ -35,7 +35,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
     try:
         object_type=df['type'].unique()[0]
     except IndexError as e:
-        logger.error('No objects to vectorize. Returning an empty dataframe.')
+        logger.error('No elements to vectorize. Returning an empty dataframe.')
         return gpd.GeoDataFrame()
 
     if len(df.type.unique())>1:
