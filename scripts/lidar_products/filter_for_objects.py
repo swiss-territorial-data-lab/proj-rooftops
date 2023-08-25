@@ -23,7 +23,7 @@ from sklearn.model_selection import GridSearchCV
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
-logger=misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
@@ -79,7 +79,6 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
     if needed_tiles.shape[0] > 1:
         intensity_values = np.array([])
         for roof_and_tile in needed_tiles.itertuples():
-                intensity_values = []
                 with rasterio.open(roof_and_tile.tilepath, crs='EPSG:2056') as src:
                     im, mask_transform = mask(src, [roof_and_tile.geometry], crop=True, filled=True, nodata=src.nodata)
                     im_profile = src.profile
@@ -123,11 +122,8 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
         fig.savefig(os.path.join(OUTPUT_DIR, str(roof_id) + '_density.jpeg'))
 
     # Determine the median value
-    try:
-        mean_intensity = np.nanmean(nan_intensity_values)
-        std_intensity = np.nanstd(nan_intensity_values)
-    except NameError:
-        continue
+    mean_intensity = np.nanmean(nan_intensity_values)
+    std_intensity = np.nanstd(nan_intensity_values)
 
     for intensity_info in intensity_arrays:
         intensity_arr = intensity_info[0]

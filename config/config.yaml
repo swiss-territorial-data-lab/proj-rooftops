@@ -1,12 +1,10 @@
 mask_for_buildings.py:
- # working_dir: /mnt/data-02/cherny/git/proj-rooftops/workdir/
   working_dir: /workdir
   roofs: input/lidar_intensity/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BATIMENT_HORSOL_TOIT_SP_merge.gpkg
   image_folder: input/TrueOrtho/
 
 
 get_lidar_infos.py:
-  # working_dir: /mnt/data-02/cherny/git/proj-rooftops/
   working_dir: /workdir/
   input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: False
@@ -55,7 +53,7 @@ filter_for_objects.py:
   roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
   parameters:
-    procedure: sd  # possible values: sd or ds
+    procedure: ds  # possible values: sd or ds
     rdp: True
   debug_mode: False
 
