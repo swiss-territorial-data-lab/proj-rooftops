@@ -23,11 +23,80 @@ from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
 import functions.fct_pcdseg as fct_seg
+from functions.fct_metrics import intersection_over_union
 from functions.fct_misc import ensure_dir_exists, format_logger
 
 logger = format_logger(logger)
 
 # Define functions ----------------------
+
+def handel_similar_cluster(clusters_gdf):
+    """Delete clusters inside another clusert and fuse clusters with IoU > 0.5.
+
+    Args:
+        clusters_gdf (GeoDataFrame): clusters of objects as determined by the vecotrization procedure
+
+    Returns:
+        GeoDataFrame, int: Cleaned clusters and the number of fusion between two clusters that occured.
+    """
+        
+    reviewed_cluster = clusters_gdf.copy()
+    dropped_index = []
+    nbr_fusions=0
+
+    for cluster in clusters_gdf.itertuples():
+
+        # Stop if you are at the last line of the table
+        if cluster.Index+1 == clusters_gdf.shape[0]:
+            nbr_dropped_objects = len(dropped_index)
+            if nbr_dropped_objects > 0:
+                logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object or were merged together.')
+                if  nbr_fusions> 0:
+                    logger.info(f'{nbr_fusions} merge{"s" if nbr_fusions>1 else ""} happened.')
+            break
+
+        for second_cluster in clusters_gdf.loc[clusters_gdf.index > cluster.Index].itertuples():
+            first_geometry = cluster.geometry
+            second_geometry = second_cluster.geometry
+            
+            if cluster.Index in dropped_index:
+                nbr_dropped_objects = len(dropped_index)
+                if cluster.Index+1 == clusters_gdf.shape[0] & nbr_dropped_objects > 0:
+                     logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object or were merged together.')
+                break
+
+            if first_geometry.intersects(second_geometry) & (second_cluster.Index not in dropped_index):
+                    
+                    if second_geometry.within(first_geometry):
+                        reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
+                        dropped_index.append(second_cluster.Index)
+
+                    elif first_geometry.within(second_geometry):
+                        reviewed_cluster.drop(index=(cluster.Index), inplace=True)
+                        dropped_index.append(cluster.Index)
+
+                    else:
+                        iou = intersection_over_union(first_geometry, second_geometry)
+                        if iou > 0.05:
+                            index=[]
+                            new_cluster = {'class': [], 'area': [], 'geometry': []}
+                            new_geometry = unary_union([first_geometry, second_geometry])
+
+                            index.append(max(clusters_gdf.index) + 1)
+                            new_cluster['class'].append('cluster')
+                            new_cluster['geometry'].append(new_geometry)
+                            new_cluster['area'].append(new_geometry.area)
+
+                            index_to_drop_list=[cluster.Index, second_cluster.Index]
+                            reviewed_cluster.drop(index=index_to_drop_list, inplace=True)
+                            dropped_index.extend(index_to_drop_list)
+
+                            reviewed_cluster = pd.concat([reviewed_cluster, gpd.GeoDataFrame(new_cluster)], ignore_index=True)
+                            nbr_fusions += 1
+
+    reviewed_cluster.reset_index(drop=True, inplace=True)
+
+    return reviewed_cluster, nbr_fusions
 
 def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
@@ -81,7 +150,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Load clusters in a dataframe 
         cluster_df = pcd_df[pcd_df['type'] == 'cluster']
         cluster = np.unique(cluster_df['group'])
-        cluster = cluster[cluster >= 0]                                         # Remove outlier class (-1): none classified points
+        cluster = cluster[cluster >= 0]         # Remove outlier class (-1): none classified points
 
         # Cluster vectorisation
         if cluster_df.empty:
@@ -122,30 +191,10 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             boundary.plot(color = 'red')
             plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
 
-        # Remove clusters within another cluster
-        reviewed_cluster=cluster_vec_gdf.copy()
-        dropped_index=[]
-        for cluster in cluster_vec_gdf.itertuples():
-
-            if cluster.Index+1 == cluster_vec_gdf.shape[0]:
-                if cluster_vec_gdf.shape != reviewed_cluster.shape:
-                    logger.info(f'{cluster_vec_gdf.shape[0]-reviewed_cluster.shape[0]} objects were dropped because they were within another object.')
-                    cluster_vec_gdf=reviewed_cluster.copy()
-                break
-
-            for second_cluster in cluster_vec_gdf.loc[cluster_vec_gdf.index > cluster.Index].itertuples():
-                
-                if cluster.Index in dropped_index:
-                    break
-
-                if cluster.geometry.intersects(second_cluster.geometry) & (second_cluster.Index not in dropped_index):
-                        if second_cluster.geometry.within(cluster.geometry):
-                            reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
-                            dropped_index.append(second_cluster.Index)
-
-                        elif cluster.geometry.within(second_cluster.geometry):
-                            reviewed_cluster.drop(index=(cluster.Index), inplace=True)
-                            dropped_index.append(cluster.Index)
+        new_clusters=1
+        while new_clusters>0:
+            print('hey')
+            cluster_vec_gdf, new_clusters = handel_similar_cluster(cluster_vec_gdf)
 
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
