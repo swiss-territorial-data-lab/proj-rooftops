@@ -23,30 +23,7 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-
-if __name__ == "__main__":
-
-    # Start chronometer
-    tic = time.time()
-    logger.info('Starting...')
-
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
-
-    logger.info(f"Using {args.config_file} as config file.")
- 
-    with open(args.config_file) as fp:
-        cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
-
-
-    # Load input parameters
-    WORKING_DIR = cfg['working_dir']
-    GT = cfg['gt_shp']
-    DETECTION = cfg['detection_shp']
-    OUTPUT_DIR = cfg['output_dir']
-    EGID = cfg['egid']
+def main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION, EGID):
 
     os.chdir(WORKING_DIR)
 
@@ -68,7 +45,6 @@ if __name__ == "__main__":
     detec_gdf['ID_DET'] = detec_gdf.index
     detec_gdf = detec_gdf.rename(columns={"area": "area_DET"})
     logger.info(f"Read detection file: {len(detec_gdf)} shapes")
-
 
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
@@ -135,6 +111,34 @@ if __name__ == "__main__":
     logger.info("The following files were written. Let's check them out!")
     for written_file in written_files:
         logger.info(written_file)
+
+    return f1
+
+if __name__ == "__main__":
+
+    # Start chronometer
+    tic = time.time()
+    logger.info('Starting...')
+
+    # Argument and parameter specification
+    parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
+    parser.add_argument('config_file', type=str, help='Framework configuration file')
+    args = parser.parse_args()
+
+    logger.info(f"Using {args.config_file} as config file.")
+ 
+    with open(args.config_file) as fp:
+        cfg = yaml.load(fp, Loader=yaml.FullLoader)[os.path.basename(__file__)]
+
+
+    # Load input parameters
+    WORKING_DIR = cfg['working_dir']
+    GT_SHP = cfg['gt_shp']
+    DETECTION_SHP = cfg['detection_shp']
+    OUTPUT_DIR = cfg['output_dir']
+    EGID = cfg['egid']
+
+    main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
 
     # Stop chronometer  
     toc = time.time()

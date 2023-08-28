@@ -9,7 +9,7 @@ import pandas as pd
 import geopandas as gpd
 from samgeo import SamGeo
 sys.path.insert(1, 'scripts')
-import functions.fct_com as fct_com
+import functions.fct_misc as misc
 
 
 def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files):
@@ -28,7 +28,7 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
         # Crop the input image by pixel value
         if CROP:
             logger.info(f"Crop image with size {SIZE}") 
-            image = fct_com.crop(image, SIZE, IMAGE_DIR)
+            image = misc.crop(image, SIZE, IMAGE_DIR)
             written_files.append(image)  
             logger.info(f"...done. A file was written: {image}") 
 
@@ -71,7 +71,7 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
             )
 
         logger.info(f"Produce and save mask")  
-        file_path=os.path.join(fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+        file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
         
         mask = file_path
@@ -79,21 +79,21 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
         written_files.append(file_path)  
         logger.info(f"...done. A file was written: {file_path}")
 
-        file_path=os.path.join(fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+        file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_colormask.tif')   
         # sam.show_masks(cmap="binary_r")
         # sam.show_anns(axis="off", alpha=0.7, output=file_path)
 
         logger.info(f"Convert segmentation mask to vector layer")  
         if SHP_EXT == 'gpkg': 
-            file_path=os.path.join(fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+            file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.gpkg')       
             sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
 
             written_files.append(file_path)  
             logger.info(f"...done. A file was written: {file_path}")
         elif SHP_EXT == 'shp': 
-            file_path=os.path.join(fct_com.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+            file_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment.shp')        
             sam.tiff_to_vector(mask, file_path)
             written_files.append(file_path)  
@@ -142,7 +142,7 @@ def filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files):
         shape_egid.buffer(0)
         # shape_egid.geometry = shape_egid.geometry.buffer(1)
 
-        fct_com.test_crs(shape_objects, shape_egid)
+        misc.test_crs(shape_objects, shape_egid)
 
         logger.info(f"Filter detection by EGID location")
         selection = shape_objects.sjoin(shape_egid, how='inner', predicate="within")
@@ -183,7 +183,7 @@ def assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files):
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-    tp_gdf, fp_gdf, fn_gdf = fct_com.get_fractional_sets(gdf_detec, gdf_gt)
+    tp_gdf, fp_gdf, fn_gdf = misc.get_fractional_sets(gdf_detec, gdf_gt)
 
     # Tag predictions   
     tp_gdf['tag'] = 'TP'
@@ -191,7 +191,7 @@ def assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files):
     fn_gdf['tag'] = 'FN'
 
     # Compute metrics
-    precision, recall, f1 = fct_com.get_metrics(tp_gdf, fp_gdf, fn_gdf)
+    precision, recall, f1 = misc.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
     TP = len(tp_gdf)
     FP = len(fp_gdf)

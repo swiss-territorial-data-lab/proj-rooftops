@@ -18,7 +18,8 @@
 
 ## Libraries
 
-import os, sys
+import os
+import sys
 import time
 import argparse
 import yaml
@@ -33,10 +34,14 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
-import functions.fct_com as fct_com
+import functions.fct_misc as misc
 import functions.fct_SAM as fct_SAM
 
-logger=fct_com.format_logger(logger)
+import SAM_rooftops
+import produce_vector_layer
+import assess_detection
+
+logger = misc.format_logger(logger)
 logger.remove()
 logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
@@ -77,12 +82,18 @@ def objective(trial):
             }
     print(dict_params)
     # SAM mask + vectorization + filtering + assessment
-    fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOFS, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
-    fct_SAM.filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files)
-    f1 = fct_SAM.assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files)
+    # fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, ROOFS_SHP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
+
+    # print('bye')
+    # fct_SAM.filter(OUTPUT_DIR, ROOFS_SHP, SRS, DETECTION, SHP_EXT, written_files)
+    # exit()
+    # f1 = fct_SAM.assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files)
+
+    SAM_rooftops.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
+    produce_vector_layer.main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS)
+    f1 = assess_detection.main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
 
     return f1
-
 
 ## Main
 
@@ -106,13 +117,16 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
-    SHP_ROOFS = cfg['shp_roofs_dir']
-    # SHP_ROOFS_EGID = cfg['shp_roofs_egid_dir']
+    DETECTION_DIR = cfg['detection_dir']
+    ROOFS_SHP = cfg['roofs_shp']
+    # ROOFS_SHP_EGID = cfg['ROOFS_SHP_egid_dir']
     GT = cfg['gt']
+    GT_SHP = cfg['gt_shp']
     OUTPUT_DIR = cfg['output_dir']    
-    DETECTION = cfg['detection']
+    DETECTION_SHP = cfg['detection_shp']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
+    EGID = cfg['egid']
     CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
@@ -127,6 +141,8 @@ if __name__ == "__main__":
     UNIQUE = cfg['SAM']['unique']
     # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
+    CUSTOM_SAM = cfg['SAM']['custom_SAM']
+    SHOW = cfg['SAM']['show_masks']
     N_TRIALS = cfg['optimization']['n_trials']
     SAMPLER = cfg['optimization']['sampler']
     PPS = cfg['optimization']['param_grid']['points_per_side']
@@ -144,7 +160,7 @@ if __name__ == "__main__":
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct_com.ensure_dir_exists(OUTPUT_DIR)
+    misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
@@ -177,7 +193,7 @@ if __name__ == "__main__":
 
     # Opitmization plots
     OUTPUT_PLOTS = os.path.join(OUTPUT_DIR, 'plots')
-    fct_com.ensure_dir_exists(OUTPUT_PLOTS)
+    misc.ensure_dir_exists(OUTPUT_PLOTS)
 
     fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
     # optuna.visualization.plot_param_importances(study).show(renderer="browser")

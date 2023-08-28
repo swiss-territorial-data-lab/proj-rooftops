@@ -11,7 +11,7 @@ tiles_generation.py:
 # 2 - Segment Anything Method
 SAM_rooftops.py:
   working_dir: .
-  image_dir:  input/img_seg/tiles/
+  image_dir:  input/img_seg/tiles_opti/
   output_dir: output/img_seg/
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   image_crop:                       # Activate the option to crop the input image according to pixel coordinates
@@ -32,7 +32,8 @@ SAM_rooftops.py:
 produce_vector_layer.py:
   working_dir: .
   detection_dir: output/img_seg/segmented_images/
-  roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  # roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  roofs_shp: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
   srs: "EPSG:2056"                        # Projection of the input file
   output_dir: output/img_seg/
@@ -48,6 +49,50 @@ assess_detection.py:
   detection_shp: output/img_seg/SAM_vectors.gpkg
   output_dir: output/img_seg/
   egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
+
+# 5 - Hyperparamters optimization
+SAM_optimization.py:
+  working_dir: .
+  image_dir: /mnt/data-03/cherny/git/proj-rooftops/input/img_seg/tiles_opti/
+  detection_dir: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/segmented_images/
+  # roofs_shp: /mnt/data-03/cherny/git/proj-rooftops/input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  roofs_shp: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # gt: /mnt/data-03/cherny/git/proj-rooftops/data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
+  output_dir: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/
+  gt: /mnt/data-03/cherny/git/proj-rooftops/data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
+  gt_shp: /mnt/data-03/cherny/git/proj-rooftops/data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
+  detection_shp: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/SAM_vectors.gpkg
+  egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
+  vector_extension: 'gpkg'                # 'gpkg' or 'shp'
+  srs: "EPSG:2056"                        # Projection of the input file 
+  image_crop:                             # Activate the option to crop the input image according to pixel coordinates
+    enable: false
+    size: [0,1026,0,1026] 
+  SAM:
+    dl_checkpoints: False                 # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
+    checkpoints: 'sam_vit_h_4b8939.pth'   # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    batch: false
+    foreground: true
+    unique: true
+    mask_multiplier: 255
+    custom_SAM: False
+    show_masks: False 
+  optimization:
+    n_trials: 6                          # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    sampler: 'TPESampler'                 # Choices: 1:TPESampler; 2:GridSampler 
+    param_grid:                           # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
+      points_per_side: [160, 160]
+      points_per_batch: [64, 64]
+      pred_iou_thresh: [0.9, 0.9]
+      stability_score_thresh: [0.95,0.95]
+      stability_score_offset: [8.0,8.0]
+      box_nms_thresh: [0.1, 1.0, 5.0]             
+      crop_n_layers: [0, 2, 5]
+      crop_nms_thresh: [5.0,5.0]
+      crop_overlap_ratio: [0, 1]
+      crop_n_points_downscale_factor: [0,0]
+      min_mask_region_area: [50,50]
 
 
 ## Additional scripts/processes - sandbox

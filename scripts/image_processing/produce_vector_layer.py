@@ -26,6 +26,73 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
+def main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS):
+
+    os.chdir(WORKING_DIR)
+
+    # Create an output directory in case it doesn't exist
+    misc.ensure_dir_exists(OUTPUT_DIR)
+
+    written_files = []
+
+    # Get the rooftops shapes
+    print(ROOFS_SHP)
+    rooftops = gpd.read_file(ROOFS_SHP)
+    print(rooftops)
+
+
+    # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
+    logger.info(f"Read shapefiles' name")
+    tiles = glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
+    vector_layer = gpd.GeoDataFrame() 
+
+    for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
+    
+        objects = gpd.read_file(tile)
+
+        # Set CRS
+        objects.crs = SRS
+        object_shp = objects.dissolve('value', as_index=False) 
+        # object_shp = objects.dissolve('mask_value', as_index=False)
+        egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
+        print('egid', egid, tile)
+
+        egid_shp = rooftops[rooftops['EGID'] == egid]
+        egid_shp.buffer(0)
+        # egid_shp.geometry = egid_shp.geometry.buffer(1)
+
+        misc.test_crs(object_shp, egid_shp)
+
+        print(object_shp)
+        print('hello')
+        print(egid_shp)
+        selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
+        selection['area'] = selection.area 
+        final_gdf = selection.drop(['index_right'], axis=1)
+        print('final', final_gdf)
+        
+        # Merge/Combine multiple shapefiles into one gdf
+        vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
+    print('vector_layer', vector_layer)
+    # Save the vectors for each EGID in layers in a gpkg 
+    feature_path = os.path.join(OUTPUT_DIR, "SAM_egid_vectors.gpkg")
+    for egid in vector_layer.EGID.unique():
+        vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
+    written_files.append(feature_path)  
+    logger.info(f"...done. A file was written: {feature_path}")
+
+    # Save all the vectors in a gpkg 
+    feature_path = os.path.join(OUTPUT_DIR, "SAM_vectors.gpkg")
+    vector_layer.to_file(feature_path)
+    written_files.append(feature_path)  
+    logger.info(f"...done. A file was written: {feature_path}")
+
+    print()
+    logger.info("The following files were written. Let's check them out!")
+    for written_file in written_files:
+        logger.info(written_file)
+    print()
+
 
 if __name__ == "__main__":
 
@@ -51,61 +118,7 @@ if __name__ == "__main__":
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
 
-    os.chdir(WORKING_DIR)
-
-    # Create an output directory in case it doesn't exist
-    misc.ensure_dir_exists(OUTPUT_DIR)
-
-    written_files = []
-
-    # Get the rooftops shapes
-    rooftops = gpd.read_file(ROOFS_SHP)
-
-    # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
-    logger.info(f"Read shapefiles' name")
-    tiles = glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
-
-    vector_layer = gpd.GeoDataFrame() 
-
-    for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
-
-        objects = gpd.read_file(tile)
-
-        # Set CRS
-        objects.crs = SRS
-        object_shp = objects.dissolve('value', as_index=False)
-        egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        egid_shp = rooftops[rooftops['EGID'] == egid]
-        egid_shp.buffer(0)
-        # egid_shp.geometry = egid_shp.geometry.buffer(1)
-
-        misc.test_crs(object_shp, egid_shp)
-
-        selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
-        selection['area'] = selection.area 
-        final_gdf = selection.drop(['index_right'], axis=1)
-        
-        # Merge/Combine multiple shapefiles into one gdf
-        vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
-
-    # Save the vectors for each EGID in layers in a gpkg 
-    feature_path = os.path.join(OUTPUT_DIR, "SAM_egid_vectors.gpkg")
-    for egid in vector_layer.EGID.unique():
-        vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
-    written_files.append(feature_path)  
-    logger.info(f"...done. A file was written: {feature_path}")
-
-    # Save all the vectors in a gpkg 
-    feature_path = os.path.join(OUTPUT_DIR, "SAM_vectors.gpkg")
-    vector_layer.to_file(feature_path)
-    written_files.append(feature_path)  
-    logger.info(f"...done. A file was written: {feature_path}")
-
-    print()
-    logger.info("The following files were written. Let's check them out!")
-    for written_file in written_files:
-        logger.info(written_file)
-    print()
+    main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS)
 
     # Stop chronometer  
     toc = time.time()

@@ -28,43 +28,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 
-if __name__ == "__main__":
-
-# Define contants ------------------------------
-    # Start chronometer
-    tic = time.time()
-    logger.info('Starting...')
-
-    # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point clouds to 2D polygons (STDL.proj-rooftops)")
-    parser.add_argument('config_file', type=str, help='Framework configuration file')
-    args = parser.parse_args()
-
-    logger.info(f"Using {args.config_file} as config file.")
- 
-    with open(args.config_file) as fp:
-        cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
-
-    # Load input parameters
-    WORKING_DIR = cfg['working_dir']
-    IMAGE_DIR = cfg['image_dir']
-    OUTPUT_DIR = cfg['output_dir']
-    SHP_EXT = cfg['vector_extension']
-    CROP = cfg['image_crop']['enable']
-    if CROP == True:
-        SIZE = cfg['image_crop']['size']
-    else:
-        CROP = None
-    DL_CKP = cfg['SAM']['dl_checkpoints']
-    CKP_DIR = cfg['SAM']['checkpoints_dir']
-    CKP = cfg['SAM']['checkpoints']
-    BATCH = cfg['SAM']['batch']
-    FOREGROUND = cfg['SAM']['foreground']
-    UNIQUE = cfg['SAM']['unique']
-    # EK = cfg['SAM']['erosion_kernel']
-    MASK_MULTI = cfg['SAM']['mask_multiplier']
-    CUSTOM_SAM = cfg['SAM']['custom_SAM']
-    SHOW = cfg['SAM']['show_masks']
+def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW):
 
     os.chdir(WORKING_DIR)
 
@@ -75,9 +39,10 @@ if __name__ == "__main__":
 
     logger.info(f"Read the image file names")
     tiles = glob(os.path.join(IMAGE_DIR, '*.tif'))
-
-    if '\\' in tiles[0]:
-        tiles = [tile.replace('\\', '/') for tile in tiles]
+    print(tiles)
+    # exit()
+    # if '\\' in tiles[0]:
+    #     tiles = [tile.replace('\\', '/') for tile in tiles]
 
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
@@ -146,7 +111,7 @@ if __name__ == "__main__":
 
         # Convert segmentation mask to vector layer 
         file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
-                    tile.split('/')[-1].split('.')[0] + '_segment' + SHP_EXT)  
+                    tile.split('/')[-1].split('.')[0] + '_segment')  
         if SHP_EXT == 'gpkg': 
             sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
         elif SHP_EXT == 'shp':       
@@ -158,6 +123,47 @@ if __name__ == "__main__":
     for written_file in written_files:
         logger.info(written_file)
     print()
+
+
+if __name__ == "__main__":
+
+# Define contants ------------------------------
+    # Start chronometer
+    tic = time.time()
+    logger.info('Starting...')
+
+    # Argument and parameter specification
+    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point clouds to 2D polygons (STDL.proj-rooftops)")
+    parser.add_argument('config_file', type=str, help='Framework configuration file')
+    args = parser.parse_args()
+
+    logger.info(f"Using {args.config_file} as config file.")
+ 
+    with open(args.config_file) as fp:
+        cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
+
+    # Load input parameters
+    WORKING_DIR = cfg['working_dir']
+    IMAGE_DIR = cfg['image_dir']
+    OUTPUT_DIR = cfg['output_dir']
+    SHP_EXT = cfg['vector_extension']
+    CROP = cfg['image_crop']['enable']
+    if CROP == True:
+        SIZE = cfg['image_crop']['size']
+    else:
+        CROP = None
+    DL_CKP = cfg['SAM']['dl_checkpoints']
+    CKP_DIR = cfg['SAM']['checkpoints_dir']
+    CKP = cfg['SAM']['checkpoints']
+    BATCH = cfg['SAM']['batch']
+    FOREGROUND = cfg['SAM']['foreground']
+    UNIQUE = cfg['SAM']['unique']
+    # EK = cfg['SAM']['erosion_kernel']
+    MASK_MULTI = cfg['SAM']['mask_multiplier']
+    CUSTOM_SAM = cfg['SAM']['custom_SAM']
+    SHOW = cfg['SAM']['show_masks']
+
+    main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
 
     # Stop chronometer  
     toc = time.time()

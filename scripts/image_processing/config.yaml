@@ -80,8 +80,10 @@ SAM_optimization.py:
     foreground: true
     unique: true
     mask_multiplier: 255
+    custom_SAM: False
+    show_masks: False 
   optimization:
-    n_trials: 500                           # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    n_trials: 1                          # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
     sampler: 'TPESampler'                 # Choices: 1:TPESampler; 2:GridSampler 
     param_grid:                           # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]
