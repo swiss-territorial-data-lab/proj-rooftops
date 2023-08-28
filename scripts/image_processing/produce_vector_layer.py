@@ -26,24 +26,22 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-def main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS):
+def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
     misc.ensure_dir_exists(OUTPUT_DIR)
+    detection_dir = os.path.join(OUTPUT_DIR, 'segmented_images')
 
     written_files = []
 
     # Get the rooftops shapes
-    print(ROOFS_SHP)
-    rooftops = gpd.read_file(ROOFS_SHP)
-    print(rooftops)
-
+    rooftops = gpd.read_file(ROOFS)
 
     # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
-    tiles = glob(os.path.join(DETECTION_DIR, '*.' + SHP_EXT))
+    tiles = glob(os.path.join(detection_dir, '*.' + SHP_EXT))
     vector_layer = gpd.GeoDataFrame() 
 
     for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
@@ -63,17 +61,13 @@ def main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS):
 
         misc.test_crs(object_shp, egid_shp)
 
-        print(object_shp)
-        print('hello')
-        print(egid_shp)
         selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
         selection['area'] = selection.area 
         final_gdf = selection.drop(['index_right'], axis=1)
-        print('final', final_gdf)
         
         # Merge/Combine multiple shapefiles into one gdf
         vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
-    print('vector_layer', vector_layer)
+
     # Save the vectors for each EGID in layers in a gpkg 
     feature_path = os.path.join(OUTPUT_DIR, "SAM_egid_vectors.gpkg")
     for egid in vector_layer.EGID.unique():
@@ -112,13 +106,13 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    DETECTION_DIR = cfg['detection_dir']
-    ROOFS_SHP = cfg['roofs_shp']
+    # detection_dir = cfg['detection_dir']
+    ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
 
-    main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS)
+    main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
 
     # Stop chronometer  
     toc = time.time()

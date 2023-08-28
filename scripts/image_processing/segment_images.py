@@ -39,10 +39,9 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP
 
     logger.info(f"Read the image file names")
     tiles = glob(os.path.join(IMAGE_DIR, '*.tif'))
-    print(tiles)
-    # exit()
-    # if '\\' in tiles[0]:
-    #     tiles = [tile.replace('\\', '/') for tile in tiles]
+
+    if '\\' in tiles[0]:
+        tiles = [tile.replace('\\', '/') for tile in tiles]
 
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")

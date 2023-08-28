@@ -50,7 +50,12 @@ logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}"
 
 # Objective function for hyperparameters optimization
 def objective(trial):
-    # torch.cuda.empty_cache()
+    """Define the function to be optimized by the hyperparameters
+
+    Args:
+        trial (trail object): suggested hyperparametesr for the objective optimization
+    """
+
     logger.info(f"Call objective function for hyperparameters optimization")
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
@@ -83,8 +88,8 @@ def objective(trial):
     print(dict_params)
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
-    produce_vector_layer.main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS)
-    f1 = assess_detections.main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
+    produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
+    f1 = assess_detections.main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION)
 
     return f1
 
@@ -98,7 +103,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point clouds to 2D polygons (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script allows to optimize the hyperparameters of the algorithm to detect objects on rooftops.")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -110,16 +115,12 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
-    DETECTION_DIR = cfg['detection_dir']
-    ROOFS_SHP = cfg['roofs_shp']
-    # ROOFS_SHP_EGID = cfg['ROOFS_SHP_egid_dir']
+    ROOFS = cfg['roofs']
     GT = cfg['gt']
-    GT_SHP = cfg['gt_shp']
     OUTPUT_DIR = cfg['output_dir']    
-    DETECTION_SHP = cfg['detection_shp']
+    DETECTION = cfg['detection']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
-    EGID = cfg['egid']
     CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
@@ -157,11 +158,9 @@ if __name__ == "__main__":
 
     written_files = []
 
-
     logger.info(f"Optimization of SAM hyperparemeters")
+
     # Set the parameter grid of hyperparameters to test
-
-
     # Define optuna study for hyperparameters optimisation
     if SAMPLER == 'GridSampler':
         logger.info(f"Set hyperparameters grid search")

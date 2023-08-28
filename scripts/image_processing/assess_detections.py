@@ -23,12 +23,14 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-def main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION, EGID):
+def main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION):
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
     misc.ensure_dir_exists(OUTPUT_DIR)
+
+    detection = os.path.join(OUTPUT_DIR, DETECTION)
 
     written_files = []
 
@@ -40,11 +42,11 @@ def main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION, EGID):
     nbr_labels = len(gt_gdf)
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
-    detec_gdf = gpd.read_file(DETECTION)
+    detec_gdf = gpd.read_file(detection)
     detec_gdf = detec_gdf# [detec_gdf['occupation'] == 1]
     detec_gdf['ID_DET'] = detec_gdf.index
     detec_gdf = detec_gdf.rename(columns={"area": "area_DET"})
-    logger.info(f"Read detection file: {len(detec_gdf)} shapes")
+    logger.info(f"Read detection_shp file: {len(detec_gdf)} shapes")
 
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="Results assessment of object detection by SAM (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="Results assessment of object detection_shp by SAM (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -133,12 +135,11 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    GT_SHP = cfg['gt_shp']
-    DETECTION_SHP = cfg['detection_shp']
+    GT = cfg['gt']
+    DETECTION = cfg['detection']
     OUTPUT_DIR = cfg['output_dir']
-    EGID = cfg['egid']
 
-    main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
+    main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION)
 
     # Stop chronometer  
     toc = time.time()

@@ -47,8 +47,8 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
-    TILES_SHP = cfg['tiles_shp']
-    ROOFS_SHP = cfg['roofs_shp']
+    TILES = cfg['tiles']
+    ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
     MASK = cfg['mask']
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     written_files = []
 
     # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS_SHP)
+    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
     if os.path.exists(feature_path):
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # AOI 
     logger.info("Select rooftop's shapes in the AOI")
-    tiles = gpd.read_file(TILES_SHP)
+    tiles = gpd.read_file(TILES)
 
     # Get the EGID list from file
     rooftops_list_gdf = rooftops.copy()

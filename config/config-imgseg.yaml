@@ -2,8 +2,8 @@
 generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  tiles_shp: input/img_seg/Tiles_GTselection_v3.shp
-  roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  tiles: input/img_seg/Tiles_GTselection_v3.shp
+  roofs: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
   output_dir: input/img_seg/tiles/
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
@@ -16,7 +16,7 @@ segment_images.py:
   vector_extension: 'gpkg'          # 'gpkg' or 'shp'
   image_crop:                       # Activate the option to crop the input image according to pixel coordinates
     enable: False
-    size: [0,1052,0,1052]           # Crop image to perform test 
+    size: [0, 1052, 0, 1052]           # Crop image to perform test 
   SAM:
     dl_checkpoints: False           # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model
@@ -33,10 +33,10 @@ produce_vector_layer.py:
   working_dir: .
   detection_dir: output/img_seg/segmented_images/
   # roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-  roofs_shp: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: output/img_seg/
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
   srs: "EPSG:2056"                        # Projection of the input file
-  output_dir: output/img_seg/
 
 # 4 - Evaluate the results
 # GT not yet available on the EGID selection
@@ -45,29 +45,25 @@ produce_vector_layer.py:
 # Adapt the path accordingly
 assess_detections.py:  
   working_dir: .
-  gt_shp: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  detection_shp: output/img_seg/SAM_vectors.gpkg
+  gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
   output_dir: output/img_seg/
-  egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
+  detection: SAM_vectors.gpkg
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: /mnt/data-03/cherny/git/proj-rooftops/input/img_seg/tiles_opti/
-  detection_dir: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/segmented_images/
-  # roofs_shp: /mnt/data-03/cherny/git/proj-rooftops/input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-  roofs_shp: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # gt: /mnt/data-03/cherny/git/proj-rooftops/data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
-  output_dir: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/
-  gt: /mnt/data-03/cherny/git/proj-rooftops/data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  gt_shp: /mnt/data-03/cherny/git/proj-rooftops/data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  detection_shp: /mnt/data-03/cherny/git/proj-rooftops/output/img_seg/opti/SAM_vectors.gpkg
-  egid: 2034760              # For now the evaluation is done on a given building. It will be change in the future 
+  image_dir: input/img_seg/tiles_opti/
+  # roofs: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
+  # gt: data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
+  output_dir: output/img_seg/opti/
+  detection: SAM_vectors.gpkg
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
   srs: "EPSG:2056"                        # Projection of the input file 
   image_crop:                             # Activate the option to crop the input image according to pixel coordinates
     enable: false
-    size: [0,1026,0,1026] 
+    size: [0, 1026, 0, 1026] 
   SAM:
     dl_checkpoints: False                 # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
