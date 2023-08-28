@@ -37,9 +37,9 @@ sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 import functions.fct_SAM as fct_SAM
 
-import SAM_rooftops
+import segment_images
 import produce_vector_layer
-import assess_detection
+import assess_detections
 
 logger = misc.format_logger(logger)
 logger.remove()
@@ -81,17 +81,10 @@ def objective(trial):
             "min_mask_region_area": MIN_MASK_REGION_AREA
             }
     print(dict_params)
-    # SAM mask + vectorization + filtering + assessment
-    # fct_SAM.SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, ROOFS_SHP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, SHP_EXT, dict_params, written_files)
 
-    # print('bye')
-    # fct_SAM.filter(OUTPUT_DIR, ROOFS_SHP, SRS, DETECTION, SHP_EXT, written_files)
-    # exit()
-    # f1 = fct_SAM.assessment(OUTPUT_DIR, DETECTION, GT, SHP_EXT, written_files)
-
-    SAM_rooftops.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
+    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
     produce_vector_layer.main(WORKING_DIR, DETECTION_DIR, ROOFS_SHP, OUTPUT_DIR, SHP_EXT, SRS)
-    f1 = assess_detection.main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
+    f1 = assess_detections.main(WORKING_DIR, OUTPUT_DIR, GT_SHP, DETECTION_SHP, EGID)
 
     return f1
 
