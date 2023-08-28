@@ -61,7 +61,8 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
     if isinstance(DETECTIONS, str):
-        gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+        # gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+        gdf_detec = gpd.read_file(DETECTIONS, layer='EGID_occupation')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
         gdf_detec = DETECTIONS
     else:

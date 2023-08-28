@@ -35,7 +35,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
-import functions.fct_SAM as fct_SAM
+import functions.fct_optimization as opti
 
 import segment_images
 import produce_vector_layer
@@ -155,6 +155,7 @@ if __name__ == "__main__":
 
     # Create an output directory in case it doesn't exist
     misc.ensure_dir_exists(OUTPUT_DIR)
+    output_plots = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'plots'))
 
     written_files = []
 
@@ -183,81 +184,87 @@ if __name__ == "__main__":
     study.optimize(objective, n_trials=N_TRIALS)
 
 
-    # Opitmization plots
-    OUTPUT_PLOTS = os.path.join(OUTPUT_DIR, 'plots')
-    misc.ensure_dir_exists(OUTPUT_PLOTS)
+    logger.info('Plot results')
+    written_files.extend(opti.plot_optimization_results(study, output_plots))
 
-    fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
-    # optuna.visualization.plot_param_importances(study).show(renderer="browser")
-    feature_path = os.path.join(OUTPUT_PLOTS, 'importance.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
-    written_files.append(feature_path)
+    logger.info('Save the best hyperparameters')
+    written_files.append(opti.save_best_hyperparameters(study))
 
-    fig_contour = optuna.visualization.matplotlib.plot_contour(study)
-    feature_path = os.path.join(OUTPUT_PLOTS, 'contour.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
-    written_files.append(feature_path)
+    # # Opitmization plots
+    # OUTPUT_PLOTS = os.path.join(OUTPUT_DIR, 'plots')
+    # misc.ensure_dir_exists(OUTPUT_PLOTS)
 
-    fig_edf = optuna.visualization.matplotlib.plot_edf(study)
-    feature_path = os.path.join(OUTPUT_PLOTS, 'edf.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
-    written_files.append(feature_path)
-
-    fig_history = optuna.visualization.matplotlib.plot_optimization_history(study)
-    feature_path = os.path.join(OUTPUT_PLOTS, 'history.png')
-    plt.tight_layout()
-    plt.savefig(feature_path)
-    written_files.append(feature_path)
-
-    fig_slice = optuna.visualization.matplotlib.plot_slice(study)
-    feature_path = os.path.join(OUTPUT_PLOTS, 'slice.png')
+    # fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
+    # # optuna.visualization.plot_param_importances(study).show(renderer="browser")
+    # feature_path = os.path.join(OUTPUT_PLOTS, 'importance.png')
     # plt.tight_layout()
-    plt.savefig(feature_path)
-    written_files.append(feature_path)
+    # plt.savefig(feature_path)
+    # written_files.append(feature_path)
 
-    # plt.show()
+    # fig_contour = optuna.visualization.matplotlib.plot_contour(study)
+    # feature_path = os.path.join(OUTPUT_PLOTS, 'contour.png')
+    # plt.tight_layout()
+    # plt.savefig(feature_path)
+    # written_files.append(feature_path)
+
+    # fig_edf = optuna.visualization.matplotlib.plot_edf(study)
+    # feature_path = os.path.join(OUTPUT_PLOTS, 'edf.png')
+    # plt.tight_layout()
+    # plt.savefig(feature_path)
+    # written_files.append(feature_path)
+
+    # fig_history = optuna.visualization.matplotlib.plot_optimization_history(study)
+    # feature_path = os.path.join(OUTPUT_PLOTS, 'history.png')
+    # plt.tight_layout()
+    # plt.savefig(feature_path)
+    # written_files.append(feature_path)
+
+    # fig_slice = optuna.visualization.matplotlib.plot_slice(study)
+    # feature_path = os.path.join(OUTPUT_PLOTS, 'slice.png')
+    # # plt.tight_layout()
+    # plt.savefig(feature_path)
+    # written_files.append(feature_path)
+
+    # # plt.show()
     
 
-    # Save the best hyprparameters
-    logger.info(f"Best hyperparameters")
-    best_trial = study.best_trial
-    best_params = study.best_params
-    best_val = study.best_value
-    best_points_per_side = study.best_params['points_per_side']
-    best_points_per_batch = study.best_params['points_per_batch']
-    best_pred_iou_thresh = study.best_params['pred_iou_thresh']
-    best_stability_score_thresh = study.best_params['stability_score_thresh']
-    best_box_nms_thresh = study.best_params['box_nms_thresh']
-    best_crop_n_layers = study.best_params['crop_n_layers']
-    best_crop_nms_thresh = study.best_params['crop_nms_thresh']
-    best_crop_overlap_ratio = study.best_params['crop_overlap_ratio']
-    best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
-    best_min_mask_region_area = study.best_params['min_mask_region_area']
+    # # Save the best hyprparameters
+    # logger.info(f"Best hyperparameters")
+    # best_trial = study.best_trial
+    # best_params = study.best_params
+    # best_val = study.best_value
+    # best_points_per_side = study.best_params['points_per_side']
+    # best_points_per_batch = study.best_params['points_per_batch']
+    # best_pred_iou_thresh = study.best_params['pred_iou_thresh']
+    # best_stability_score_thresh = study.best_params['stability_score_thresh']
+    # best_box_nms_thresh = study.best_params['box_nms_thresh']
+    # best_crop_n_layers = study.best_params['crop_n_layers']
+    # best_crop_nms_thresh = study.best_params['crop_nms_thresh']
+    # best_crop_overlap_ratio = study.best_params['crop_overlap_ratio']
+    # best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
+    # best_min_mask_region_area = study.best_params['min_mask_region_area']
 
-    #     
-    logger.info('Create dictionary of the best hyperparameters')
-    best_hp_dict = {'best_trial' : best_trial,
-                    'best_param' : best_params,
-                    'best_value' : best_val,
-                    'best_points_per_side' : best_points_per_side,
-                    'best_points_per_batch': best_points_per_batch,
-                    'best_pred_iou_thresh': best_pred_iou_thresh,
-                    'best_stability_score_thresh': best_stability_score_thresh,
-                    'best_box_nms_thresh': best_box_nms_thresh,
-                    'best_crop_n_layers': best_crop_n_layers,
-                    'best_crop_nms_thresh': best_crop_nms_thresh,
-                    'best_crop_overalp_ratio': best_crop_overlap_ratio,
-                    'best_crop_n_points_downscale_factor': best_crop_n_points_downscale_factor,
-                    'best_min_mask_region_area': best_min_mask_region_area
-                    }    
+    # #     
+    # logger.info('Create dictionary of the best hyperparameters')
+    # best_hp_dict = {'best_trial' : best_trial,
+    #                 'best_param' : best_params,
+    #                 'best_value' : best_val,
+    #                 'best_points_per_side' : best_points_per_side,
+    #                 'best_points_per_batch': best_points_per_batch,
+    #                 'best_pred_iou_thresh': best_pred_iou_thresh,
+    #                 'best_stability_score_thresh': best_stability_score_thresh,
+    #                 'best_box_nms_thresh': best_box_nms_thresh,
+    #                 'best_crop_n_layers': best_crop_n_layers,
+    #                 'best_crop_nms_thresh': best_crop_nms_thresh,
+    #                 'best_crop_overalp_ratio': best_crop_overlap_ratio,
+    #                 'best_crop_n_points_downscale_factor': best_crop_n_points_downscale_factor,
+    #                 'best_min_mask_region_area': best_min_mask_region_area
+    #                 }    
 
-    df = pd.DataFrame(best_hp_dict, index=[0])
-    feature_path = os.path.join(OUTPUT_DIR, 'best_hyperparams.txt')
-    df.to_csv(feature_path, index=False, header=True)  
-    written_files.append(feature_path) 
+    # df = pd.DataFrame(best_hp_dict, index=[0])
+    # feature_path = os.path.join(OUTPUT_DIR, 'best_hyperparams.txt')
+    # df.to_csv(feature_path, index=False, header=True)  
+    # written_files.append(feature_path) 
 
 
     print()

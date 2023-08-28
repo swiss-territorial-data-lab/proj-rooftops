@@ -49,6 +49,14 @@ assess_detections.py:
   output_dir: output/img_seg/
   detection: SAM_vectors.gpkg
 
+assess_results.py:  
+  working_dir: .
+  gt: data/GT/EGID_occupation.gpkg
+  output_dir: output/img_seg/opti
+  detections: output/img_seg/opti/SAM_vectors.gpkg
+  egids: data/GT/EGID2034760/EGID_2034760.csv
+  method: one-to-one
+
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
