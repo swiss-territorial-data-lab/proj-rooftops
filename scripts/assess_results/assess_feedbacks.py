@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 from glob import glob
 from loguru import logger
 from yaml import load, FullLoader
@@ -14,9 +15,13 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-logger.info(f"Using config_feedback_assessment.yaml as config file.")
+parser = argparse.ArgumentParser()
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
 
-with open('config/config_feedback_assessment.yaml') as fp:
+logger.info(f"Using {args.config_file} as config file.")
+
+with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 # Define constants --------------

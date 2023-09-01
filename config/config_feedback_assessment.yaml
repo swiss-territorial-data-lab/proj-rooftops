@@ -1,6 +1,6 @@
 assess_feedbacks.py:
   working_directory: .
-  input_folder: input
+  input_folder: input/STDL_occupied_surfaces/Alisa_feedbacks/
   output_folder: 'output/expert_control'
   output_file: experts_feedbacks
   expert: <EXPERT> # Add the name of the result's reviewer
