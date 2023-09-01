@@ -1,8 +1,7 @@
-import os, sys
+import os
+import sys
 
-import pandas as pd
 import geopandas as gpd
-import numpy as np
 
 
 def format_logger(logger):
@@ -24,7 +23,7 @@ def format_logger(logger):
     return logger
 
 
-def test_crs(crs1, crs2 = "EPSG:2056"):
+def test_crs(crs1, crs2="EPSG:2056"):
     '''
     Take the crs of two dataframes and compare them. If they are not the same, stop the script.
     '''
@@ -34,7 +33,7 @@ def test_crs(crs1, crs2 = "EPSG:2056"):
         crs2=crs2.crs
 
     try:
-        assert(crs1 == crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
+        assert(crs1==crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
     except Exception as e:
         print(e)
         sys.exit(1)

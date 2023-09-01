@@ -1,6 +1,6 @@
 assess_feedback.py:
   working_directory: .
-  input_folder: input
+  input_folder: input/
   output_folder: 'output/expert_control'
   output_file: experts_feedback
   expert: <EXPERT> # Add the name of the result's reviewer
