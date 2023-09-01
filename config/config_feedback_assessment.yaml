@@ -1,7 +1,7 @@
-assess_feedbacks.py:
+assess_feedback.py:
   working_directory: .
-  input_folder: input/STDL_occupied_surfaces/Alisa_feedbacks/
+  input_folder: input
   output_folder: 'output/expert_control'
-  output_file: experts_feedbacks
+  output_file: experts_feedback
   expert: <EXPERT> # Add the name of the result's reviewer
   append: False # If True new results will be add to the existing file otherwise data will be overwritten
