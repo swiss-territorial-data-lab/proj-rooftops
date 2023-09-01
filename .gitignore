@@ -1,6 +1,14 @@
 # Test scripts
 /**/test*.ipynb
 
+# Folders
+data/*
+input/*
+output/*
+model/*
+tests/*
+workdir*/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

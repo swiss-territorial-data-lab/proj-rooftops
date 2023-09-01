@@ -1,4 +1,7 @@
 assess_feedbacks.py:
-  working_directory: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_folder: verifications\retours_Benjamin
-  output_file: Benjamins_feedback.xlsx
+  working_directory: .
+  input_folder: input
+  output_folder: 'output/expert_control'
+  output_file: experts_feedbacks
+  expert: <EXPERT> # Add the name of the result's reviewer
+  append: False # If True new results will be add to the existing file otherwise data will be overwritten

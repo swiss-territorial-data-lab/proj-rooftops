@@ -6,11 +6,11 @@
 #
 attrs==23.1.0
     # via fiona
-certifi==2023.5.7
+certifi==2023.7.22
     # via
     #   fiona
     #   pyproj
-click==8.1.4
+click==8.1.7
     # via
     #   click-plugins
     #   cligj
@@ -19,15 +19,15 @@ click-plugins==1.1.1
     # via fiona
 cligj==0.7.2
     # via fiona
-colorama==0.4.6
-    # via click
 et-xmlfile==1.1.0
     # via openpyxl
 fiona==1.9.4.post1
     # via geopandas
 geopandas==0.13.2
     # via -r requirements.in
-numpy==1.25.1
+loguru==0.7.0
+    # via -r requirements.in
+numpy==1.25.2
     # via
     #   pandas
     #   shapely
@@ -35,7 +35,7 @@ openpyxl==3.1.2
     # via -r requirements.in
 packaging==23.1
     # via geopandas
-pandas==2.0.3
+pandas==2.1.0
     # via geopandas
 pyproj==3.6.0
     # via geopandas
@@ -43,7 +43,7 @@ python-dateutil==2.8.2
     # via pandas
 pytz==2023.3
     # via pandas
-pyyaml==6.0
+pyyaml==6.0.1
     # via -r requirements.in
 shapely==2.0.1
     # via geopandas
