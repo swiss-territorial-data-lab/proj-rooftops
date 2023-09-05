@@ -215,14 +215,14 @@ captured_dit_id = united_surfaces['OBJECTID_DIT'].unique().tolist() + \
 missed_DIT_roofs = roofs[~roofs['OBJECTID'].isin(captured_dit_id)].copy()
 
 united_surfaces.drop(columns=['geom_DIT', 'index_DIT', 'OBJECTID'], inplace=True)
-united_surfaces.loc[united_surfaces['intersecting_area'] < 0.75, 'OBJECTID_DIT']=NaN
+united_surfaces.loc[united_surfaces['intersecting_area'] < 0.75, 'OBJECTID_DIT'] = NaN
 
 missed_DIT_roofs.rename(columns={'OBJECTID': 'OBJECTID_DIT'}, inplace=True)
 missed_DIT_roofs.drop(columns=['geom_DIT'], inplace=True)
-missed_DIT_roofs['suitability']='unknown'
-missed_DIT_roofs['reason']='This roofs has no correspondance among the OCEN roofs'
-missed_DIT_roofs.loc[missed_DIT_roofs.area<SOLAR_ABS_MIN_AREA, 'suitability']=SUITABILITY_MESSAGES['nothing']
-missed_DIT_roofs.loc[missed_DIT_roofs.area<SOLAR_ABS_MIN_AREA, 'reason']=f'The roof section is small than {SOLAR_ABS_MIN_AREA} m2, which is too small for a solar panel.'
+missed_DIT_roofs['suitability'] = 'unknown'
+missed_DIT_roofs['reason'] = 'This roofs has no correspondance among the OCEN roofs'
+missed_DIT_roofs.loc[missed_DIT_roofs.area<SOLAR_ABS_MIN_AREA, 'suitability'] = SUITABILITY_MESSAGES['nothing']
+missed_DIT_roofs.loc[missed_DIT_roofs.area<SOLAR_ABS_MIN_AREA, 'reason'] = f'The roof section is small than {SOLAR_ABS_MIN_AREA} m2, which is too small for a solar panel.'
 logger.info(f'{missed_DIT_roofs.shape[0]} DIT roofs do not have a correspondence in the OCEN roofs.')
 
 nbr_surfaces = united_surfaces.shape[0]
@@ -232,12 +232,12 @@ del roofs, solar_surfaces, joined_surfaces
 
 
 logger.info('Setting suitability for vegetation based on roof slope...')
-united_surfaces['suitability']=[
+united_surfaces['suitability'] = [
     SUITABILITY_MESSAGES['no vegetation']
     if slope > VEGETATION_INCLINATION else None
     for slope in united_surfaces['PENTE_MOYE'].to_numpy()
 ]
-united_surfaces['reason']=[
+united_surfaces['reason'] = [
     'The slope is too steep for vegetation.'
     if slope > VEGETATION_INCLINATION else None
     for slope in united_surfaces['PENTE_MOYE'].to_numpy()

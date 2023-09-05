@@ -72,8 +72,8 @@ def test_valid_geom(poly_gdf, correct=False, gdf_obj_name=None):
         logger.error(e)
         if correct:
             logger.warning("Correction of the invalid geometries with a buffer of 0 m...")
-            corrected_poly=poly_gdf.copy()
-            corrected_poly.loc[corrected_poly.is_valid==False,'geometry']= \
+            corrected_poly = poly_gdf.copy()
+            corrected_poly.loc[corrected_poly.is_valid==False,'geometry'] = \
                             corrected_poly[corrected_poly.is_valid==False]['geometry'].buffer(0)
 
             return corrected_poly

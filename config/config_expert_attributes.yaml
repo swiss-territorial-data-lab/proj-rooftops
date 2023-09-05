@@ -2,7 +2,7 @@ filter_by_attributes.py:
   working_directory: .
   input_files:
     roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    potential_solar_surfaces: data/vectors/SHP_OCEN_SOLAIRE_ID_SURFACE_BASE\OCEN_SOLAIRE_ID_SURFACE_BASE.shp
+    potential_solar_surfaces: data/vectors/SHP_OCEN_SOLAIRE_ID_SURFACE_BASE/OCEN_SOLAIRE_ID_SURFACE_BASE.shp
     heritage:
       ensembles: data/vectors/SHP_DPS_ENSEMBLE/DPS_ENSEMBLE.shp
       classement: data/vectors/SHP_DPS_CLASSEMENT/DPS_CLASSEMENT.shp
