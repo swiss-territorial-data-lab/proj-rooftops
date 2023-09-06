@@ -2,9 +2,9 @@
 generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  tiles: input/img_seg/GT_selection/Tiles_GTselection_v3.shp
-  roofs: input/img_seg/GT_selection/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-  output_dir: input/img_seg/tiles/
+  tiles: input/image_segmentation/ground_truth/Tiles_GTselection_v3.shp
+  roofs: input/image_segmentation/ground_truth/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+  output_dir: input/image_segmentation/tiles/
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 

@@ -110,7 +110,7 @@ if __name__ == "__main__":
             coords = misc.bbox(bounds)
             coords_list.append(coords)
 
-        bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs = 'epsg:2056', geometry = coords_list).drop_duplicates(subset='EGID')
+        bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs='epsg:2056', geometry=coords_list).drop_duplicates(subset='EGID')
 
         bbox_list.to_file(feature_path)
         written_files.append(feature_path)  
