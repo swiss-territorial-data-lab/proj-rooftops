@@ -76,7 +76,7 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
     logger.info(f"...done. A file was written: {feature_path}")
 
     # Save all the vectors in a gpkg 
-    feature_path = os.path.join(OUTPUT_DIR, "SAM_vectors.gpkg")
+    feature_path = os.path.join(OUTPUT_DIR, "final", "SAM_vectors.gpkg")
     vector_layer.to_file(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")

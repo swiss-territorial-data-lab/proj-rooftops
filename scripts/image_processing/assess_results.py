@@ -8,7 +8,8 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
+import os
+import sys
 import time
 import argparse
 from loguru import logger
@@ -52,30 +53,41 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     egids=pd.read_csv(EGIDS)
     # Open shapefiles
     gdf_gt = gpd.read_file(GT)
-    if 'OBSTACLE' in gdf_gt.columns:
-        gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
-    gdf_gt = gdf_gt[(gdf_gt.occupation.astype(int) == 1) & (gdf_gt.EGID.isin(egids.EGID.to_numpy()))]
+    # if 'OBSTACLE' in gdf_gt.columns:
+    #     gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
+
+    gdf_gt['fid'] = gdf_gt['fid'].astype(int)
+    gdf_gt['type'] = gdf_gt['type'].astype(int)
+    # gdf_gt['egid_new'] = gdf_gt['egid_new'].astype(int)
+
+    gdf_gt = gdf_gt[(gdf_gt.type != 12) & (gdf_gt.egid.isin(egids.EGID.to_numpy()))]
     gdf_gt['ID_GT'] = gdf_gt.index
-    gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
+
+    gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'egid_new'})
     nbr_labels=gdf_gt.shape[0]
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
     if isinstance(DETECTIONS, str):
         # gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
-        gdf_detec = gpd.read_file(DETECTIONS, layer='EGID_occupation')
+        # gdf_detec = gpd.read_file(DETECTIONS, layer='EGID_occupation')
+        gdf_detec = gpd.read_file(DETECTIONS)
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
         gdf_detec = DETECTIONS
     else:
         logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
-    gdf_detec = gdf_detec[gdf_detec['occupation'].astype(int) == 1]
+    # gdf_detec = gdf_detec[gdf_detec['occupation'].astype(int) == 1]
+
+
+    if 'value' in gdf_detec.columns:
+        gdf_detec.rename(columns={'value': 'pred_id'}, inplace=True)
     gdf_detec['ID_DET'] = gdf_detec.pred_id
     gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
     logger.info(f"Read detection file: {len(gdf_detec)} shapes")
 
     logger.info(f"Metrics computation")
-    if METHOD=='one-to-one':
+    if METHOD == 'one-to-one':
         logger.info('Using the one-to-one method.')
-    elif METHOD=='one-to-many':
+    elif METHOD == 'one-to-many':
         logger.info('Using one-to-many method.')
     else:
         logger.warning('Unknown method, defaulting to one-to-one.')
@@ -92,9 +104,9 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     FP = fp_gdf.shape[0]
     FN = fn_gdf.shape[0]
 
-    if METHOD=='one-to-many':
-        tp_with_duplicates=tp_gdf.copy()
-        dissolved_tp_gdf=tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
+    if METHOD == 'one-to-many':
+        tp_with_duplicates = tp_gdf.copy()
+        dissolved_tp_gdf = tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
 
         geom1 = dissolved_tp_gdf.geometry.values.tolist()
         geom2 = dissolved_tp_gdf['geom_GT'].values.tolist()
@@ -103,7 +115,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
             iou.append(metrics.intersection_over_union(i, ii))
         dissolved_tp_gdf['IOU'] = iou
 
-        tp_gdf=dissolved_tp_gdf.copy()
+        tp_gdf = dissolved_tp_gdf.copy()
 
         logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
 
@@ -117,7 +129,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
 
     nbr_tagged_labels = TP + FN
     diff_in_labels = nbr_labels - nbr_tagged_labels
-    filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+    filename = os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
     if diff_in_labels != 0:
@@ -125,40 +137,45 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
         logger.info(f'The list of the problematic labels in exported to {filename}.')
 
         if diff_in_labels > 0:
-            tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+            tagged_labels = tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
 
-            untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf = gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
             untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
 
-            layer_name='missing_label_tags'
+            layer_name = 'missing_label_tags'
             untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
 
         elif diff_in_labels < 0:
             all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
-            duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
-            duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
+            duplicated_id_gt = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
             duplicated_labels.drop(columns=['geom_GT', 'geom_DET', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
-            layer_name='duplicated_label_tags'
+            layer_name = 'duplicated_label_tags'
             duplicated_labels.to_file(filename, layer=layer_name, index=False)
         
-        written_files[filename]=layer_name
+        written_files[filename] = layer_name
 
 
     # Set the final dataframe with tagged prediction
+
     tagged_preds_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-
-    tagged_preds_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET', 'ID_DET', 'area_DET'], axis = 1, inplace=True)
-    tagged_preds_gdf=tagged_preds_gdf.round({'IOU': 2})
+    tagged_preds_gdf.drop(['fid', 'index_right', 'geom_GT', 'geom_DET', 'ID_DET', 'area_DET', 'egid_new', 'egid'], axis=1, inplace=True)
+    # tagged_preds_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET', 'ID_DET', 'area_DET'], axis = 1, inplace=True)
+    tagged_preds_gdf = tagged_preds_gdf.round({'IOU': 2})
+    
     tagged_preds_gdf.reset_index(drop=True, inplace=True)
+    tagged_preds_gdf['fid'] = tagged_preds_gdf.index
 
-    layer_name='tagged_predictions'
+    layer_name = 'tagged_predictions'
     feature_path = os.path.join(OUTPUT_DIR, 'tagged_predictions.gpkg')
-    tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
-    written_files[feature_path]=layer_name
+    tagged_preds_gdf.to_file(feature_path, index=False)
+    # tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
 
+    written_files[feature_path] = layer_name
 
+    
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
         logger.success(f'  file: {path}, layer: {written_files[path]}')
@@ -191,7 +208,7 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
     METHOD = cfg['method']
 
-    f1, diff_in_labels=main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD)
+    f1, diff_in_labels = main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD)
 
     # Stop chronometer  
     toc = time.time()
