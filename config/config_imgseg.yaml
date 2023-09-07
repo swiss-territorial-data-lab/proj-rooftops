@@ -51,7 +51,7 @@ assess_detections.py:
 
 assess_results.py:  
   working_dir: .
-  gt: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL.shp
   output_dir: output/image_segmentation/final
   detections: output/image_segmentation/final/SAM_vectors.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
