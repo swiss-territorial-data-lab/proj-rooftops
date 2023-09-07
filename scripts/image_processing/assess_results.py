@@ -27,7 +27,7 @@ logger = fct_misc.format_logger(logger)
 
 # Define functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -45,7 +45,8 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    output_dir = os.path.join(OUTPUT_DIR, 'vectors')
+    fct_misc.ensure_dir_exists(output_dir)
 
     written_files = {}
 
@@ -68,11 +69,14 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
     nbr_labels = labels_gdf.shape[0]
     logger.info(f"Read LABELS file: {nbr_labels} shapes")
 
+
     if isinstance(DETECTIONS, str):
+        print('hello')
         # detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
         # detections_gdf = gpd.read_file(DETECTIONS, layer='EGID_occupation')
-        detections_gdf = gpd.read_file(DETECTIONS)
+        detections_gdf = gpd.read_file(os.path.join(output_dir, DETECTIONS))
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
+        print('coucou')
         detections_gdf = DETECTIONS
     else:
         logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
@@ -132,15 +136,15 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
 
     # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN
-    diff_in_labels = nbr_labels - nbr_tagged_labels
-    filename = os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
+    labels_diff= nbr_labels - nbr_tagged_labels
+    filename = os.path.join(output_dir, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
-    if diff_in_labels != 0:
+    if labels_diff != 0:
         logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
         logger.info(f'The list of the problematic labels in exported to {filename}.')
 
-        if diff_in_labels > 0:
+        if labels_diff > 0:
             tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
             untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
@@ -149,7 +153,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
             layer_name = 'missing_label_tags'
             untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-        elif diff_in_labels < 0:
+        elif labels_diff < 0:
             all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
@@ -170,7 +174,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
     tagged_preds_gdf['fid'] = tagged_preds_gdf.index
 
     layer_name = 'tagged_predictions'
-    feature_path = os.path.join(OUTPUT_DIR, 'tagged_predictions.gpkg')
+    feature_path = os.path.join(output_dir, 'tagged_predictions.gpkg')
     tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
 
     written_files[feature_path] = layer_name
@@ -180,7 +184,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD):
     for path in written_files.keys():
         logger.success(f'  file: {path}, layer: {written_files[path]}')
 
-    return f1, diff_in_labels       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
+    return f1, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
 # ------------------------------------------
 
@@ -208,7 +212,7 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
     METHOD = cfg['method']
 
-    f1, diff_in_labels = main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, LABELS, EGIDS, METHOD)
+    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD)
 
     # Stop chronometer  
     toc = time.time()

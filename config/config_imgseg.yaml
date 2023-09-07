@@ -32,7 +32,6 @@ segment_images.py:
 produce_vector_layer.py:
   working_dir: .
   detection_dir: output/image_segmentation/segmented_images/
-  # roofs_shp: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: output/image_segmentation/
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
@@ -42,21 +41,21 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL.shp
-  output_dir: output/image_segmentation/final
-  detections: output/image_segmentation/final/SAM_vectors.gpkg
+  output_dir: output/image_segmentation
+  detections: roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
   method: one-to-one
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles_opti/
-  # roofs: input/img_seg/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  # gt: data/GT/CAD_BATIMENT_HORSOL_OCCUPATION_GT.gpkg
-  output_dir: output/img_seg/opti/
-  detection: SAM_vectors.gpkg
+  image_dir: input/image_segmentation/tiles/
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL.shp
+  output_dir: output/image_segmentation/optimization/
+  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  method: one-to-one
+  detections: roof_segmentation.gpkg
   vector_extension: 'gpkg'                # 'gpkg' or 'shp'
   srs: "EPSG:2056"                        # Projection of the input file 
   image_crop:                             # Activate the option to crop the input image according to pixel coordinates

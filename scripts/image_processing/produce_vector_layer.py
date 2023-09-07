@@ -33,6 +33,7 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
     # Create an output directory in case it doesn't exist
     misc.ensure_dir_exists(OUTPUT_DIR)
     detection_dir = os.path.join(OUTPUT_DIR, 'segmented_images')
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'vectors'))
 
     written_files = []
 
@@ -53,7 +54,6 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
         object_shp = objects.dissolve('value', as_index=False) 
         # object_shp = objects.dissolve('mask_value', as_index=False)
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        print('egid', egid, tile)
 
         egid_shp = rooftops[rooftops['EGID'] == egid]
         egid_shp.buffer(0)
@@ -68,15 +68,15 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
         # Merge/Combine multiple shapefiles into one gdf
         vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
 
-    # Save the vectors for each EGID in layers in a gpkg 
-    feature_path = os.path.join(OUTPUT_DIR, "SAM_egid_vectors.gpkg")
+    # Save the vectors for each EGID in layers in a gpkg !!! Will be deleted at the end !!!
+    feature_path = os.path.join(output_dir, "roof_segmentation_egid.gpkg")
     for egid in vector_layer.EGID.unique():
         vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")
 
     # Save all the vectors in a gpkg 
-    feature_path = os.path.join(OUTPUT_DIR, "final", "SAM_vectors.gpkg")
+    feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
     vector_layer.to_file(feature_path)
     written_files.append(feature_path)  
     logger.info(f"...done. A file was written: {feature_path}")

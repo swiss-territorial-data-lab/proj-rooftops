@@ -2,7 +2,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 # 
-#  proj-rooftops: automatic detection of rooftops objects
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
@@ -39,7 +39,7 @@ import functions.fct_optimization as opti
 
 import segment_images
 import produce_vector_layer
-import assess_detections
+import assess_results
 
 logger = misc.format_logger(logger)
 logger.remove()
@@ -89,7 +89,7 @@ def objective(trial):
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
     produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
-    f1 = assess_results.main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION)
+    f1, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD)
 
     return f1
 
@@ -116,9 +116,11 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     ROOFS = cfg['roofs']
-    GT = cfg['gt']
+    LABELS = cfg['ground_truth']
+    EGIDS = cfg['egids']
+    METHOD = cfg['method']
     OUTPUT_DIR = cfg['output_dir']    
-    DETECTION = cfg['detection']
+    DETECTIONS = cfg['detections']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
     CROP = cfg['image_crop']['enable']
@@ -188,84 +190,7 @@ if __name__ == "__main__":
     written_files.extend(opti.plot_optimization_results(study, output_plots))
 
     logger.info('Save the best hyperparameters')
-    written_files.append(opti.save_best_hyperparameters(study))
-
-    # # Opitmization plots
-    # OUTPUT_PLOTS = os.path.join(OUTPUT_DIR, 'plots')
-    # misc.ensure_dir_exists(OUTPUT_PLOTS)
-
-    # fig_importance = optuna.visualization.matplotlib.plot_param_importances(study)
-    # # optuna.visualization.plot_param_importances(study).show(renderer="browser")
-    # feature_path = os.path.join(OUTPUT_PLOTS, 'importance.png')
-    # plt.tight_layout()
-    # plt.savefig(feature_path)
-    # written_files.append(feature_path)
-
-    # fig_contour = optuna.visualization.matplotlib.plot_contour(study)
-    # feature_path = os.path.join(OUTPUT_PLOTS, 'contour.png')
-    # plt.tight_layout()
-    # plt.savefig(feature_path)
-    # written_files.append(feature_path)
-
-    # fig_edf = optuna.visualization.matplotlib.plot_edf(study)
-    # feature_path = os.path.join(OUTPUT_PLOTS, 'edf.png')
-    # plt.tight_layout()
-    # plt.savefig(feature_path)
-    # written_files.append(feature_path)
-
-    # fig_history = optuna.visualization.matplotlib.plot_optimization_history(study)
-    # feature_path = os.path.join(OUTPUT_PLOTS, 'history.png')
-    # plt.tight_layout()
-    # plt.savefig(feature_path)
-    # written_files.append(feature_path)
-
-    # fig_slice = optuna.visualization.matplotlib.plot_slice(study)
-    # feature_path = os.path.join(OUTPUT_PLOTS, 'slice.png')
-    # # plt.tight_layout()
-    # plt.savefig(feature_path)
-    # written_files.append(feature_path)
-
-    # # plt.show()
-    
-
-    # # Save the best hyprparameters
-    # logger.info(f"Best hyperparameters")
-    # best_trial = study.best_trial
-    # best_params = study.best_params
-    # best_val = study.best_value
-    # best_points_per_side = study.best_params['points_per_side']
-    # best_points_per_batch = study.best_params['points_per_batch']
-    # best_pred_iou_thresh = study.best_params['pred_iou_thresh']
-    # best_stability_score_thresh = study.best_params['stability_score_thresh']
-    # best_box_nms_thresh = study.best_params['box_nms_thresh']
-    # best_crop_n_layers = study.best_params['crop_n_layers']
-    # best_crop_nms_thresh = study.best_params['crop_nms_thresh']
-    # best_crop_overlap_ratio = study.best_params['crop_overlap_ratio']
-    # best_crop_n_points_downscale_factor = study.best_params['crop_n_points_downscale_factor']
-    # best_min_mask_region_area = study.best_params['min_mask_region_area']
-
-    # #     
-    # logger.info('Create dictionary of the best hyperparameters')
-    # best_hp_dict = {'best_trial' : best_trial,
-    #                 'best_param' : best_params,
-    #                 'best_value' : best_val,
-    #                 'best_points_per_side' : best_points_per_side,
-    #                 'best_points_per_batch': best_points_per_batch,
-    #                 'best_pred_iou_thresh': best_pred_iou_thresh,
-    #                 'best_stability_score_thresh': best_stability_score_thresh,
-    #                 'best_box_nms_thresh': best_box_nms_thresh,
-    #                 'best_crop_n_layers': best_crop_n_layers,
-    #                 'best_crop_nms_thresh': best_crop_nms_thresh,
-    #                 'best_crop_overalp_ratio': best_crop_overlap_ratio,
-    #                 'best_crop_n_points_downscale_factor': best_crop_n_points_downscale_factor,
-    #                 'best_min_mask_region_area': best_min_mask_region_area
-    #                 }    
-
-    # df = pd.DataFrame(best_hp_dict, index=[0])
-    # feature_path = os.path.join(OUTPUT_DIR, 'best_hyperparams.txt')
-    # df.to_csv(feature_path, index=False, header=True)  
-    # written_files.append(feature_path) 
-
+    written_files.append(opti.save_best_hyperparameters(study, OUTPUT_DIR))
 
     print()
     logger.info("The following files were written. Let's check them out!")

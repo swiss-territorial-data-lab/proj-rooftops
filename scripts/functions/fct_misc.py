@@ -3,6 +3,7 @@ import sys
 import rasterio
 import pandas as pd
 import geopandas as gpd
+from loguru import logger
 from shapely.geometry import Polygon
 from rasterio.windows import Window
 
@@ -25,7 +26,8 @@ def format_logger(logger):
             level="ERROR")
 
     return logger
-    import logger
+    
+logger = format_logger(logger)
 
 
 def test_crs(crs1, crs2="EPSG:2056"):
@@ -52,6 +54,8 @@ def ensure_dir_exists(dirpath):
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
         logger.info(f"The directory {dirpath} was created.")
+    
+    return dirpath
 
 
 def bbox(bounds):
