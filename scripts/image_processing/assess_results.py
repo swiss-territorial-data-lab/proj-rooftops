@@ -50,7 +50,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     written_files={}
 
     # Get the EGIDS of interest
-    egids=pd.read_csv(EGIDS)
+    egids = pd.read_csv(EGIDS)
     # Open shapefiles
     gdf_gt = gpd.read_file(GT)
     # if 'OBSTACLE' in gdf_gt.columns:
@@ -60,11 +60,12 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     gdf_gt['type'] = gdf_gt['type'].astype(int)
     # gdf_gt['egid_new'] = gdf_gt['egid_new'].astype(int)
 
+    # Class 12 correspond to free surfaces, other classes are ojects
     gdf_gt = gdf_gt[(gdf_gt.type != 12) & (gdf_gt.egid.isin(egids.EGID.to_numpy()))]
     gdf_gt['ID_GT'] = gdf_gt.index
 
     gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'egid_new'})
-    nbr_labels=gdf_gt.shape[0]
+    nbr_labels = gdf_gt.shape[0]
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
     if isinstance(DETECTIONS, str):
