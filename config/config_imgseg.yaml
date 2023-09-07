@@ -39,16 +39,6 @@ produce_vector_layer.py:
   srs: "EPSG:2056"                        # Projection of the input file
 
 # 4 - Evaluate the results
-# GT not yet available on the EGID selection
-# Assess script can be run for a given EGID so far(i.e. the workflow can be run for EGID 2034760)
-# Data to run the script can be found here: /mnt/s3/proj-rooftops/02_Data/ground_truth/Single_Buildings/EGID2034760/
-# Adapt the path accordingly
-assess_detections.py:  
-  working_dir: .
-  gt: data/GT/EGID2034760/CAD_BATIMENT_HORSOL_OCCUPATION_EGID2034760.gpkg
-  output_dir: output/img_seg/
-  detection: SAM_vectors.gpkg
-
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL.shp

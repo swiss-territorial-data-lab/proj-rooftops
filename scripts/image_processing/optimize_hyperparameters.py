@@ -89,7 +89,7 @@ def objective(trial):
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
     produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
-    f1 = assess_detections.main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION)
+    f1 = assess_results.main(WORKING_DIR, OUTPUT_DIR, GT, DETECTION)
 
     return f1
 
