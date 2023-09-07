@@ -1,12 +1,11 @@
 import os
 from loguru import logger
 
+import optuna
 import pandas as pd
-
 import plotly.express as px
 import plotly.graph_objects as go
 
-import optuna
 
 def plot_optimization_results(study, output_path='.'):
     """Plot the parameter importance, the contour, the EDF, the history and the slice for the optimization.
@@ -19,7 +18,7 @@ def plot_optimization_results(study, output_path='.'):
         list: path of the written files from the working directory.
     """
 
-    written_files=[]
+    written_files = []
 
     # fig_importance = optuna.visualization.plot_param_importances(study)
     # feature_path = os.path.join(output_path, 'importance.jpeg')
@@ -53,6 +52,7 @@ def plot_optimization_results(study, output_path='.'):
 
     return written_files
 
+
 def save_best_hyperparameters(study, output_dir='.'):
     """Save the best hyperparameters into a txt file.
 
@@ -68,13 +68,13 @@ def save_best_hyperparameters(study, output_dir='.'):
     best_params = study.best_params
     best_val = study.best_value
 
-    best_hyperparam_dict={'best_trail': best_trial, 'best_value': best_val}
+    best_hyperparam_dict = {'best_trail': best_trial, 'best_value': best_val}
 
     for key in best_params.keys():
         best_hyperparam_dict[key]=best_params[key]
 
-    best_hyperparam_df=pd.DataFrame(best_hyperparam_dict, index=[0])
-    feature_path=os.path.join(output_dir, 'best_hyperparams.csv')
+    best_hyperparam_df = pd.DataFrame(best_hyperparam_dict, index=[0])
+    feature_path = os.path.join(output_dir, 'best_hyperparams.csv')
     best_hyperparam_df.to_csv(feature_path, index=False, header=True)
     
     return feature_path
