@@ -35,14 +35,15 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 ### Files structure
 
-1. `tiles_generation.py` : produces custom tiles of the extension of a given roof
-2. `SAM_rooftops.py` : image segmentation: detection masks + masks vectorisation
+1. `generate_tiles.py` : produces custom tiles of the extension of a given roof
+2. `segment_images.py` : image segmentation: detection masks + masks vectorisation
 3. `produce_vector_layer.py` : filtering of the vector layer for each building + aggregation of all layers into a single layer (binary: free/occupied)
-4. `assess_detection.py` : evaluation of the results. Comparison of results to Ground Truth, metrics computation and detection tagging.
+4. `assess_results.py` : evaluation of the results. Comparison of results to Ground Truth, metrics computation and detection tagging.
+5. `optimize_hyperparameters.py` : Optuna framework to optimize hyperparameters
 
 ### Data
 
-This part of the project use True Orthophotos processed from flight acquisitions of the Geneva canton in 2019.
+This part of the project uses True Orthophotos processed from flight acquisitions of the Geneva canton in 2019.
 
 - True Orthophotos (image_dir): /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/*.tiff
 
@@ -50,26 +51,20 @@ Shapefiles are also used as input data and listed below:
 
 - Data linked to the building selection of the Ground Truth:
 
-    - Roof shape (roofs_shp): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/GTselection/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-    - Tiles shape (roofs_shp): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/GTselection/Tiles_GTselection_v3.shp
-
-As the GT has not been entirely delivered yet the last script `assess_detection.py` is not ready to run with these data...
-
-- Single building data:
-
-The entire workflow can be run with a single building (EGID 2034760)
-
-    - Roof shape (roofs_shp): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of the building: /mnt/s3/proj-rooftops/02_Data/ground_truth/Single_Buildings/EGID2034760/
-    - Tiles shape (roofs_shp): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/GTselection/Tiles_GTselection_v3.shp
-    - GT shape (gt_shp): /mnt/s3/proj-rooftops/02_Data/ground_truth/Single_Buildings/EGID2034760/CAD_BATIMENT_HORSOL_TOIT_EGID_2034760.shp
-
+    - Roof shape (roofs): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/egid/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
+    - Tiles shape (tiles): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/tiles/Tiles_GTselection_v3.shp
+    - Ground truth shape (labels): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_31_08_STDL/roofs_31_08_STDL_corrected.shp
 
 ### Workflow
 
 Following the end-to-end, the workflow can be run by issuing the following list of actions and commands:
 
     $ cd proj-rooftops
-    $ python3 scripts/image_processing/tiles_generation.py config/config-imgseg.yaml
-    $ python3 scripts/image_processing/SAM_rooftops.py config/config-imgseg.yaml
-    $ python3 scripts/image_processing/produce_vector_layer.py config/config-imgseg.yaml
-    $ python3 scripts/image_processing/assess_detection.py config/config-imgseg.yaml
+    $ python3 scripts/image_processing/generate_tiles.py config/config_imgseg.yaml
+    $ python3 scripts/image_processing/image_segmentation.py config/config_imgseg.yaml
+    $ python3 scripts/image_processing/produce_vector_layer.py config/config_imgseg.yaml
+    $ python3 scripts/image_processing/assess_results.py config/config_imgseg.yaml
+
+The model optimization (find the hyperparameters maximizing the f1 score) can be performed as follow:
+
+    $ python3 scripts/image_processing/optimize_hyperparameters.py config/config_imgseg.yaml
