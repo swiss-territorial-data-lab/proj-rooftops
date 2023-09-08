@@ -74,7 +74,7 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     true_detections_index=true_detections_gdf['detection_id'].unique().tolist()
 
     # Check that the label is at least 25% under the prediction.
-    tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['geom_GT'].intersection(tp_gdf_ini['geom_DET']).area/tp_gdf_ini['geom_GT'].area, 3)
+    tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['label_geometry'].intersection(tp_gdf_ini['detection_geometry']).area/tp_gdf_ini['label_geometry'].area, 3)
     tp_gdf_temp=tp_gdf_ini[(tp_gdf_ini['detection_id'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
 
     # For each label, only keep the pred with the best IOU.

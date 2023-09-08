@@ -63,32 +63,23 @@ if __name__ == "__main__":
 
     # Get the rooftops shapes
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
-
-    if os.path.exists(feature_path):
-        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
-        rooftops = gpd.read_file(feature_path)
-    else:
-        logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
-        logger.info(f"Create it")
-        roofs = gpd.read_file(os.path.join(WORKING_DIR, ROOFS_DIR, ROOFS_NAME))
-        logger.info(f"Dissolved shapes by EGID number")
-        rooftops = roofs.dissolve('EGID', as_index=False)
-        rooftops.to_file(feature_path)
-        written_files.append(feature_path)  
-        logger.info(f"...done. A file was written: {feature_path}")
+    attribute = 'EGID'
+    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
+    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    
+    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     # AOI 
     logger.info("Select rooftop's shapes in the AOI")
     tiles = gpd.read_file(TILES)
 
     # Get the EGID list from file
-    rooftops_list_gdf = rooftops.copy()
-    logger.info(f"Number of building to process: {len(rooftops_list_gdf)}")
+    roofs_gdf = roofs.copy()
+    logger.info(f"Number of building to process: {len(roofs_gdf)}")
 
     # Find the image's tiles intersecting the rooftops' shapes  
     logger.info("Intersection of rooftop shapes and image tiles")
-    join_tiles_rooftops = gpd.sjoin(rooftops_list_gdf, tiles, how="left")
+    join_tiles_roofs = gpd.sjoin(roofs_gdf, tiles, how="left")
     
     image_list = []  
     egid_list = []
@@ -104,7 +95,7 @@ if __name__ == "__main__":
         logger.info(f"File bbox.gpkg does not exist")
         logger.info(f"Create it")
 
-        for row in join_tiles_rooftops.itertuples():
+        for row in join_tiles_roofs.itertuples():
             egid = row.EGID
             egid_list.append(egid)
             bounds = row.geometry.bounds
@@ -120,13 +111,13 @@ if __name__ == "__main__":
 
     # Get the image tile(s) number intersecting the rooftop shape 
     logger.info("Find the number of image tile(s) intersecting the rooftop shape")
-    unique_egid = join_tiles_rooftops["EGID"].unique() 
+    unique_egid = join_tiles_roofs["EGID"].unique() 
 
     if MASK:
         logger.info("Applying building mask")
 
     for egid in tqdm(unique_egid, desc="Production of tiles fitting the roof's extent", total=len(unique_egid)):
-        image_list = join_tiles_rooftops.loc[join_tiles_rooftops['EGID'] == egid, 'TileName'].to_numpy().tolist()
+        image_list = join_tiles_roofs.loc[join_tiles_roofs['EGID'] == egid, 'TileName'].to_numpy().tolist()
 
         tiles_list = [os.path.join(IMAGE_DIR, image + '.tif') for image in image_list]   
 
@@ -159,7 +150,7 @@ if __name__ == "__main__":
         image = raster
 
         if MASK:
-            egid_shape = rooftops.loc[rooftops['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)                
+            egid_shape = roofs.loc[roofs['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)                
 
             mask_image, mask_transform = mask(raster, egid_shape)
             mask_meta=raster.meta

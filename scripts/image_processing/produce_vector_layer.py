@@ -38,7 +38,7 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
     written_files = []
 
     # Get the rooftops shapes
-    rooftops = gpd.read_file(ROOFS)
+    roofs = gpd.read_file(ROOFS)
 
     # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
@@ -55,7 +55,7 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
         # object_shp = objects.dissolve('mask_value', as_index=False)
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
 
-        egid_shp = rooftops[rooftops['EGID'] == egid]
+        egid_shp = roofs[roofs['EGID'] == egid]
         egid_shp.buffer(0)
         # egid_shp.geometry = egid_shp.geometry.buffer(1)
 

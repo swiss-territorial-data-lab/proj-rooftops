@@ -97,3 +97,32 @@ def crop(source, size, output):
             dst.write(src.read(window=window))  
 
         return file_path
+
+
+def dissolve_by_attribute(desired_file, original_file, name, attribute):
+    """Dissolve shape according to a given attribute in the gdf
+
+    Args:
+        desired_file (path): path to the processed geodataframe 
+        original_file (path): path to the original geodataframe on which dissolution is perfomed
+        name (str): root name of the file
+        attribute (key): column key on which the operation is performed
+
+    Returns:
+        gdf: geodataframes dissolved according to the provided gdf attribute
+    """
+
+    if os.path.exists(desired_file):
+        logger.info(f"File {name}_{attribute}.shp already exists")
+        gdf = gpd.read_file(desired_file)
+    else:
+        logger.info(f"File {name}_{attribute}.shp does not exist")
+        logger.info(f"Create it")
+        gdf = gpd.read_file(original_file)
+        logger.info(f"Dissolved shapes by {attribute}")
+        gdf = gdf.dissolve(attribute, as_index=False)
+        gdf.to_file(desired_file)
+        written_files.append(desired_file)  
+        logger.info(f"...done. A file was written: {desired_file}")
+
+    return gdf

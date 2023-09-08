@@ -44,6 +44,7 @@ assess_results.py:
   output_dir: output/image_segmentation
   detections: roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   method: one-to-one
 
 # 5 - Hyperparamters optimization

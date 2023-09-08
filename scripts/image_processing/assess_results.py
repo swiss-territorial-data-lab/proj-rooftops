@@ -20,14 +20,14 @@ import pandas as pd
 import geopandas as gpd
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 import functions.fct_metrics as metrics
 
-logger = fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -35,6 +35,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD):
         OUTPUT_DIR (path): output directory
         DETECTIONS (path): file of the detections
         LABELS (path): file of the ground truth
+        ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
         METHOD (string): method to use for the assessment of the results, either one-to-one or one-to-many.
 
@@ -46,12 +47,22 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD):
 
     # Create an output directory in case it doesn't exist
     output_dir = os.path.join(OUTPUT_DIR, 'vectors')
-    fct_misc.ensure_dir_exists(output_dir)
+    misc.ensure_dir_exists(output_dir)
 
     written_files = {}
 
     # Get the EGIDS of interest
     egids = pd.read_csv(EGIDS)
+
+    # Get the rooftops shapes
+    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
+    attribute = 'EGID'
+    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
+    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    
+    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
 
     # Open shapefiles
     labels_gdf = gpd.read_file(LABELS)
@@ -66,17 +77,34 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD):
     labels_gdf = labels_gdf[(labels_gdf.type != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['label_id'] = labels_gdf.index
 
+    # Add geometry attributes
+    labels_gdf['area'] = labels_gdf.area
+    # labels_gdf['centroid'] = labels_gdf.centroid
+
+    # Nearest distance between polygons
+    labels_gdf_tmp = labels_gdf.join(roofs_gdf[['EGID', 'geometry']].set_index('EGID'), on='EGID', how='left', lsuffix='_label', rsuffix='_roof', validate='m:1')
+
+    geom1 = labels_gdf_tmp['geometry_label'].to_numpy().tolist()
+    geom2 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
+
+    nearest_distance = []
+    
+    for (i, ii) in zip(geom1, geom2):
+        if i == None or ii == None:
+            nearest_distance.append(None)
+        else:
+            nearest_distance.append(i.distance(ii))
+    labels_gdf['nearest_distance_poly'] = nearest_distance
+
     nbr_labels = labels_gdf.shape[0]
     logger.info(f"Read LABELS file: {nbr_labels} shapes")
 
 
     if isinstance(DETECTIONS, str):
-        print('hello')
         # detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
         # detections_gdf = gpd.read_file(DETECTIONS, layer='EGID_occupation')
         detections_gdf = gpd.read_file(os.path.join(output_dir, DETECTIONS))
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
-        print('coucou')
         detections_gdf = DETECTIONS
     else:
         logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
@@ -209,10 +237,11 @@ if __name__ == "__main__":
 
     DETECTIONS=cfg['detections']
     LABELS = cfg['ground_truth']
+    ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
     METHOD = cfg['method']
 
-    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD)
+    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD)
 
     # Stop chronometer  
     toc = time.time()
