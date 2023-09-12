@@ -8,6 +8,7 @@ prepare_data.py:
     egids: EGIDs.csv
   output_dir: processed/PCD_segmentation
   filters:
+    building_type: 'all'
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude

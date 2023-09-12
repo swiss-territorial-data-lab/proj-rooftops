@@ -55,6 +55,7 @@ FILTERS=cfg['filters']
 PCD_TILES=INPUTS['pcd_tiles']
 SHP_ROOFS = INPUTS['shp_roofs']
 EGIDS = INPUTS['egids']
+BUILDING_TYPE = FILTERS['building_type']
 FILTER_CLASS = FILTERS['filter_class']
 CLASS_NUMBER = FILTERS['class_number']
 FILTER_ROOF = FILTERS['filter_roof']
@@ -80,6 +81,12 @@ written_files = []
 
 # Get the EGIDS of interest
 egids=pd.read_csv(EGIDS)
+if BUILDING_TYPE in ['administrative', 'contemporary', 'industrial', 'residential', 'villa']:
+    egids = egids[egids.type==BUILDING_TYPE]
+elif BUILDING_TYPE!='all':
+    logger.critical('Unknown building type passed.')
+    sys.exit(1)
+
 
 # Get the rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
@@ -144,12 +151,12 @@ for egid in tqdm(egids.EGID.to_numpy()):
         pcd_path = os.path.join(WORKING_DIR, tile.filepath)
 
         # Perform .las clip with shapefile    
-        clip_path = os.path.join(output_dir, tile.fme_basena + PCD_EXT)
+        clip_path = os.path.join(output_dir, file_name + PCD_EXT)
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
         clipped_inputs=clipped_inputs + ', ' + clip_path
 
-    # Join the PCD for EGID expanding over serveral tiles
+    # Join the PCD if the EGID expands over serveral tiles
     if useful_tiles.shape[0]==1:
         whole_pcd_path=clip_path
     else:
