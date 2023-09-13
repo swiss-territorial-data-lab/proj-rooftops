@@ -27,11 +27,11 @@ def plot_optimization_results(study, output_path='.'):
     fig_importance.write_image(feature_path)
     written_files.append(feature_path)
 
-    fig_contour = optuna.visualization.plot_contour(study)
-    feature_path = os.path.join(output_path, 'contour.jpeg')
-    fig_contour.write_html(feature_path.replace('jpeg', 'html'))
-    # fig_contour.write_image(feature_path)
-    written_files.append(feature_path)
+    # fig_contour = optuna.visualization.plot_contour(study)
+    # feature_path = os.path.join(output_path, 'contour.jpeg')
+    # fig_contour.write_html(feature_path.replace('jpeg', 'html'))
+    # # fig_contour.write_image(feature_path)
+    # written_files.append(feature_path)
 
     fig_edf = optuna.visualization.plot_edf(study)
     feature_path = os.path.join(output_path, 'edf.jpeg')
@@ -68,7 +68,7 @@ def save_best_hyperparameters(study, output_dir='.'):
     best_params = study.best_params
     best_val = study.best_value
 
-    best_hyperparam_dict={'best_trail': best_trial, 'best_value': best_val}
+    best_hyperparam_dict={'best_trial': best_trial, 'best_value': best_val}
 
     for key in best_params.keys():
         best_hyperparam_dict[key]=best_params[key]

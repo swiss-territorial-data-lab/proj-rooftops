@@ -25,7 +25,7 @@ def objective(trial):
     """Define the function to be optimized by the hyperparameters
 
     Args:
-        trial (trail object): suggested hyperparametesr for the objective optimization
+        trial (trial object): suggested hyperparametesr for the objective optimization
     """
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
@@ -126,7 +126,7 @@ written_files = []
 logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=100)
+study.optimize(objective, n_trials=200)
 
 study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
 joblib.dump(study, study_path)
