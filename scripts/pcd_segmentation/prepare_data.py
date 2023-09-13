@@ -82,11 +82,13 @@ written_files = []
 # Get the EGIDS of interest
 egids=pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'contemporary', 'industrial', 'residential', 'villa']:
+    logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
     egids = egids[egids.type==BUILDING_TYPE]
 elif BUILDING_TYPE!='all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
 
+logger.info(f'The algorithm will be working on {egids.shape[0]} egids.')
 
 # Get the rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
@@ -151,7 +153,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
         pcd_path = os.path.join(WORKING_DIR, tile.filepath)
 
         # Perform .las clip with shapefile    
-        clip_path = os.path.join(output_dir, file_name + PCD_EXT)
+        clip_path = os.path.join(output_dir, file_name + '_' + tile.fme_basena + PCD_EXT)
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
         clipped_inputs=clipped_inputs + ', ' + clip_path
@@ -199,7 +201,8 @@ for egid in tqdm(egids.EGID.to_numpy()):
     if clip_path==whole_pcd_path:
         os.remove(clip_path)
     else:
-        os.remove(clip_path)
+        for path in clipped_inputs.split(', '):
+            os.remove(path)
         os.remove(whole_pcd_path)
 
 print()
