@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from loguru import logger
 
 import geopandas as gpd
@@ -19,26 +20,29 @@ def format_logger(logger):
             level="WARNING", filter=lambda record: record["level"].no < 40)
     logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - <red>{level}</red> - <level>{message}</level>",
             level="ERROR")
+    
     return logger
 
 
-logger=format_logger(logger)
+logger = format_logger(logger)
 
 
-def test_crs(crs1, crs2 = "EPSG:2056"):
+def test_crs(crs1, crs2="EPSG:2056"):
     '''
     Take the crs of two dataframes and compare them. If they are not the same, stop the script.
     '''
+
     if isinstance(crs1, gpd.GeoDataFrame):
-        crs1=crs1.crs
+        crs1 = crs1.crs
     if isinstance(crs2, gpd.GeoDataFrame):
-        crs2=crs2.crs
+        crs2 = crs2.crs
 
     try:
-        assert(crs1 == crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
+        assert(crs1==crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
     except Exception as e:
         print(e)
         sys.exit(1)
+
 
 def ensure_dir_exists(dirpath):
     '''
@@ -72,8 +76,8 @@ def test_valid_geom(poly_gdf, correct=False, gdf_obj_name=None):
         logger.error(e)
         if correct:
             logger.warning("Correction of the invalid geometries with a buffer of 0 m...")
-            corrected_poly=poly_gdf.copy()
-            corrected_poly.loc[corrected_poly.is_valid==False,'geometry']= \
+            corrected_poly = poly_gdf.copy()
+            corrected_poly.loc[corrected_poly.is_valid==False,'geometry'] = \
                             corrected_poly[corrected_poly.is_valid==False]['geometry'].buffer(0)
 
             return corrected_poly
