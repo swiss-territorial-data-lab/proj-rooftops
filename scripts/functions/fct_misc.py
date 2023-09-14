@@ -99,7 +99,7 @@ def crop(source, size, output):
         return file_path
 
 
-def dissolve_by_attribute(desired_file, original_file, written_files, name, attribute):
+def dissolve_by_attribute(desired_file, original_file, name, attribute):
     """Dissolve shape according to a given attribute in the gdf
 
     Args:
@@ -123,10 +123,9 @@ def dissolve_by_attribute(desired_file, original_file, written_files, name, attr
         gdf = gdf.dissolve(attribute, as_index=False)
         gdf['geometry'] = gdf['geometry'].buffer(0.0001)       
         gdf.to_file(desired_file)
-        written_files.append(desired_file)  
         logger.info(f"...done. A file was written: {desired_file}")
 
-    return gdf, written_files
+    return gdf
 
 
 def distance_shape(geom1, geom2):

@@ -49,7 +49,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     output_dir = os.path.join(OUTPUT_DIR, 'vectors')
     misc.ensure_dir_exists(output_dir)
 
-    written_files = [] 
+    written_files = {}
 
     # Get the EGIDS of interest
     egids = pd.read_csv(EGIDS)
@@ -60,7 +60,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
     desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
     
-    roofs, written_files = misc.dissolve_by_attribute(desired_file_path, original_file_path, written_files, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
 
@@ -80,7 +80,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     logger.info(f"Read labels file: {nbr_labels} shapes")
 
     # Add geometry attributes
-    labels_gdf['area'] = round(labels_gdf.area, 4)
+    labels_gdf['label area'] = round(labels_gdf.area, 4)
 
     ## Nearest distance between polygons
     labels_gdf_tmp = labels_gdf.join(roofs_gdf[['EGID', 'geometry']].set_index('EGID'), on='EGID', how='left', lsuffix='_label', rsuffix='_roof', validate='m:1')
@@ -163,7 +163,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     # Compute Jaccard index at the scale of a roof (by EGID)
     labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index_roof(labels_gdf, detections_gdf)
     iou_average = detections_egid_gdf['IOU_EGID'].mean()
-    logger.info(f"   averaged IOU for all EGIDs = {iou_average:.2f}")
+    logger.info(f"   averaged IoU for all EGIDs = {iou_average:.2f}")
 
     # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN
@@ -194,13 +194,14 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
             layer_name = 'duplicated_label_tags'
             duplicated_labels.to_file(filename, layer=layer_name, index=False)
         
-        # written_files[filename] = layer_name
+        written_files[filename] = layer_name
 
 
     # Set the final dataframe with tagged prediction
     tagged_preds_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-    tagged_preds_gdf.drop(['index_right', 'label_geometry', 'detection_geometry', 'detection_id', 'detection_area'], axis=1, inplace=True)
-    tagged_preds_gdf = tagged_preds_gdf.round({'IOU': 2})
+    tagged_preds_gdf.drop(['index_right', 'label_geometry', 'detection_geometry', 'detection_id'], axis=1, inplace=True)
+    tagged_preds_gdf = tagged_preds_gdf.round({'IOU': 4})
+    tagged_preds_gdf = tagged_preds_gdf.round({'detection_area': 4})
     tagged_preds_gdf.reset_index(drop=True, inplace=True)
     tagged_preds_gdf['fid'] = tagged_preds_gdf.index
 
@@ -208,7 +209,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     feature_path = os.path.join(output_dir, 'tagged_predictions.gpkg')
     tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
 
-    # written_files[feature_path] = layer_name
+    written_files[feature_path] = layer_name
 
     
     logger.success("The following files were written. Let's check them out!")
@@ -220,6 +221,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
 # ------------------------------------------
 
 if __name__ == "__main__":
+
     # Start chronometer
     tic = time.time()
     logger.info('Starting...')
