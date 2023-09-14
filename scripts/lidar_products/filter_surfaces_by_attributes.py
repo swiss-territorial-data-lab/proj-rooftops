@@ -133,23 +133,23 @@ nodata_overlap_full = gpd.GeoDataFrame(nodata_overlap_grouped.merge(existing_cli
 nodata_overlap_full['nodata_overlap'] = nodata_overlap_full['joined_area'] / nodata_overlap_full['clipped_area']
 nodata_overlap_full = nodata_overlap_full.round(3)
 
-logger.info('Excluding roofs with area not classified as building (in LiDAR point cloud)...')
+logger.info('Excluding roofs with area not classified as building in the LiDAR point cloud...')
 
-no_roofs = nodata_overlap_full[nodata_overlap_full['nodata_overlap'] > (1-NODATA_OVERLAP)].copy()
+no_roofs = nodata_overlap_full[nodata_overlap_full['nodata_overlap'] > 0.75].copy()
 no_roofs['status'] = 'undefined'
-no_roofs['reason'] = f'More than {(1-NODATA_OVERLAP)*100}% of the roof area is not classified as building (in LiDAR point clooud). Check weather it is a building or not.'
+no_roofs['reason'] = 'More than 75% of the roof area is not classified as building (in LiDAR point clooud). Check weather it is a building or not.'
 no_roofs.reset_index(drop=True, inplace=True)
 
-building_roofs = nodata_overlap_full[(nodata_overlap_full['nodata_overlap'] <= (1-NODATA_OVERLAP)) | (nodata_overlap_full['nodata_overlap'].isna())].copy()
+building_roofs = nodata_overlap_full[(nodata_overlap_full['nodata_overlap'] <= 0.75) | (nodata_overlap_full['nodata_overlap'].isna())].copy()
 
 other_classes_roofs = building_roofs[building_roofs['nodata_overlap'] > NODATA_OVERLAP].copy()
-other_classes_roofs = cause_occupation(other_classes_roofs, f'More than {NODATA_OVERLAP*100}% of the area is not classified as building (in LiDAR point cloud).')
+other_classes_roofs = cause_occupation(other_classes_roofs, f'More than {NODATA_OVERLAP*100}% of the area is not classified as building in the LiDAR point cloud.')
 
 clipped_roofs_cleaned = building_roofs[(building_roofs['nodata_overlap'] <= NODATA_OVERLAP) | (nodata_overlap_full['nodata_overlap'].isna())].reset_index(drop=True)
 
 nbr_no_roofs = no_roofs.shape[0]
 nbr_other_class_roofs = other_classes_roofs.shape[0]
-logger.info(f'{nbr_no_roofs} roofs are classified as undefined, because they do not overlap with the building class at more than {(1-NODATA_OVERLAP)*100}%.')
+logger.info(f'{nbr_no_roofs} roofs are classified as undefined, because they do not overlap with the building class at more than 75%.')
 logger.info(f'{nbr_other_class_roofs} roofs are classified as occupied, ' +
             f'because more than {NODATA_OVERLAP*100}% of their surface is not classified as building.')
 
@@ -161,7 +161,7 @@ del nodata_polygons, nodata_df
 del nodata_overlap, nodata_overlap_grouped, nodata_overlap_full
 del building_roofs
 
-#Compute stats pfor each polygon
+# Compute stats for each polygon
 zs_per_roof = gpd.GeoDataFrame()
 for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from tiles...'):
 
@@ -201,8 +201,8 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
 
         zs_per_roof = pd.concat([zs_per_roof, zs_per_roof_on_tile], ignore_index=True)
                               
-    else:
-        pass
+    # else:
+    #   logger.error(f'No raster found for the id {tile_id}.')
 
 logger.info('Filtering roof planes with statisitcal threshold values on LiDAR intensity and roughness rasters...')
 
@@ -231,17 +231,17 @@ roofs_high_variability = pd.concat([roofs_high_variability, roofs_high_moe, roof
 logger.info(f'{roofs_high_variability.shape[0]} roof planes exceed at least one statistical threshold values')
 logger.info('They have been classified as "occupied surfaces".')
 
-zs_per_free_roofs = temp_roofs[~((temp_roofs['MOE_i'] > LIM_MOE) | (temp_roofs['std_i'] > LIM_STD) | (temp_roofs['median_r'] > LIM_ROUGHNESS))]
-zs_per_free_roofs['status'] = 'free'
-logger.info(f'{zs_per_free_roofs.shape[0]} roof planes do not exceed statistical threshold values')
-logger.info('They have been classified as "free surfaces".')
+zs_per_filtred_roofs = temp_roofs[~((temp_roofs['MOE_i'] > LIM_MOE) | (temp_roofs['std_i'] > LIM_STD) | (temp_roofs['median_r'] > LIM_ROUGHNESS))]
+zs_per_filtred_roofs['status'] = 'potentially free'
+logger.info(f'{zs_per_filtred_roofs.shape[0]} roof planes do not exceed statistical threshold values')
+logger.info('They have been classified as "potentially free surfaces".')
 
 # If roofs appear several times, keep the largest surface
-final_nbr_roofs = len(zs_per_free_roofs) + len(roofs_high_variability) + len(other_classes_roofs) + len(no_roofs)
+final_nbr_roofs = len(zs_per_filtred_roofs) + len(roofs_high_variability) + len(other_classes_roofs) + len(no_roofs)
 if final_nbr_roofs != nbr_existing_clipped_roofs:
     logger.error(f'There is a difference of {final_nbr_roofs-nbr_existing_clipped_roofs} in the number of roofs between the start and the end.')
 
-roofs_occupation = pd.concat([zs_per_free_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
+roofs_occupation = pd.concat([zs_per_filtred_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
 roofs_occupation['clipped_area'] = roofs_occupation.geometry.area
 roofs_occupation_cleaned = roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
 

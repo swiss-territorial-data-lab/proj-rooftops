@@ -41,6 +41,7 @@ if MAKE_RGH:
 
 OUTPUT_DIR_DEM = misc.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/DEM'))
 OUTPUT_DIR_RGH = misc.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/roughness'))
+OUTPUT_DIR_RGH_SCALE = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR_RGH, 'scale_roughness'))
 
 logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
@@ -77,7 +78,6 @@ for file in lidar_files:
                                     filename + f'_{MIN_SCALE}_{MAX_SCALE}_{STEP}.tif')
         
         if (not os.path.isfile(output_path_mag)) | OVERWRITE:
-            OUTPUT_DIR_RGH_SCALE = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR_RGH, 'scale_roughness'))
             output_path_scale = os.path.join(OUTPUT_DIR_RGH_SCALE, 
                                     'scale_' + filename + f'_{MIN_SCALE}_{MAX_SCALE}_{STEP}.tif')
             wbt.multiscale_roughness(
