@@ -99,7 +99,7 @@ def crop(source, size, output):
         return file_path
 
 
-def dissolve_by_attribute(desired_file, original_file, name, attribute):
+def dissolve_by_attribute(desired_file, original_file, written_files, name, attribute):
     """Dissolve shape according to a given attribute in the gdf
 
     Args:
@@ -121,8 +121,32 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf = gpd.read_file(original_file)
         logger.info(f"Dissolved shapes by {attribute}")
         gdf = gdf.dissolve(attribute, as_index=False)
+        gdf['geometry'] = gdf['geometry'].buffer(0.0001)       
         gdf.to_file(desired_file)
         written_files.append(desired_file)  
         logger.info(f"...done. A file was written: {desired_file}")
 
-    return gdf
+    return gdf, written_files
+
+
+def distance_shape(geom1, geom2):
+    """Compute the minimum distance between two intersecting (or not) geometries (different or not).
+    Geometries accepted: POLYGON, POINT, LINE but not MULTIPOLYGON!
+
+    Args:
+        geom1 (list): list of shapes of n dimensions
+        geom2 (list): list of shapes of n dimensions
+
+    Returns:
+        nearest_distance (float): minimum distance between the provided two geometries
+    """
+
+    nearest_distance = []
+    
+    for (i, ii) in zip(geom1, geom2):
+        if i == None or ii == None:
+            nearest_distance.append(None)
+        else:
+            nearest_distance.append(i.exterior.distance(ii))
+
+    return nearest_distance

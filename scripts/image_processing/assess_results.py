@@ -49,7 +49,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     output_dir = os.path.join(OUTPUT_DIR, 'vectors')
     misc.ensure_dir_exists(output_dir)
 
-    written_files = {}
+    written_files = [] 
 
     # Get the EGIDS of interest
     egids = pd.read_csv(EGIDS)
@@ -60,11 +60,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
     desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
     
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs, written_files = misc.dissolve_by_attribute(desired_file_path, original_file_path, written_files, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
 
-    # Open shapefiles
+    # Get labels shapefile
     labels_gdf = gpd.read_file(LABELS)
     # if 'OBSTACLE' in labels_gdf.columns:
     #     labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
@@ -76,30 +76,33 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     # Class 12 corresponds to free surfaces, other classes are ojects
     labels_gdf = labels_gdf[(labels_gdf.type != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['label_id'] = labels_gdf.index
+    nbr_labels = labels_gdf.shape[0]
+    logger.info(f"Read labels file: {nbr_labels} shapes")
 
     # Add geometry attributes
-    labels_gdf['area'] = labels_gdf.area
-    # labels_gdf['centroid'] = labels_gdf.centroid
+    labels_gdf['area'] = round(labels_gdf.area, 4)
 
-    # Nearest distance between polygons
+    ## Nearest distance between polygons
     labels_gdf_tmp = labels_gdf.join(roofs_gdf[['EGID', 'geometry']].set_index('EGID'), on='EGID', how='left', lsuffix='_label', rsuffix='_roof', validate='m:1')
 
-    geom1 = labels_gdf_tmp['geometry_label'].to_numpy().tolist()
-    geom2 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
+    ### Nearest distance between the centroid's polygon of an object to the roof's border 
+    geom1 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
+    geom2 = labels_gdf_tmp['geometry_label'].centroid.to_numpy().tolist()
+    nearest_distance = misc.distance_shape(geom1, geom2)
+    labels_gdf['nearest_distance_centroid'] = nearest_distance
+    labels_gdf['nearest_distance_centroid'] = round(labels_gdf.nearest_distance_centroid, 4)
 
-    nearest_distance = []
-    
-    for (i, ii) in zip(geom1, geom2):
-        if i == None or ii == None:
-            nearest_distance.append(None)
-        else:
-            nearest_distance.append(i.distance(ii))
-    labels_gdf['nearest_distance_poly'] = nearest_distance
+    ### Nearest distance between the centroid's border of an object to the roof's border 
+    geom1 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
+    geom2 = labels_gdf_tmp['geometry_label'].to_numpy().tolist()
+    nearest_distance = misc.distance_shape(geom1, geom2)
+    labels_gdf['nearest_distance_border'] = nearest_distance
+    labels_gdf['nearest_distance_border'] = round(labels_gdf.nearest_distance_border, 4)
 
-    nbr_labels = labels_gdf.shape[0]
-    logger.info(f"Read LABELS file: {nbr_labels} shapes")
+    feature_path = os.path.join(output_dir, 'labels.gpkg')
+    labels_gdf.to_file(feature_path, index=False)
 
-
+    # Get detections shapefile
     if isinstance(DETECTIONS, str):
         # detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
         # detections_gdf = gpd.read_file(DETECTIONS, layer='EGID_occupation')
@@ -191,7 +194,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
             layer_name = 'duplicated_label_tags'
             duplicated_labels.to_file(filename, layer=layer_name, index=False)
         
-        written_files[filename] = layer_name
+        # written_files[filename] = layer_name
 
 
     # Set the final dataframe with tagged prediction
@@ -205,7 +208,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     feature_path = os.path.join(output_dir, 'tagged_predictions.gpkg')
     tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
 
-    written_files[feature_path] = layer_name
+    # written_files[feature_path] = layer_name
 
     
     logger.success("The following files were written. Let's check them out!")
