@@ -68,12 +68,9 @@ for attribute_class in classes_filter:
 
 satisfaction_df = pd.DataFrame(satisfactions, index=[EXPERT])
 
-if os.path.exists(OUTPUT_FILEPATH):
-    if APPEND == True:
+if os.path.exists(OUTPUT_FILEPATH) and APPEND:
         with pd.ExcelWriter(OUTPUT_FILEPATH, mode="a", engine="openpyxl", if_sheet_exists="overlay") as writer:
             satisfaction_df.to_excel(writer, sheet_name="Sheet1", header=None, startrow=writer.sheets["Sheet1"].max_row, index=True)
-    else:
-        satisfaction_df.to_excel(OUTPUT_FILEPATH)
 else:
     satisfaction_df.to_excel(OUTPUT_FILEPATH)
 
