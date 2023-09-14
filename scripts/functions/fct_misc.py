@@ -141,6 +141,12 @@ def distance_shape(geom1, geom2):
     """
 
     nearest_distance = []
+
+    try:
+        assert(len(geom1) == len(geom2))
+    except AssertionError:
+        logger.error(f"The lists of geometries have different lengths: geom1 = {len(geom1)}, geom2 = {len(geom2)}")
+        sys.exit()
     
     for (i, ii) in zip(geom1, geom2):
         if i == None or ii == None:
