@@ -30,8 +30,8 @@ logger = format_logger(logger)
 
 # Define functions ----------------------
 
-def handel_similar_cluster(clusters_gdf):
-    """Delete clusters inside another clusert and fuse clusters with IoU > 0.5.
+def handel_overlapping_cluster(clusters_gdf):
+    """Delete clusters inside another cluster.
 
     Args:
         clusters_gdf (GeoDataFrame): clusters of objects as determined by the vecotrization procedure
@@ -42,7 +42,6 @@ def handel_similar_cluster(clusters_gdf):
         
     reviewed_cluster = clusters_gdf.copy()
     dropped_index = []
-    nbr_fusions=0
 
     for cluster in clusters_gdf.itertuples():
 
@@ -50,9 +49,7 @@ def handel_similar_cluster(clusters_gdf):
         if cluster.Index+1 == clusters_gdf.shape[0]:
             nbr_dropped_objects = len(dropped_index)
             if nbr_dropped_objects > 0:
-                logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object or were merged together.')
-                if  nbr_fusions> 0:
-                    logger.info(f'{nbr_fusions} merge{"s" if nbr_fusions>1 else ""} happened.')
+                logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
             break
 
         for second_cluster in clusters_gdf.loc[clusters_gdf.index > cluster.Index].itertuples():
@@ -62,7 +59,7 @@ def handel_similar_cluster(clusters_gdf):
             if cluster.Index in dropped_index:
                 nbr_dropped_objects = len(dropped_index)
                 if cluster.Index+1 == clusters_gdf.shape[0] & nbr_dropped_objects > 0:
-                     logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object or were merged together.')
+                     logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
                 break
 
             if first_geometry.intersects(second_geometry) & (second_cluster.Index not in dropped_index):
@@ -75,28 +72,9 @@ def handel_similar_cluster(clusters_gdf):
                         reviewed_cluster.drop(index=(cluster.Index), inplace=True)
                         dropped_index.append(cluster.Index)
 
-                    else:
-                        iou = intersection_over_union(first_geometry, second_geometry)
-                        if iou > 0.05:
-                            index=[]
-                            new_cluster = {'class': [], 'area': [], 'geometry': []}
-                            new_geometry = unary_union([first_geometry, second_geometry])
-
-                            index.append(max(clusters_gdf.index) + 1)
-                            new_cluster['class'].append('cluster')
-                            new_cluster['geometry'].append(new_geometry)
-                            new_cluster['area'].append(new_geometry.area)
-
-                            index_to_drop_list=[cluster.Index, second_cluster.Index]
-                            reviewed_cluster.drop(index=index_to_drop_list, inplace=True)
-                            dropped_index.extend(index_to_drop_list)
-
-                            reviewed_cluster = pd.concat([reviewed_cluster, gpd.GeoDataFrame(new_cluster)], ignore_index=True)
-                            nbr_fusions += 1
-
     reviewed_cluster.reset_index(drop=True, inplace=True)
 
-    return reviewed_cluster, nbr_fusions
+    return reviewed_cluster
 
 def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
@@ -186,15 +164,12 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
 
         # Create occupation layer
         if False:
-            # Control: plot plane polygon, uncomment to see
+            # Control: plot plane polygon
             boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
             boundary.plot(color = 'red')
             plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
 
-        new_clusters=1
-        while new_clusters>0:
-            print('hey')
-            cluster_vec_gdf, new_clusters = handel_similar_cluster(cluster_vec_gdf)
+        cluster_vec_gdf = handel_overlapping_cluster(cluster_vec_gdf)
 
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
@@ -208,7 +183,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
                     diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
 
                 if False:
-                    # Control: plot object polygon, uncomment to see          
+                    # Control: plot object polygon       
                     boundary = gpd.GeoSeries(diff_geom)
                     boundary.plot(color = 'blue')
                     plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
