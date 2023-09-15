@@ -51,25 +51,25 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
     # Open shapefiles
-    gdf_gt = gpd.read_file(GT)
-    if 'OBSTACLE' in gdf_gt.columns:
-        gdf_gt.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
-    gdf_gt = gdf_gt[(gdf_gt.occupation.astype(int) == 1) & (gdf_gt.EGID.isin(egids.EGID.to_numpy()))]
-    gdf_gt['ID_GT'] = gdf_gt.index
-    gdf_gt = gdf_gt.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
-    nbr_labels=gdf_gt.shape[0]
+    labels_gdf = gpd.read_file(GT)
+    if 'OBSTACLE' in labels_gdf.columns:
+        labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
+    labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
+    labels_gdf['ID_GT'] = labels_gdf.index
+    labels_gdf = labels_gdf.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
+    nbr_labels=labels_gdf.shape[0]
     logger.info(f"Read GT file: {nbr_labels} shapes")
 
     if isinstance(DETECTIONS, str):
-        gdf_detec = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+        detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
-        gdf_detec = DETECTIONS
+        detections_gdf = DETECTIONS
     else:
         logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
-    gdf_detec = gdf_detec[gdf_detec['occupation'].astype(int) == 1]
-    gdf_detec['ID_DET'] = gdf_detec.pred_id
-    gdf_detec = gdf_detec.rename(columns={"area": "area_DET"})
-    logger.info(f"Read detection file: {len(gdf_detec)} shapes")
+    detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1]
+    detections_gdf['ID_DET'] = detections_gdf.pred_id
+    detections_gdf = detections_gdf.rename(columns={"area": "area_DET"})
+    logger.info(f"Read detection file: {len(detections_gdf)} shapes")
 
     logger.info(f"Metrics computation")
     if METHOD=='one-to-one':
@@ -82,7 +82,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     logger.info(f"Metrics computation:")
     logger.info(f" - Compute TP, FP and FN")
 
-    tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(gdf_detec, gdf_gt, method=METHOD)
+    tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
 
     # Compute metrics
     precision, recall, f1 = metrics.get_metrics(tp_gdf, fp_gdf, fn_gdf)
@@ -111,8 +111,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     logger.info(f" - Compute mean Jaccard index")
     if TP!=0:
         iou_average = tp_gdf['IOU'].mean()
-        logger.info(f"   IOU average = {iou_average:.2f}")
-        
+        logger.info(f"   IOU average for TP = {iou_average:.2f}")
 
     nbr_tagged_labels = TP + FN
     diff_in_labels = nbr_labels - nbr_tagged_labels
@@ -126,7 +125,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
         if diff_in_labels > 0:
             tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
 
-            untagged_gt_gdf=gdf_gt[~gdf_gt['ID_GT'].isin(tagged_labels)]
+            untagged_gt_gdf=labels_gdf[~labels_gdf['ID_GT'].isin(tagged_labels)]
             untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
 
             layer_name='missing_label_tags'
@@ -158,11 +157,18 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     written_files[feature_path]=layer_name
 
 
+    # Compute Jaccard index at the scale of the EGIDs
+    labels_gdf.rename(columns={'EGID_GT': 'EGID'}, inplace=True)
+    egid_iou_gdf = metrics.get_jaccard_index_roof(labels_gdf, detections_gdf)
+    iou_average = egid_iou_gdf['IOU_EGID'].mean()
+    logger.info(f"Averaged IOU at the EGID scale = {iou_average:.2f}")
+
+
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
         logger.success(f'  file: {path}, layer: {written_files[path]}')
 
-    return f1, diff_in_labels       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
+    return f1, iou_average
 
 # ------------------------------------------
 

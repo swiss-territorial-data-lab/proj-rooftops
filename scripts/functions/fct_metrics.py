@@ -190,3 +190,28 @@ def get_metrics(tp_gdf, fp_gdf, fn_gdf):
     f1 = 2 * precision * recall / (precision + recall)
     
     return precision, recall, f1
+
+
+def get_jaccard_index_roof(labels_gdf, detections_gdf):
+    """Compute the IoU (Jaccard index) of all the detection by roof (EGID)
+
+    Args:
+        detections_gdf (geodataframe): geodataframe of the detection with "detection_geometry" and "EGID" columns
+        labels_gdf (geodataframe): geodataframe of the ground truth with "detection_geometry" and "EGID" columns
+
+    Returns:
+        labels_egid_gdf: geodataframes of all the labels merged by roof
+        detections_egid_gdf: geodataframes of all the detections merged by roof and with the IoU by roof
+    """
+
+    detections_egid_gdf = detections_gdf.dissolve(by='EGID', as_index=False) 
+    labels_egid_gdf = labels_gdf.dissolve(by='EGID', as_index=False) 
+
+    geom1 = detections_egid_gdf.geometry.values.tolist()
+    geom2 = labels_egid_gdf.geometry.values.tolist()
+    iou = []
+    for (i, ii) in zip(geom1, geom2):
+        iou.append(intersection_over_union(i, ii))
+    detections_egid_gdf['IOU_EGID'] = iou
+
+    return detections_egid_gdf

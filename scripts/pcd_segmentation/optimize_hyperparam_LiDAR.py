@@ -71,11 +71,11 @@ def objective(trial):
                                                     alpha_shape=ALPHA_SHAPE
                                                     # **dict_parameters_vect
     )
-    f1, diff_in_labels = assess_results.main(WORKING_DIR, OUTPUT_DIR,
+    f1, averaged_iou = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                      all_occupation_gdf, GT,
                                                      EGIDS, METHOD)
 
-    return f1
+    return f1, averaged_iou
 
     
 tic = time()
@@ -125,18 +125,20 @@ written_files = []
 
 logger.info('Optimization of the hyperparameters for Open3d')
 
-study=optuna.create_study(directions=['maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=200)
+study=optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
+study.optimize(objective, n_trials=100)
 
 study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
 joblib.dump(study, study_path)
 written_files.append(study_path)
 
+targets = {0: 'f1 score', 1: 'average IoU'}
+
 logger.info('Plot results')
-written_files.extend(fct_opti.plot_optimization_results(study, output_plots))
+written_files.extend(fct_opti.plot_optimization_results(study, targets, output_path=output_plots))
 
 logger.info('Save the best hyperparameters')
-written_files.append(fct_opti.save_best_hyperparameters(study))
+written_files.append(fct_opti.save_best_hyperparameters(study, targets))
 
 print()
 logger.success("The following files were written. Let's check them out!")
