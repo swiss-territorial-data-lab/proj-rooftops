@@ -169,7 +169,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     return tp_gdf, fp_gdf, fn_gdf
 
 
-def get_jaccard_index_roof(labels_gdf, detections_gdf):
+def get_jaccard_index(labels_gdf, detections_gdf, attribute):
     """Compute the IoU (Jaccard index) of all the detection by roof (EGID)
 
     Args:
@@ -181,23 +181,38 @@ def get_jaccard_index_roof(labels_gdf, detections_gdf):
         detections_egid_gdf: geodataframes of all the detections merged by roof and with the IoU by roof
     """
 
-    detections_egid_gdf = detections_gdf.dissolve(by='EGID', as_index=False) 
-    labels_egid_gdf = labels_gdf.dissolve(by='EGID', as_index=False) 
+    detections_egid_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
+    labels_egid_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
 
     geom1 = detections_egid_gdf.geometry.values.tolist()
     geom2 = labels_egid_gdf.geometry.values.tolist()
     iou = []
     for (i, ii) in zip(geom1, geom2):
         iou.append(intersection_over_union(i, ii))
-    detections_egid_gdf['IOU_EGID'] = iou
+    detections_egid_gdf['IOU_' + attribute] = iou
 
     return labels_egid_gdf, detections_egid_gdf
 
 
-
-
-
 def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
+    """Tag labels and detections with "charges". 
+    This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
+    A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
+    cf https://tech.stdl.ch/PROJ-TREEDET/#24-post-processing-assessment-algorithm-and-metrics-computation for more information
+
+    Args:
+        gt (geodataframe): geodataframe of the detection with the id "detection_idection"
+        dets (geodataframe): threshold to apply on the IoU to determine TP and FP
+        tol_m (float): 
+        gt_prefix (str): prefix used to identified labels groups 
+        det_prefix (str): prefix used to identified detections groups 
+
+    Returns:
+        gt (gdf): geodataframes of the tagged labels with the associated group id, TP charge and FN charge
+        dets (gdf): geodataframes of the tagged detections with the associated group id, TP charge and FN charge
+    """
+
+
     """
         - tol_m = tolerance in meters
     """
@@ -323,7 +338,16 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
     return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
 
 
-def assess(tagged_gt, tagged_dets):
+def get_count(tagged_gt, tagged_dets):
+    """Sum the TP, FP and FN charge for all the labels and detections
+
+    Args:
+        tagged_gt (gdf): geodataframe with TP and FP charges
+        tagged_dets (gdf): geodataframe with TP and FN charges
+
+    Returns:
+        TP, FP, FN (float): values of TP, FP and FN
+    """
 
     assert 'TP_charge' in tagged_dets.columns.tolist()
     assert 'TP_charge' in tagged_gt.columns.tolist()
@@ -341,55 +365,28 @@ def assess(tagged_gt, tagged_dets):
     except AssertionError as e:
         print(f"AssertionError: {e}")
 
-    metrics = precision_recall_f1(TP, FP, FN)
-
-    output = OrderedDict(
-        TP=TP,
-        FP=FP,
-        FN=FN,
-        precision=metrics['precision'],
-        recall=metrics['recall'],
-        f1=metrics['f1']
-    )
-
-    output['TP+FN'] = TP + FN
-    output['TP+FP'] = TP + FP
-
-    return output
+    return TP, FP, FN
 
 
-
-def precision_recall_f1(tp, fp, fn):
-
-    precision = 0. if tp == 0.0 else 1.*tp/(tp + fp)
-    recall = 0. if tp == 0.0 else 1.*tp/(tp + fn)
-    f1 = 0. if precision == 0.0 or recall == 0.0 else 2.*precision*recall/(precision + recall)
-
-    return dict(precision=precision, recall=recall, f1=f1)
-
-
-def get_metrics(tp_gdf, fp_gdf, fn_gdf):
-    """Determine the metrics based on the TP, FP and FN
+def get_metrics(TP, FP, FN):
+    """Determine the metrics precision, recall and f1-score based on the TP, FP and FN
 
     Args:
-        tp_gdf (geodataframe): true positive detections
-        fp_gdf (geodataframe): false positive detections
-        fn_gdf (geodataframe): false negative labels
+        TP (float): number of true positive detections
+        FP (float): number of false positive detections
+        FN (float): number of false negative labels
 
     Returns:
-        float: precision, recall and f1 score
+        metrics_dic (dic): dictionary returning count + metrics
     """
-    
-    TP = len(tp_gdf)
-    FP = len(fp_gdf)
-    FN = len(fn_gdf)
-    #print(TP, FP, FN)
-    
-    if TP == 0:
-        return 0, 0, 0
+        
+    precision = 0. if TP == 0.0 else TP / (TP + FP)
+    recall = 0. if TP == 0.0 else TP / (TP + FN)
+    f1 = 0. if precision == 0.0 or recall == 0.0 else 2 * precision * recall / (precision + recall)
 
-    precision = TP / (TP + FP)
-    recall    = TP / (TP + FN)
-    f1 = 2 * precision * recall / (precision + recall)
-    
-    return precision, recall, f1
+    metrics_dic = dict(TP=TP, FP=FP, FN=FN,
+                        TPplusFN=TP+FN, TPplusFP=TP+FP,
+                        precision=precision, recall=recall, f1=f1
+                        )
+
+    return metrics_dic
