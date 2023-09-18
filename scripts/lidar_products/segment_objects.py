@@ -19,7 +19,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
-with open('config/config.yaml') as fp:
+with open('config\config_lidar_products.yaml') as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 # Parameters  -----------------------

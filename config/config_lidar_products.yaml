@@ -1,0 +1,70 @@
+mask_for_buildings.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
+  image_folder: initial/images/true_ortho_2019
+
+
+get_lidar_infos.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: initial/LiDAR
+  overwrite: False
+
+
+rasterize_intensity.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: initial/LiDAR
+  overwrite: False
+  parameters:
+    method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
+    resolution: 0.3
+    radius: 0.3
+    returns: 'first'
+
+
+rasterize_roughness.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: initial/LiDAR
+  overwrite: True
+  make_dem: True
+  parameters_dem: 
+    resolution: 0.3
+    radius: 0.3
+    min_z: 325
+    max_z: 525
+    max_edge: 25
+  make_rgh: True
+  parameters_rgh:
+    min_scale: 1
+    max_scale: 2
+    step: 1
+
+
+filter_surfaces_by_attributes.py:
+  debug_mode: True
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir_images: processed/lidar/rasterized_lidar
+  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+
+
+filter_for_objects.py:
+  debug_mode: False
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir_images: processed/lidar/rasterized_lidar/intensity
+  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: processed/roofs/roofs.gpkg
+  roofs_layer: roof_occupation
+  kernel: False
+  parameters:
+    procedure: ds  # possible values: sd or ds
+    rdp: True
+
+
+segment_objects.py:
+  debug_mode: True
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir_images: processed/lidar/rasterized_lidar/intensity
+  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs_layer: roof_occupation
+  method: watershed   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  save_normalized_intensity: True

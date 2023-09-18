@@ -26,7 +26,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
-with open('config/config.yaml') as fp:
+with open('config\config_lidar_products.yaml') as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 # Constant definitions -------------------
@@ -39,6 +39,8 @@ LIDAR_TILES = cfg['lidar_tiles']
 
 ROOF_OCCUPATION = cfg['roofs']
 LAYER = cfg['roofs_layer']
+
+KERNEL = cfg['kernel']
 
 PROCEDURE = cfg['parameters']['procedure']
 RDP = cfg['parameters']['rdp']
@@ -55,10 +57,15 @@ im_list = glob(os.path.join(INPUT_DIR_IMAGES, '*.tif'))
 
 # Data processing  -----------------------
 
-free_roofs = roofs[roofs['status']=='free'].reset_index(drop=True)
+free_roofs = roofs[roofs['status']=='potentially free'].reset_index(drop=True)
 free_roofs = free_roofs[['OBJECTID', 'EGID', 'ALTI_MAX', 'ALTI_MIN', 'geometry']]
 
-logger.info(f'{free_roofs.shape[0]} roofs are estimed to be free.')
+nbr_roofs = free_roofs.shape[0]
+if nbr_roofs != 0:
+    logger.info(f'{nbr_roofs} roofs are estimed to be potentially free.')
+else:
+    logger.critical(f'No roofs are estimated to be potentially free.')
+    sys.exit(1)
 
 logger.info('Getting the median intensity by EGID...')
 
@@ -101,7 +108,7 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
     )
     normalized_intensity = nan_normalized_intensity[~np.isnan(nan_normalized_intensity)].flatten()
 
-    if False:
+    if KERNEL:
         # Do kernel density
         fig, ax = plt.subplots()
 
