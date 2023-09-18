@@ -1,8 +1,10 @@
 import os, sys
 from loguru import logger
 
+import numpy as np
 import geopandas as gpd
 from shapely.affinity import scale
+from shapely.geometry import Polygon
 
 def format_logger(logger):
     '''Format the logger from loguru
@@ -29,9 +31,9 @@ def test_crs(crs1, crs2 = "EPSG:2056"):
     Take the crs of two dataframes and compare them. If they are not the same, stop the script.
     '''
     if isinstance(crs1, gpd.GeoDataFrame):
-        crs1=crs1.crs
+        crs1 = crs1.crs
     if isinstance(crs2, gpd.GeoDataFrame):
-        crs2=crs2.crs
+        crs2 = crs2.crs
 
     try:
         assert(crs1 == crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
@@ -85,14 +87,27 @@ def get_tilepath_from_id(tile_id, im_list):
     return: matching tilepath
     '''
 
-    matching_path=[tilepath for tilepath in im_list if tile_id in tilepath]
-    if len(matching_path)>1:
+    matching_path = [tilepath for tilepath in im_list if tile_id in tilepath]
+    if len(matching_path) > 1:
         logger.critical(f'There are multiple tiles corresponding to the id {tile_id}.')
         sys.exit(1)
-    elif len(matching_path)==0:
+    elif len(matching_path) == 0:
         logger.warning(f'There is no tile corresponding to the id {tile_id}.')
         return None
     else:
-        tilepath=matching_path[0]
+        tilepath = matching_path[0]
 
     return tilepath
+
+def poly_from_utm(polygon, transform):
+    poly_pts = []
+    
+    for i in np.array(polygon.exterior.coords):
+        
+        # Convert polygons to the image CRS
+        poly_pts.append(~transform * tuple(i))
+        
+    # Generate a polygon object
+    new_poly = Polygon(poly_pts)
+
+    return new_poly

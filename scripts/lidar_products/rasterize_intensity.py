@@ -1,52 +1,52 @@
-import os, sys
+import os
+import sys
 from loguru import logger
 from glob import glob
 from yaml import load, FullLoader
 
-from whitebox import WhiteboxTools
-wbt = WhiteboxTools()
+import whitebox
+# whitebox.download_wbt(linux_musl=True, reset=True)        # Uncomment if issue with GLIBC library
+wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct
+import functions.fct_misc as misc
 
-logger=fct.format_logger(logger)
+logger = misc.format_logger(logger)
 
 logger.info(f"Using config.yaml as config file.")
 with open('config/config.yaml') as fp:
-    cfg = load(fp, Loader=FullLoader)['rasterize_intensity.py']
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-# Define constants ----------------
 
-WORKING_DIR=cfg['working_dir']
-INPUT_DIR=cfg['input_dir']
+WORKING_DIR = cfg['working_dir']
+INPUT_DIR = cfg['input_dir']
 
-OVERWRITE=cfg['overwrite'] if 'overwrite' in cfg.keys() else False
+OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
-PARAMETERS=cfg['parameters']
-METHOD=PARAMETERS['method'].lower()
-RES=PARAMETERS['res']
-RADIUS=PARAMETERS['radius']
-RETURNS=PARAMETERS['returns']
+PARAMETERS = cfg['parameters']
+METHOD = PARAMETERS['method'].lower()
+RES = PARAMETERS['resolution']
+RADIUS = PARAMETERS['radius']
+RETURNS = PARAMETERS['returns']
 
-OUTPUT_DIR_TIF=fct.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
+OUTPUT_DIR_TIF = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
 
 logger.info('Getting the list of files...')
-lidar_files=glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
+lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 
-logger.info('Treating files...')
+logger.info('Processing files...')
 for file in lidar_files:
     
     if '\\' in file:
         filename=file.split('\\')[-1].rstrip('.las')
-        
     else:
-        filename=file.split('/')[-1].rstirp('.las')
+        filename=file.split('/')[-1].rstrip('.las')
 
-    output_path_tif=os.path.join(OUTPUT_DIR_TIF, 
+    output_path_tif = os.path.join(OUTPUT_DIR_TIF, 
                                  filename + f'_{METHOD}_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}_{RETURNS}.tif')
     
     if (not os.path.isfile(output_path_tif)) | OVERWRITE:
-        if METHOD=='idw':
+        if METHOD == 'idw':
             wbt.lidar_idw_interpolation(
                 i=file, 
                 output=output_path_tif, 
@@ -56,7 +56,7 @@ for file in lidar_files:
                 radius=RADIUS,
                 resolution=RES,
             )
-        elif METHOD=='nnb':
+        elif METHOD == 'nnb':
             wbt.lidar_nearest_neighbour_gridding(
                 i=file, 
                 output=output_path_tif, 

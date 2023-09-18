@@ -1,30 +1,29 @@
 mask_for_buildings.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
-  layer: labelling subset
-  image_folder: initial/images/true_ortho_2019
+  working_dir: /workdir
+  roofs: input/lidar_intensity/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BATIMENT_HORSOL_TOIT_SP_merge.gpkg
+  image_folder: input/TrueOrtho/
 
 
 get_lidar_infos.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /workdir/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: False
 
 
 rasterize_intensity.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /workdir/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: False
   parameters:
-    method: idw
-    res: 0.3
+    method: idw                  # Interpolation method. Supported choices: 1: idw (Inverse Distance Weighting), 2: nnb (Nearest Neighbour Interpolation) 
+    resolution: 0.3
     radius: 0.3
     returns: 'first'
 
 
 rasterize_roughness.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: /workdir/
+  input_dir: input/lidar_intensity/LiDAR/2019/
   overwrite: True
   make_dem: True
   parameters_dem: 
@@ -41,26 +40,30 @@ rasterize_roughness.py:
 
 
 filter_surfaces_by_attributes.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: /workdir/
   input_dir_images: processed/lidar/rasterized_lidar
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
+  roofs: input/lidar_intensity/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 
 filter_for_objects.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: /workdir/
   input_dir_images: processed/lidar/rasterized_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
   parameters:
-    procedure: sd  # possible values: sd or ds
-    rdp: true
+    procedure: ds  # possible values: sd or ds
+    rdp: True
+  debug_mode: False
+
 
 segment_objects.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: /workdir/
   input_dir_images: processed/lidar/rasterized_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
   roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
-  method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  method: watershed   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  debug_mode: True
+  save_normalized_intensity: True
