@@ -29,7 +29,7 @@ IMAGE_FOLDER = cfg['image_folder']
 
 os.chdir(WORKING_DIR)
 
-misc.ensure_dir_exists('processed/tiles/mask')
+output_dir = misc.ensure_dir_exists('processed/tiles/mask')
 
 logger.info('Loading data...')
 roofs = gpd.read_file(ROOFS)
