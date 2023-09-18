@@ -41,11 +41,21 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL_corrected.shp
-  output_dir: output/image_segmentation
+  output_dir: output/metrics_charge
   detections: roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   method: one-to-one
+
+# 4 - Evaluate the results
+assess_dev.py:  
+  working_dir: .
+  ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
+  output_dir: output/metrics_charge
+  detections: data/GT/synthetic_examples/detection_synthetic.gpkg
+  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  method: many-to-many
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:

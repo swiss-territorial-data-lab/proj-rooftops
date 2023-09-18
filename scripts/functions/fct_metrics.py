@@ -3,8 +3,11 @@ import os
 import sys
 from loguru import logger
 
-import pandas as pd
 import geopandas as gpd
+import pandas as pd
+import networkx as nx
+from collections import OrderedDict
+from fractions import Fraction
    
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
@@ -189,6 +192,180 @@ def get_jaccard_index_roof(labels_gdf, detections_gdf):
     detections_egid_gdf['IOU_EGID'] = iou
 
     return labels_egid_gdf, detections_egid_gdf
+
+
+
+
+
+def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
+    """
+        - tol_m = tolerance in meters
+    """
+
+    ### --- helper functions --- ###
+    def make_groups():
+
+        g = nx.Graph()
+        for row in l_join[l_join.geohash_y.notnull()].itertuples():
+            g.add_edge(row.geohash_x, row.geohash_y)
+
+        groups = list(nx.connected_components(g))
+
+        return groups
+
+
+    def assess_group(group):
+
+        # init
+        cnt_gt = 0
+        cnt_dets = 0
+        FP_charge = 0
+        FN_charge = 0
+    
+        for el in group:
+            if el.startswith(dets_prefix):
+                cnt_dets += 1
+            if el.startswith(gt_prefix):
+                cnt_gt += 1
+            
+        if cnt_dets > cnt_gt:
+            FP_charge = cnt_dets - cnt_gt
+        
+        if cnt_dets < cnt_gt:
+            FN_charge = cnt_gt - cnt_dets
+
+        return dict(cnt_gt=cnt_gt, cnt_dets=cnt_dets, FP_charge=FP_charge, FN_charge=FN_charge)
+
+
+    def assign_groups(row):
+
+        group_index = {node: i for i, group in enumerate(groups) for node in group}
+    
+        try:
+            row['group_id'] = group_index[row['geohash']]
+        except: 
+            row['group_id'] = None
+        
+        return row
+
+
+    def assign_charges(row):
+        
+        for k, v in charges_dict[row['geohash']].items():
+            row[k] = v
+
+        return row
+
+    ### --- main --- ###
+    assert 'geohash' in gt.columns.tolist()
+    assert 'geohash' in dets.columns.tolist()
+
+    # init
+    _gt = gt.copy()
+    _dets = dets.copy()
+    _dets['geometry'] = _dets.geometry.buffer(tol_m)
+
+    charges_dict = {}
+
+    # spatial joins
+    l_join = gpd.sjoin(_dets, _gt, how='left', predicate='intersects', lsuffix='x', rsuffix='y')
+    r_join = gpd.sjoin(_dets, _gt, how='right', predicate='intersects', lsuffix='x', rsuffix='y')
+
+    # trivial False Positives
+    trivial_FPs = l_join[l_join.geohash_y.isna()]
+    for tup in trivial_FPs.itertuples():
+        charges_dict = {
+            **charges_dict,
+            tup.geohash_x: {
+                'FP_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
+            }
+        }
+
+    # trivial False Negatives
+    trivial_FNs = r_join[r_join.geohash_x.isna()]
+    for tup in trivial_FNs.itertuples():
+        charges_dict = {
+            **charges_dict,
+            tup.geohash_y: {
+                'FN_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
+            }
+        }
+
+    # less trivial cases
+    groups = make_groups()
+    for group in groups:
+        group_assessment = assess_group(group)
+        this_group_charges_dict = {}
+
+        for el in group:
+            if el.startswith(dets_prefix):
+                this_group_charges_dict[el] = {
+                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
+                    'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])      
+                }
+        
+            if el.startswith(gt_prefix):
+                this_group_charges_dict[el] = {
+                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
+                    'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
+                }
+        
+        charges_dict = {**charges_dict, **this_group_charges_dict}
+    
+    _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
+    _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
+
+    _gt = _gt.apply(lambda row: assign_charges(row), axis=1)
+    _dets = _dets.apply(lambda row: assign_charges(row), axis=1)
+
+    return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
+
+
+def assess(tagged_gt, tagged_dets):
+
+    assert 'TP_charge' in tagged_dets.columns.tolist()
+    assert 'TP_charge' in tagged_gt.columns.tolist()
+    assert 'FP_charge' in tagged_dets.columns.tolist()
+    assert 'FN_charge' in tagged_gt.columns.tolist()
+    
+    TP = float(tagged_dets.TP_charge.sum())
+    FP = float(tagged_dets.FP_charge.sum())
+
+    _TP = float(tagged_gt.TP_charge.sum()) # x-check
+    FN = float(tagged_gt.FN_charge.sum())
+    
+    try:
+        assert _TP == TP, f"{_TP} != {TP}"
+    except AssertionError as e:
+        print(f"AssertionError: {e}")
+
+    metrics = precision_recall_f1(TP, FP, FN)
+
+    output = OrderedDict(
+        TP=TP,
+        FP=FP,
+        FN=FN,
+        precision=metrics['precision'],
+        recall=metrics['recall'],
+        f1=metrics['f1']
+    )
+
+    output['TP+FN'] = TP + FN
+    output['TP+FP'] = TP + FP
+
+    return output
+
+
+
+def precision_recall_f1(tp, fp, fn):
+
+    precision = 0. if tp == 0.0 else 1.*tp/(tp + fp)
+    recall = 0. if tp == 0.0 else 1.*tp/(tp + fn)
+    f1 = 0. if precision == 0.0 or recall == 0.0 else 2.*precision*recall/(precision + recall)
+
+    return dict(precision=precision, recall=recall, f1=f1)
 
 
 def get_metrics(tp_gdf, fp_gdf, fn_gdf):

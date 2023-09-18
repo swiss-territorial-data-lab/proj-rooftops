@@ -1,19 +1,25 @@
 import os
 import sys
-import rasterio
-import pandas as pd
-import geopandas as gpd
 from loguru import logger
+
+import rasterio
+import geopandas as gpd
+import pandas as pd
+import pygeohash as pgh
+
 from shapely.geometry import Polygon
 from rasterio.windows import Window
 
 
 def format_logger(logger):
-    '''Format the logger from loguru
-    
-    -logger: logger object from loguru
-    return: formatted logger object
-    '''
+    """Format the logger from loguru
+
+    Args:
+        logger: logger object from loguru
+
+    Returns:
+        logger: formatted logger object
+    """
 
     logger.remove()
     logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}",
@@ -30,35 +36,39 @@ def format_logger(logger):
 logger = format_logger(logger)
 
 
-def test_crs(crs1, crs2="EPSG:2056"):
-    '''
-    Take the crs of two dataframes and compare them. If they are not the same, stop the script.
-    '''
-    if isinstance(crs1, gpd.GeoDataFrame):
-        crs1 = crs1.crs
-    if isinstance(crs2, gpd.GeoDataFrame):
-        crs2 = crs2.crs
+def add_geohash(gdf, prefix=None, suffix=None):
+    """Add geohash column to a geodaframe.
 
-    try:
-        assert(crs1==crs2), f"CRS mismatch between the two files ({crs1} vs {crs2})."
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    Args:
+        gdf: geodaframe
+        prefix (string): custom geohash string with a chosen prefix 
+        suffix (string): custom geohash string with a chosen suffix
 
+    Returns:
+        out (gdf): geodataframe with geohash column
+    """
 
-def ensure_dir_exists(dirpath):
-    '''
-    Test if a directory exists. If not, make it.
-    '''
+    out_gdf = gdf.copy()
+    out_gdf['geohash'] = gdf.to_crs(epsg=4326).apply(geohash, axis=1)
 
-    if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
-        logger.info(f"The directory {dirpath} was created.")
-    
-    return dirpath
+    if prefix is not None:
+        out_gdf['geohash'] = prefix + out_gdf['geohash'].astype(str)
+
+    if suffix is not None:
+        out_gdf['geohash'] = out_gdf['geohash'].astype(str) + suffix
+
+    return out_gdf
 
 
 def bbox(bounds):
+    """Get bounding box of a 2D shape
+
+    Args:
+        bounds ():
+
+    Returns:
+        geometry (Polygon): polygon geometry of the bounding box
+    """
 
     minx = bounds[0]
     miny = bounds[1]
@@ -72,10 +82,20 @@ def bbox(bounds):
 
 
 def crop(source, size, output):
+    """Crop raster
+
+    Args:
+        source (str): path to the raster
+        size (array): array(x1, x2, y1, y2) of cropping rectangle coordinates
+        output (str): path to the cropped raster
+
+    Returns:
+        file_path (str): path to the saved cropped raster
+    """
 
     with rasterio.open(source) as src:
 
-        # The size in pixels of your desired window
+        # The size in pixels of the desired window
         x1, x2, y1, y2 = size[0], size[1], size[2], size[3]
 
         # Create a Window and calculate the transform from the source dataset    
@@ -103,8 +123,8 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
     """Dissolve shape according to a given attribute in the gdf
 
     Args:
-        desired_file (path): path to the processed geodataframe 
-        original_file (path): path to the original geodataframe on which dissolution is perfomed
+        desired_file (str): path to the processed geodataframe 
+        original_file (str): path to the original geodataframe on which dissolution is perfomed
         name (str): root name of the file
         attribute (key): column key on which the operation is performed
 
@@ -136,6 +156,9 @@ def distance_shape(geom1, geom2):
         geom1 (list): list of shapes of n dimensions
         geom2 (list): list of shapes of n dimensions
 
+    Raises:
+        Error: list lenght mismatch
+
     Returns:
         nearest_distance (float): minimum distance between the provided two geometries
     """
@@ -155,3 +178,86 @@ def distance_shape(geom1, geom2):
             nearest_distance.append(i.exterior.distance(ii))
 
     return nearest_distance
+
+
+def drop_duplicates(gdf, subset=None):
+    """Delete duplicate rows based on the values in a subset column.
+
+    Args:
+        gdf : geodataframe
+
+    Returns:
+        out_gdf (gdf): clean geodataframe
+    """
+
+    out_gdf = gdf.copy()
+    out_gdf.drop_duplicates(subset=subset, inplace=True)
+
+    return out_gdf
+
+
+def geohash(row):
+    """Geohash encoding (https://en.wikipedia.org/wiki/Geohash) of a location (point).
+    If geometry type is a point then (x, y) coordinates of the point are considered. 
+    If geometry type is a polygon then (x, y) coordinates of the polygon centroid are considered. 
+    Other geometries are not handled at the moment    
+
+    Args:
+        row: geodaframe row
+
+    Raises:
+        Error: geometry error
+
+    Returns:
+        out (str): geohash code for a given geometry
+    """
+    
+    if row.geometry.geom_type == 'Point':
+        out = pgh.encode(latitude=row.geometry.y, longitude=row.geometry.x, precision=16)
+    elif row.geometry.geom_type == 'Polygon':
+        out = pgh.encode(latitude=row.geometry.centroid.y, longitude=row.geometry.centroid.x, precision=16)
+    else:
+        logger.error(f"{row.geometry.geom_type} type is not handled (only Point or Polygon geometry type)")
+        sys.exit()
+
+    return out
+
+
+def ensure_dir_exists(dirpath):
+    """Test if a directory exists. If not, make it.  
+
+    Args:
+        dirpath (str): directory path to test
+
+    Returns:
+        dirpath (str): directory path that have been tested
+    """
+
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+        logger.info(f"The directory {dirpath} was created.")
+    
+    return dirpath
+
+
+def test_crs(crs1, crs2="EPSG:2056"):
+    """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
+
+    Args:
+        crs1 (str): coordinate reference system of geodataframe 1
+        crs2 (str): coordinate reference system of geodataframe 2 (by default "EPSG:2056")
+
+    Raises:
+        Error: crs mismatch
+    """
+
+    if isinstance(crs1, gpd.GeoDataFrame):
+        crs1 = crs1.crs
+    if isinstance(crs2, gpd.GeoDataFrame):
+        crs2 = crs2.crs
+
+    try:
+        assert(crs1==crs2)
+    except AssertionError:
+        logger.error(f"CRS mismatch between the two files ({crs1} vs {crs2}")
+        sys.exit()
