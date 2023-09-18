@@ -2,6 +2,7 @@ mask_for_buildings.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
   image_folder: initial/images/true_ortho_2019
+  transparency: True
 
 
 get_lidar_infos.py:
@@ -9,16 +10,15 @@ get_lidar_infos.py:
   input_dir: initial/LiDAR
   overwrite: False
 
-
 rasterize_intensity.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir: initial/LiDAR
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
-    resolution: 0.3
-    radius: 0.3
-    returns: 'first'
+    resolution: 0.3   # Output resolution
+    radius: 0.3       # Search radius
+    returns: first    # Point return types to include. Supported values: all, first, last
 
 
 rasterize_roughness.py:
@@ -27,20 +27,21 @@ rasterize_roughness.py:
   overwrite: True
   make_dem: True
   parameters_dem: 
-    resolution: 0.3
-    radius: 0.3
-    min_z: 325
-    max_z: 525
-    max_edge: 25
+    resolution: 0.3   # Output resolution
+    radius: 0.3       # Search radius
+    min_z: 325        # Minimum elevation for inclusion in the interpolation
+    max_z: 525        # Maximum elevation for inclusion in the interpolation
+    max_edge: 25      # Maximum triangle edge length
   make_rgh: True
   parameters_rgh:
-    min_scale: 1
-    max_scale: 2
-    step: 1
+    min_scale: 1      # Minimum search radius
+    max_scale: 2      # Maximum search radius
+    step: 1           # Step size (int > 1)
 
 
 filter_surfaces_by_attributes.py:
   debug_mode: True
+  check_tiles: False
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir_images: processed/lidar/rasterized_lidar
   lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp

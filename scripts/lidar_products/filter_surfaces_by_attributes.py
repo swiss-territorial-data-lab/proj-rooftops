@@ -7,7 +7,7 @@ from yaml import load, FullLoader
 
 import pandas as pd
 import geopandas as gpd
-import rasterio
+import rasterio as rio
 import rasterio.features
 from numpy import NaN
 from shapely.geometry import shape
@@ -42,6 +42,7 @@ def cause_occupation(df, message='Undefined cause'):
 # Define parameters ---------------
 
 DEBUG = cfg['debug_mode']
+CHECK_TILES = cfg['check_tiles']
 
 WORKING_DIR = cfg['working_dir']
 INPUT_DIR_IMAGES = cfg['input_dir_images']
@@ -172,11 +173,11 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
         # Intensity statistics
         tilepath = misc.get_tilepath_from_id(tile_id, im_list_intensity)
         
-        with rasterio.open(tilepath, crs='EPSG:2056') as src:
+        with rio.open(tilepath, crs='EPSG:2056') as src:
             intensity = src.read(1)
             meta = src.meta
         
-        meta.update({'crs': rasterio.crs.CRS.from_epsg(2056)})
+        meta.update({'crs': rio.crs.CRS.from_epsg(2056)})
 
         zs_df_intensty = pd.DataFrame(zonal_stats(roofs_on_tile, intensity, affine=meta['transform'],
                                         stats=['min', 'max', 'mean', 'median', 'std', 'count'], nodata=meta['nodata']))
@@ -187,11 +188,11 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
         # Roughness statistics
         tilepath = misc.get_tilepath_from_id(tile_id, im_list_roughness)
         
-        with rasterio.open(tilepath, crs='EPSG:2056') as src:
+        with rio.open(tilepath, crs='EPSG:2056') as src:
             roughness = src.read(1)
             meta = src.meta
         
-        meta.update({'crs': rasterio.crs.CRS.from_epsg(2056)})
+        meta.update({'crs': rio.crs.CRS.from_epsg(2056)})
 
         zs_df_roughness = pd.DataFrame(zonal_stats(roofs_on_tile, roughness, affine=meta['transform'],
                                         stats=['min', 'max', 'mean', 'median', 'std', 'count'], nodata=meta['nodata']))
@@ -201,14 +202,15 @@ for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting zonal stats from til
 
         zs_per_roof = pd.concat([zs_per_roof, zs_per_roof_on_tile], ignore_index=True)
                               
-    # else:
-    #   logger.error(f'No raster found for the id {tile_id}.')
+    elif CHECK_TILES:
+      logger.error(f'No raster found for the id {tile_id}.')
 
 logger.info('Filtering roof planes with statisitcal threshold values on LiDAR intensity and roughness rasters...')
 
 # Compute the margin of error
 zs_per_roof['MOE_i'] = Z*zs_per_roof['std_i'] / (zs_per_roof['count_i']**(1/2))
 
+# Get roofs with more than one stat over the limits.
 index_over_lim = []
 for attribute in STAT_LIMITS.keys():
     index_over_lim.extend(zs_per_roof[zs_per_roof[attribute] > STAT_LIMITS[attribute]].index.tolist())
@@ -218,6 +220,7 @@ dupes_index = [roof_index for roof_index in index_over_lim if roof_index in seen
 roofs_high_variability = zs_per_roof[zs_per_roof.index.isin(dupes_index)]
 temp_roofs = zs_per_roof[~zs_per_roof.index.isin(dupes_index)]
 
+# Get roofs with one stat over the limit.
 roofs_high_moe = temp_roofs[temp_roofs['MOE_i'] > LIM_MOE]
 roofs_high_std = temp_roofs[temp_roofs['std_i'] > LIM_STD]
 rough_roofs = temp_roofs[temp_roofs['median_r'] > LIM_ROUGHNESS]
