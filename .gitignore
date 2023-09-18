@@ -2,12 +2,13 @@
 /**/test*.ipynb
 
 # Folders
-data/*
-input/*
-output/*
-model/*
-tests/*
-workdir*/*
+data/
+input/
+output/
+model/
+tests/
+workdir*/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
