@@ -38,7 +38,7 @@ LAYER = cfg['roofs_layer']
 METHOD = cfg['method']
 
 os.chdir(WORKING_DIR)
-OUTPUT_PATH = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/roofs/merged_colors'))
+OUTPUT_PATH = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/roofs/segmented_objects'))
 logger.info('Reading files...')
 
 roofs = gpd.read_file(ROOF_OCCUPATION, layer=LAYER)

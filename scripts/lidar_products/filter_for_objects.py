@@ -190,10 +190,6 @@ for roof_id in tqdm(tiles_per_roof['OBJECTID'].unique().tolist()):
         else:
             objects = pd.concat([objects, objects_in_roof], ignore_index=True)
 
-        # with rasterio.open(os.path.join(OUTPUT_DIR, str(roof_id) + '_filterd.tif'), 'w', **im_profile) as dst:
-        #     dst.write(filtered_intensity)
-
-# https://scikit-image.org/docs/stable/auto_examples/segmentation/plot_watershed.html
 
 # Save filtered zones as objects
 logger.info('Saving geodataframe to geopackage...')
