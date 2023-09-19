@@ -194,7 +194,7 @@ def get_jaccard_index(labels_gdf, detections_gdf, attribute):
     return labels_egid_gdf, detections_egid_gdf
 
 
-def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
+def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
     """Tag labels and detections with "charges". 
     This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
     A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
@@ -203,7 +203,7 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
     Args:
         gt (geodataframe): geodataframe of the detection with the id "detection_idection"
         dets (geodataframe): threshold to apply on the IoU to determine TP and FP
-        tol_m (float): 
+        tol_m (float): tolerance in meters
         gt_prefix (str): prefix used to identified labels groups 
         det_prefix (str): prefix used to identified detections groups 
 
@@ -212,13 +212,14 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
         dets (gdf): geodataframes of the tagged detections with the associated group id, TP charge and FN charge
     """
 
-
-    """
-        - tol_m = tolerance in meters
-    """
-
     ### --- helper functions --- ###
     def make_groups():
+        """Identify groups based on pairing nodes with NetworkX. The Graph is a collection of nodes.
+        Nodes are hashable objects (geohash (str)).
+
+        Returns:
+            groups (list): list of connected geohash groups
+        """
 
         g = nx.Graph()
         for row in l_join[l_join.geohash_y.notnull()].itertuples():
@@ -230,7 +231,15 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
 
 
     def assess_group(group):
+        """Count the number of GT label and detection by identified group and provide FN and FP charge.
 
+        Args:
+            group (list): list of geohash (GT and detection) of a single group
+
+        Returns:
+            (dic): count of GT, detection by groups and associated FP and FN charges
+        """
+        
         # init
         cnt_gt = 0
         cnt_dets = 0
@@ -242,7 +251,7 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
                 cnt_dets += 1
             if el.startswith(gt_prefix):
                 cnt_gt += 1
-            
+ 
         if cnt_dets > cnt_gt:
             FP_charge = cnt_dets - cnt_gt
         
@@ -253,6 +262,14 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
 
 
     def assign_groups(row):
+        """Assign a group number to GT and detection of a geodataframe
+
+        Args:
+            row (row): geodataframe row
+
+        Returns:
+            row (row): row with a new 'group_id' column
+        """
 
         group_index = {node: i for i, group in enumerate(groups) for node in group}
     
@@ -265,7 +282,15 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
 
 
     def assign_charges(row):
-        
+        """Assign a charge to GT and detection of a geodataframe
+
+        Args:
+            row (row): geodataframe row
+
+        Returns:
+            row (row): row with new columns: GT = TP_charge and FN_charge and Detection = TP_charge and FP_charge
+        """
+
         for k, v in charges_dict[row['geohash']].items():
             row[k] = v
 
@@ -310,7 +335,40 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix):
 
     # less trivial cases
     groups = make_groups()
+
     for group in groups:
+        geom1 = gt[gt['geohash'].isin(group)].geometry.values.tolist()
+        geohash1 = gt[gt['geohash'].isin(group)].geohash.values.tolist()        
+        geom2 = dets[dets['geohash'].isin(group)].geometry.values.tolist()
+        geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
+
+        # Filter detection based on intersection/overlap fraction threshold with the GT 
+        for (i, ii, iii, iv) in zip(geom1, geom2, geohash1, geohash2):
+            # # IoU 
+            # iou = intersection_over_union(i, ii)
+            # if iou <= threshold:
+            #     group.remove(iv)
+            #     charges_dict = {
+            #         **charges_dict,
+            #         iv: {
+            #         'FP_charge': Fraction(1, 1),
+            #         'TP_charge': Fraction(0, 1)
+            #         }
+            #     }
+            # % of overlap of GT and detection shape 
+            polygon1_shape = i
+            polygon2_shape = ii
+            intersection = polygon1_shape.intersection(polygon2_shape).area
+            if intersection / polygon1_shape.area <= threshold and intersection / polygon2_shape.area <= threshold:
+                group.remove(iv)
+                charges_dict = {
+                    **charges_dict,
+                    iv: {
+                    'FP_charge': Fraction(1, 1),
+                    'TP_charge': Fraction(0, 1)
+                    }
+                }
+
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
 
@@ -362,8 +420,9 @@ def get_count(tagged_gt, tagged_dets):
     
     try:
         assert _TP == TP, f"{_TP} != {TP}"
-    except AssertionError as e:
-        print(f"AssertionError: {e}")
+    except AssertionError:
+        logger.error(f"{_TP} != {TP}")
+        sys.exit()
 
     return TP, FP, FN
 

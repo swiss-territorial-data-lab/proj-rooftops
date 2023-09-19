@@ -23,8 +23,7 @@ logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
-# def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, METHOD):
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -47,6 +46,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     misc.ensure_dir_exists(output_dir)
 
     written_files = {}
+
+    threshold_str = str(THRESHOLD).replace('.', 'dot')
 
     # # Get the EGIDS of interest
     # egids = pd.read_csv(EGIDS)
@@ -144,7 +145,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     logger.info("> Assessing detections...")
     logger.info("-> Tagging GT trees and detections (True Positives, False Positives, False Negatives)...")
     tolerance_m = 0
-    tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, tol_m=tolerance_m, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX)
+    tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, tol_m=tolerance_m, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
     logger.info("<- ...done.")
 
     # Detections count
@@ -164,7 +165,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
     metrics_df = pd.DataFrame()
 
     if METHOD == 'many-to-many':
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, tol_m=0, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX)
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, tol_m=0, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
 
         logger.info("-> Computing metrics...")
         logger.info("--> Global metrics")
@@ -187,10 +188,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
 
         logger.info("> Generating output files...")
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
-        layer_name = 'tagged_labels_' + METHOD
+        layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
         written_files[feature_path] = layer_name
-        layer_name = 'tagged_detections_' + METHOD
+        layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
         written_files[feature_path] = layer_name
         feature_path = os.path.join(output_dir, 'metrics.csv')
@@ -245,13 +246,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD):
         tagged_dets_gdf.reset_index(drop=True, inplace=True)
         tagged_dets_gdf['fid'] = tagged_dets_gdf.index
 
-        layer_name = 'tagged_detections_' + METHOD
+        layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
         tagged_dets_gdf.to_file(feature_path, layer=layer_name, index=False)
 
         written_files[feature_path] = layer_name
-
- 
+        
 
     logger.info(f" - Compute mean Jaccard index")
     # Compute Jaccard index at the scale of a roof (by EGID)
@@ -346,9 +346,9 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
     METHOD = cfg['method']
+    THRESHOLD = cfg['threshold']
 
-    # f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, METHOD)
-    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD)
+    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD)
 
     # Stop chronometer  
     toc = time.time()
