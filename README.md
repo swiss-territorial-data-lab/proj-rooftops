@@ -4,8 +4,8 @@
 **Data**: This workflow is based on some classified LiDAR point cloud. <br>
 **Requirements**:
 - There are no hardware or software requirements.
-- Everything was tested with Python 3.11
-- The necessary libraries can be installed from the file `requirements.txt`
+- Everything was tested with Python 3.11.
+- The necessary libraries can be installed from the file `requirements.txt`.
 
 The path to the config file is hard-coded at the start of each script.
 
@@ -13,9 +13,9 @@ The path to the config file is hard-coded at the start of each script.
 (*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
 ```
-python rasterize_intensity.py
-python rasterize_roughness.py
-python filter_surfaces_by_attributes.py
+python scripts/lidar_products/rasterize_intensity.py
+python scripts/lidar_products/rasterize_roughness.py
+python scripts/lidar_products/filter_surfaces_by_attributes.py
 ```
 
 The command lines perform the following steps:

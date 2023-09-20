@@ -24,7 +24,7 @@ rasterize_intensity.py:
 rasterize_roughness.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir: initial/LiDAR
-  overwrite: True
+  overwrite: False
   make_dem: True
   parameters_dem: 
     resolution: 0.3   # Output resolution
@@ -40,7 +40,7 @@ rasterize_roughness.py:
 
 
 filter_surfaces_by_attributes.py:
-  debug_mode: True
+  debug_mode: False
   check_tiles: False
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir_images: processed/lidar/rasterized_lidar
