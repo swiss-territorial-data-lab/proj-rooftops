@@ -57,7 +57,7 @@ ocan_gdf = pd.merge(
 ocan_gdf.rename(columns={'status_ocan': 'status'}, inplace=True)
 
 possible_classes = ocan_gdf['status'].unique()
-agreement_dict = {'ocan': [ocan_gdf, []], 'ocen': [ocen_gdf, []]}
+agreement_dict = {'OCAN': [ocan_gdf, []], 'OCEN': [ocen_gdf, []]}
 for key in agreement_dict.keys():
     gdf, agreement_list = agreement_dict[key]
     gdf.loc[gdf['class']=='not occupied', 'class'] = 'potentially free'

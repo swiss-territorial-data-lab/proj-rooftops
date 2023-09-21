@@ -109,7 +109,7 @@ del large_roofs, clipped_roofs
 logger.info('Getting zones with nodata value...')
 
 nodata_polygons = []
-for tile_id in tqdm(lidar_tiles['id'].values, desc='Getting nodata area on tiles...'):
+for tile_id in tqdm(lidar_tiles['id'].values, desc='Transform nodata area to polygons...'):
 
     if any(tile_id in tilepath for tilepath in im_list_intensity):
 
