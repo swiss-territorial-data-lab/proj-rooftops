@@ -42,7 +42,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR, 'vectors')
+    output_dir = os.path.join(OUTPUT_DIR)
     misc.ensure_dir_exists(output_dir)
     threshold_str = str(THRESHOLD).replace('.', 'dot')
     written_files = {}
@@ -50,7 +50,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info("Get input data")
 
     # Get the EGIDS of interest
-    logger.info("- List of slected EGID")
+    logger.info("- List of selected EGID")
     egids = pd.read_csv(EGIDS)
 
     # Get the rooftops shapes
@@ -78,7 +78,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info("  Filter objects and EGID")
     labels_gdf = labels_gdf[(labels_gdf['type'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['label_id'] = labels_gdf.index
-    labels_gdf = labels_gdf[labels_gdf['geometry'].geom_type.values == 'Polygon']
+    
+    labels_gdf = labels_gdf.explode()
+    # labels_gdf = labels_gdf[labels_gdf['geometry'].geom_type.values == 'Polygon']
 
     # Creat geohash to GT shapes
     logger.info("  Geohashing GT")
@@ -119,16 +121,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     # Get detections shapefile
     logger.info("- Detections")
-    if isinstance(DETECTIONS, str):
-        # detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
-        # detections_gdf = gpd.read_file(DETECTIONS, layer='EGID_occupation')
-        detections_gdf = gpd.read_file(os.path.join(output_dir, DETECTIONS))
-    elif isinstance(DETECTIONS, gpd.GeoDataFrame):
-        detections_gdf = DETECTIONS
-    else:
-        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
+    detections_gdf = gpd.read_file(DETECTIONS)
 
-    detections_gdf = detections_gdf[detections_gdf['geometry'].geom_type.values == 'Polygon']
+    # detections_gdf = detections_gdf[detections_gdf['geometry'].geom_type.values == 'Polygon']
+    detections_gdf = detections_gdf.explode()
 
     logger.info("  Geohashing detections")
     DETS_PREFIX = "dt_"
@@ -272,7 +268,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
     print('')
-    
+
     # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN
     labels_diff = nbr_labels - nbr_tagged_labels
