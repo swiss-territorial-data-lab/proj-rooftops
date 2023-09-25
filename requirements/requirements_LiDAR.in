@@ -1,10 +1,11 @@
-# GDAL==3.0.4
-pygdal==<GDAL_VERSION>.*
+GDAL
 geopandas
 laspy
 loguru
 matplotlib
-pyyaml
+openpyxl
+# pygdal==<GDAL_VERSION>.*
+PyYAML
 rasterio
 rasterstats
 rdp

@@ -1,4 +1,16 @@
+GDAL
 geopandas
+laspy
 loguru
+matplotlib
 openpyxl
+# pygdal==<GDAL_VERSION>.*
 PyYAML
+rasterio
+rasterstats
+rdp
+scikit-image
+scikit-learn
+scipy
+tqdm
+whitebox
