@@ -3,16 +3,17 @@ generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: input/image_segmentation/ground_truth/tiles/Tiles_GTselection_v3.shp
-  roofs: input/image_segmentation/ground_truth/egid/CAD_BATIMENT_HORSOL_TOIT_GTselection_v3.shp
-  output_dir: input/image_segmentation/tiles_test/
+  egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: input/image_segmentation/tiles/
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles_test/
-  output_dir: output/image_segmentation/test/
+  image_dir:  input/image_segmentation/tiles/
+  output_dir: output/image_segmentation/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: False
@@ -31,9 +32,9 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  detection_dir: output/image_segmentation/test/segmented_images/
+  detection_dir: output/image_segmentation/segmented_images/
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/test/
+  output_dir: output/image_segmentation/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   srs: "EPSG:2056" # Projection of the input file
 
@@ -41,23 +42,13 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/roofs_15_09_23_STDL/roofs_STDL_proofed_corrected.shp
-  detections: output/image_segmentation/test/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/test/assessment/
+  output_dir: output/image_segmentation/assessment/
   method: many-to-many
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
 
-# 4 - !!! Evaluate the results: test on synthetic examples for development
-assess_dev.py:  
-  working_dir: .
-  ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
-  output_dir: output/metrics_charge
-  detections: data/GT/synthetic_examples/detection_synthetic.gpkg
-  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  method: many-to-many
-  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
@@ -102,6 +93,17 @@ optimize_hyperparameters.py:
 
 
 ## Additional scripts/processes - sandbox
+
+# !!! Evaluate the results: test on synthetic examples for development
+assess_dev.py:  
+  working_dir: .
+  ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
+  output_dir: output/metrics_charge
+  detections: data/GT/synthetic_examples/detection_synthetic.gpkg
+  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  method: many-to-many
+  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
 
 # Create an image mask keeping buildings
 mask_for_buildings.py:

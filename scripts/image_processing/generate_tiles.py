@@ -29,6 +29,7 @@ if __name__ == "__main__":
 
     # Start chronometer
     tic = time.time()
+    logger.info('Generate tiles')
     logger.info('Starting...')
 
     # Argument and parameter specification
@@ -45,6 +46,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     TILES = cfg['tiles']
+    EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
@@ -57,21 +59,28 @@ if __name__ == "__main__":
 
     written_files = []
 
+    logger.info("Get input data")
+
+    # Get the EGIDS of interest
+    logger.info("- List of selected EGID")
+    egids = pd.read_csv(EGIDS)
+
     # Get the rooftops shapes
+    logger.info("- Roofs shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
     original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
     desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
     
     roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+
+    logger.info(f"  Number of building to process: {len(roofs_gdf)}")
 
     # AOI 
-    logger.info("Select rooftop's shapes in the AOI")
+    logger.info("- Tiles name")
     tiles = gpd.read_file(TILES)
-
-    # Get the EGID list from file
-    roofs_gdf = roofs.copy()
-    logger.info(f"Number of building to process: {len(roofs_gdf)}")
 
     # Find the image's tiles intersecting the rooftops' shapes  
     logger.info("Intersection of rooftop shapes and image tiles")
@@ -84,12 +93,13 @@ if __name__ == "__main__":
     # Open or produce the rooftops boundary boxes shapes 
     feature_path = os.path.join(OUTPUT_DIR, 'bbox.gpkg')
 
+    logger.info("Produce building bounding box")
     if os.path.exists(feature_path):
-        logger.info(f"File bbox.gpkg already exists")
+        logger.info(f"- File bbox.gpkg already exists")
         bbox_list = gpd.read_file(feature_path)
     else:
-        logger.info(f"File bbox.gpkg does not exist")
-        logger.info(f"Create it")
+        logger.info(f"- File bbox.gpkg does not exist")
+        logger.info(f"  Create it")
 
         for row in join_tiles_roofs.itertuples():
             egid = row.EGID
@@ -102,11 +112,9 @@ if __name__ == "__main__":
 
         bbox_list.to_file(feature_path)
         written_files.append(feature_path)  
-        logger.info(f"...done. A file was written: {feature_path}")
-
 
     # Get the image tile(s) number intersecting the rooftop shape 
-    logger.info("Find the number of image tile(s) intersecting the rooftop shape")
+    logger.info("Finding the number of image tile(s) intersecting the rooftop shape")
     unique_egid = join_tiles_roofs["EGID"].unique() 
 
     if MASK:
