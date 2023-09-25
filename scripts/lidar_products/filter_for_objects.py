@@ -1,3 +1,16 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+# 
+# 
+
+
+import argparse
 import os
 import sys
 from glob import glob
@@ -9,9 +22,9 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
+import rasterio
 from osgeo import gdal
 from osgeo import gdal_array
-import rasterio
 from rasterio.features import shapes
 from rasterio.mask import mask
 from rdp import rdp
@@ -25,9 +38,15 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-logger.info(f"Using config.yaml as config file.")
-with open('config\config_lidar_products.yaml') as fp:
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description="The script detects the objects by filtering the intensity raster.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
+
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
+
 
 # Constant definitions -------------------
 DEBUG = cfg['debug_mode']

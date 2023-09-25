@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import time
@@ -20,10 +21,14 @@ logger = misc.format_logger(logger)
 tic = time.time()
 logger.info('Starting...')
 
-logger.info(f"Using config.yaml as config file.")
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description="The script makes a mask for the building images.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
 
-with open('config/config_lidar_products.yaml') as fp:
-        cfg = load(fp, Loader = FullLoader)[os.path.basename(__file__)]
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 TRANSPARENCY = cfg['transparency']
 

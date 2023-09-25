@@ -27,7 +27,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser(description="The script sorts the roofs by suitability according to thresholds defined with the OCAN's and the OCEN's experts of Geneva.")
+parser = argparse.ArgumentParser()
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 

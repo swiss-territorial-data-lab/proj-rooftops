@@ -1,5 +1,18 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+# 
+# 
+
+
 import os
 import sys
+import argparse
 from loguru import logger
 from yaml import load, FullLoader
 
@@ -12,8 +25,13 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-logger.info(f"Using config.yaml as config file.")
-with open('config\config_lidar_products.yaml') as fp:
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description="The script compares the occupation classification based on LiDAR products with that of the experts.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
+
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 # Define constants ----------------------------------

@@ -1,3 +1,15 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+# 
+
+
+import argparse
 import os
 import sys
 from loguru import logger
@@ -13,8 +25,13 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-logger.info(f"Using config.yaml as config file.")
-with open('config\config_lidar_products.yaml') as fp:
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description="The script makes rasters from the intensity values of the point clouds in a folder.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
+
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 
@@ -36,14 +53,9 @@ lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 
 logger.info('Processing files...')
 for file in lidar_files:
-    
-    if '\\' in file:
-        filename=file.split('\\')[-1].rstrip('.las')
-    else:
-        filename=file.split('/')[-1].rstrip('.las')
 
     output_path_tif = os.path.join(OUTPUT_DIR_TIF, 
-                                 filename + f'_{METHOD}_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}_{RETURNS}.tif')
+                                 os.path.basename(file.rstrip('.las')) + f'_{METHOD}_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}_{RETURNS}.tif')
     
     if (not os.path.isfile(output_path_tif)) | OVERWRITE:
         if METHOD == 'idw':
