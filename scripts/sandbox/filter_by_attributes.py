@@ -1,3 +1,16 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+# 
+# 
+#  Estimate roof suitability for solar and vegetated installations based on experts' critiera of slope and area.
+
+
 import os
 import sys
 import argparse
@@ -19,7 +32,6 @@ parser.add_argument('config_file', type=str, help='Framework configuration file'
 args = parser.parse_args()
 
 logger.info(f"Using {args.config_file} as config file.")
-
 with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 

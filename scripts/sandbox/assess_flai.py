@@ -1,16 +1,19 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
-
-#  proj-rooftops
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
-#      Copyright (c) 2020 Republic and Canton of Geneva
-#
+# 
+# 
+#  Assess flai's vectorized classification of the roof objects
+
 
 import os
 import sys
+import argparse
 from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
@@ -25,11 +28,13 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-logger.info(f"Using config_flai.yaml as config file.")
+parser = argparse.ArgumentParser(description="The script sorts the roofs by suitability according to thresholds defined with the OCAN's and the OCEN's experts of Geneva.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
 
-with open('config/config_flai.yaml') as fp:
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
-
 
 # Load input parameters
 WORKING_DIR = cfg['working_dir']
@@ -37,7 +42,7 @@ METHOD = cfg['method']
 
 GT = cfg['gt']
 DETECTION = cfg['detection']
-EPSG = cfg['epsg']
+EPSG = cfg['epsg'] if 'epsg' in cfg.keys() else 2056
 
 TILE_NAME = os.path.basename(DETECTION).split('.')[0]
 TILES = cfg['tiles']

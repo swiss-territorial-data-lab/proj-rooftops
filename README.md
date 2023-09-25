@@ -68,10 +68,6 @@ The suitability of a roof to host a solar or vegetated installation can be estim
 - Everything was tested with Python 3.11.
 - The necessary libraries can be installed from the file `requirements.txt`.
 
-```
-python scripts\attributes-based_processing\filter_by_attributes.py config/config_expert_attributes.yaml
-```
-
 **Workflow**
 
 <figure align="center">
@@ -82,7 +78,7 @@ python scripts\attributes-based_processing\filter_by_attributes.py config/config
 All the filters are applied in one script. 
 
 ```
-python filter_by_attributes.py
+python scripts/sandbox/filter_by_attributes.py config/config_expert_attributes.yaml
 ```
 
 ### Collaboration with flai
@@ -90,5 +86,5 @@ python filter_by_attributes.py
 We worked with [flai](https://www.flai.ai/) to test their algorithm for classifying LiDAR point clouds. flai vectorized the clusters of the class "Roof objects". A script was written to assess the quality of the results based on the vectorized clusters.
 
 ```
-python scripts/sandbox/assess_flai config/config_flai.yaml
+python scripts/sandbox/assess_flai.py config/config_flai.yaml
 ```

@@ -1,3 +1,16 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+# 
+#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+# 
+# 
+#  Assess the experts' feedback for the classification of occupation and suitability of the roofs.
+
+
 import os
 import sys
 import argparse
