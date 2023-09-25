@@ -5,6 +5,7 @@ from loguru import logger
 import pandas as pd
 import geopandas as gpd
 import numpy as np
+from shapely.affinity import scale
 
 
 def format_logger(logger):
