@@ -30,8 +30,6 @@ PREDICTIONS_LAYER = cfg['predictions_layer']
 os.chdir(WORKING_DIR)
 OUTPUT_DIR = misc.ensure_dir_exists('final/expert_control')
 
-written_files = []
-
 # Data processing --------------------------------------
 
 logger.info('Read the files...')
@@ -75,5 +73,8 @@ agreement_pd = pd.DataFrame.from_dict(agreement_dict, orient='index', columns=np
 agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates.csv'))
 
 all_info_gdf = pd.merge(ocan_gdf, ocen_gdf[['OBJECTID', 'class', 'agreement', 'status', 'reason']], on='OBJECTID', suffixes=('_ocan', '_ocen'))
+filepath = os.path.join(OUTPUT_DIR, 'comparison_occupation_classif.gpkg')
 all_info_gdf[['OBJECTID', 'class_ocan', 'agreement_ocan', 'status_ocan', 'reason_ocan', 'class_ocen', 'agreement_ocen', 'status_ocen', 'reason_ocen',
-              'std_i', 'MOE_i', 'median_r', 'mean_r', 'nodata_overlap', 'geometry']].to_file(os.path.join(OUTPUT_DIR, 'comparison_occupation_classif.gpkg'))
+              'std_i', 'MOE_i', 'median_r', 'mean_r', 'nodata_overlap', 'geometry']].to_file(filepath)
+
+logger.success(f'One file was written: "{filepath}".')
