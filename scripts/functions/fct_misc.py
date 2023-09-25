@@ -141,7 +141,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf = gpd.read_file(original_file)
         logger.info(f"Dissolved shapes by {attribute}")
         gdf = gdf.dissolve(attribute, as_index=False)
-        gdf['geometry'] = gdf['geometry'].buffer(0.0001)       
+        gdf['geometry'] = gdf['geometry'].buffer(0.0001)   # apply a buffer to prevent thin polygons due to polyons gaps    
         gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
 
