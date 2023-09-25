@@ -1,22 +1,8 @@
-##############################################################################
 #!/bin/python
 # -*- coding: utf-8 -*-
-# 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
-#  Script allowing to find the optimized hyperparameters values of the SAM model
-#  Input: List of EGID, Ground Truth, hyperparameter values to explore
-#  Output: Best hyperparameters values, Hyperparameters plots
-#  Works along with scripts "/functions/common.py" and "/functions/fct_SAM.py"
-##############################################################################
 
+#  proj-rooftops
 
-## Libraries
 
 import os
 import sys

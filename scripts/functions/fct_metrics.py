@@ -1,4 +1,3 @@
-
 import os
 import sys
 from loguru import logger
@@ -71,7 +70,7 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
         geodataframes: geodataframes of the true positive and of the flase positives intersecting labels.
     """
     
-    # Compare the global IoU of the detection based on all the matching labels
+    # Compare the global IoU of the detection based on all the matching labels    
     sum_detections_gdf = tp_gdf_ini.groupby(['detection_id'])['IOU'].sum().reset_index()
     true_detections_gdf = sum_detections_gdf[sum_detections_gdf['IOU']>threshold]
     true_detections_index = true_detections_gdf['detection_id'].unique().tolist()
