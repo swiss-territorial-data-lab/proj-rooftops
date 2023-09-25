@@ -11,7 +11,7 @@ Goal: Determine the space available on rooftops by detecting objects. Production
 
 ### Hardware
 
-The scripts have been run with Ubuntu 20.04 OS on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4)
+The scripts have been run with Ubuntu 20.04 OS on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4)  <!-- That's our installation, not a requirement. A requirement would be to have a CUDA-compatible GPU. -->
 
 ### Installation
 
