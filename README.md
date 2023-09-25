@@ -1,5 +1,6 @@
 # proj-rooftops
 
+### Filtering of the roof parameters
 
 **Data**: This workflow is based on the following layers, available in the [SITG catalog](http://ge.ch/sitg/sitg_catalog/sitg_donnees). <br>
 - CAD_BATIMENT_HORSOL_TOIT.shp: Roof areas of above-ground buildings.
@@ -26,3 +27,8 @@ Everything is executed in one script.
 ```
 python filter_by_attributes.py
 ```
+
+### Collaboration with flai
+
+This branch serves to assess the quality of the results provided by flai compared to our ground truth.
+The script `assess_flai.py`and the functions `get_fractional_sets` and `get_metrics` are mostly taken from the GitHub branch `ch/SAM`. Some modifications were performed in order to allow a one-to-many cardinality between the predictions and the labels. In addition, the use of the attribute `value` is only adapted to the specific case of the SAM algorithm and had to be changed.

@@ -1,0 +1,7 @@
+assess_flai.py:  
+  working_dir: .
+  method: one-to-many       # one-to-one or one-to-many
+  tiles: input/lidar_intensity/LiDAR/2019/Tuiles/Emprises tuiles Lidar 2019.shp
+  gt: input/GT/merged_occupied_surface.shp
+  detection: input/flai/2488500_1116500.shp
+  epsg: 2056
