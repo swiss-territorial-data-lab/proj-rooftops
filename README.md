@@ -46,12 +46,17 @@ _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling
 
 ## LiDAR classification
 
+**Data**: LiDAR point cloud with intensity values. Here, the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used.
+
+**Workflow**
+
 (*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
 ```
-python scripts/lidar_products/rasterize_intensity.py
-python scripts/lidar_products/rasterize_roughness.py
-python scripts/lidar_products/filter_surfaces_by_attributes.py
+python scripts/lidar_products/rasterize_intensity.py config/config_lidar_products.yaml
+python scripts/lidar_products/rasterize_roughness.py config/config_lidar_products.yaml
+python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
+python scripts/assess_results/assess_classif_surfaces.py config/config_lidar_products.yaml
 ```
 
 The command lines perform the following steps:
@@ -61,8 +66,9 @@ The command lines perform the following steps:
     - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
     - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
 3. Classify the roof sections by estimating their degree of occupation according to their roughness and intensity.
+4. Compare the results to a classification performed by experts and determine the accuracy (= agreement rate).
 
-The other scripts are attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
+The other scripts are some attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
 
 
 ## LiDAR segmentation
