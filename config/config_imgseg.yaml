@@ -2,7 +2,7 @@
 generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  tiles: input/image_segmentation/ground_truth/tiles/Tiles_GTselection_v3.shp
+  tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
   egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: input/image_segmentation/tiles/
@@ -41,7 +41,7 @@ produce_vector_layer.py:
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_15_09_23_STDL/roofs_STDL_proofed_corrected.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/gt_all.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp

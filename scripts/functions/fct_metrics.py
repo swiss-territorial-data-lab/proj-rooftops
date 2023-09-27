@@ -193,7 +193,7 @@ def get_jaccard_index(labels_gdf, detections_gdf, attribute):
     return labels_egid_gdf, detections_egid_gdf
 
 
-def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
+def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
     """Tag labels and detections with "charges". 
     This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
     A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
@@ -202,7 +202,7 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
     Args:
         gt (geodataframe): geodataframe of the detection with the id "detection_idection"
         dets (geodataframe): threshold to apply on the IoU to determine TP and FP
-        tol_m (float): tolerance in meters
+        gt_buffer (float): buffer (in meter) applied to gt shape to avoid shape sharing border to be assigned to the same group if no common detection overlap them
         gt_prefix (str): prefix used to identified labels groups 
         det_prefix (str): prefix used to identified detections groups 
 
@@ -302,7 +302,7 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
     # init
     _gt = gt.copy()
     _dets = dets.copy()
-    _dets['geometry'] = _dets.geometry.buffer(tol_m)
+    _gt['geometry'] = _gt.geometry.buffer(gt_buffer, join_style=2)
 
     charges_dict = {}
 
@@ -343,17 +343,6 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
 
         # Filter detection based on intersection/overlap fraction threshold with the GT 
         for (i, ii, iii, iv) in zip(geom1, geom2, geohash1, geohash2):
-            # # IoU 
-            # iou = intersection_over_union(i, ii)
-            # if iou <= threshold:
-            #     group.remove(iv)
-            #     charges_dict = {
-            #         **charges_dict,
-            #         iv: {
-            #         'FP_charge': Fraction(1, 1),
-            #         'TP_charge': Fraction(0, 1)
-            #         }
-            #     }
             # % of overlap of GT and detection shape 
             polygon1_shape = i
             polygon2_shape = ii
@@ -385,7 +374,10 @@ def tag(gt, dets, tol_m, gt_prefix, dets_prefix, threshold):
                 }
         
         charges_dict = {**charges_dict, **this_group_charges_dict}
-    
+
+    # remove the buffer applied before group assignement to recover original geometry 
+    _gt['geometry'] = _gt.geometry.buffer(-gt_buffer, join_style=2)
+
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
 

@@ -70,7 +70,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     # if 'OBSTACLE' in labels_gdf.columns:
     #     labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
 
-    labels_gdf['fid'] = labels_gdf['fid'].astype(int)
+    # labels_gdf['fid'] = labels_gdf['fid'].astype(int)
     labels_gdf['type'] = labels_gdf['type'].astype(int)
     labels_gdf['EGID'] = labels_gdf['EGID'].astype(int)
 
@@ -133,7 +133,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     detections_gdf['EGID'] = detections_gdf['EGID'].astype(int)
     if 'value' in detections_gdf.columns:
-         detections_gdf.rename(columns={'value': 'detection_id'}, inplace=True)
+        detections_gdf.rename(columns={'value': 'detection_id'}, inplace=True)
     detections_gdf['detection_id'] = detections_gdf['detection_id'].astype(int)
     detections_gdf = detections_gdf.rename(columns={"area": "detection_area"})
 
@@ -156,7 +156,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     metrics_df = pd.DataFrame()
 
     if METHOD == 'many-to-many':
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, tol_m=0, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
 
         logger.info("- Global metrics")
 
@@ -182,9 +182,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         written_files[feature_path] = layer_name
         layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
-        written_files[feature_path] = layer_name
-        feature_path = os.path.join(output_dir, 'metrics.csv')
-        metrics_df.to_csv(feature_path, sep=',', index=False)
+
 
     else:
         # Count 
@@ -245,8 +243,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID')
     iou_average = detections_egid_gdf['IOU_EGID'].mean()
     metrics_df['IoU'] = 0
-    metrics_df['IoU'] = np.where(metrics_df['EGID'] == 'ALL', iou_average,metrics_df['IoU'])
-    logger.info(f"  Averaged IoU for all EGIDs = {iou_average:.2f}")
+    metrics_df['IoU'] = np.where(metrics_df['EGID'] == 'ALL', iou_average,metrics_df['IoU'])    
 
     for egid in sorted(labels_gdf.EGID.unique()):
         labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index(
@@ -256,20 +253,27 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         iou_average = detections_egid_gdf['IOU_EGID'].mean()
         metrics_df['IoU'] = np.where(metrics_df['EGID'] == egid, iou_average,metrics_df['IoU'])
 
+    # Sump-up results and save files
     TP = metrics_df['TP'][metrics_df.EGID == 'ALL'][0]
     FP = metrics_df['FP'][metrics_df.EGID == 'ALL'][0]
     FN = metrics_df['FN'][metrics_df.EGID == 'ALL'][0]
     precision = metrics_df['precision'][metrics_df.EGID == 'ALL'][0]
     recall = metrics_df['recall'][metrics_df.EGID == 'ALL'][0]
     f1 = metrics_df['f1'][metrics_df.EGID == 'ALL'][0]
+    iou = metrics_df['IoU'][metrics_df.EGID == 'ALL'][0]
+
+    written_files[feature_path] = layer_name
+    feature_path = os.path.join(output_dir, 'metrics.csv')
+    metrics_df.to_csv(feature_path, sep=',', index=False, float_format='%.4f')
 
     print('')
     logger.info(f"TP = {TP}, FP = {FP}, FN = {FN}")
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
+    logger.info(f"IoU for all EGIDs = {iou:.2f}")
     print('')
 
-    # Check if detection or labels have been lost in the process
+    # Check if detection or labels have been lost in the prbbbcocess
     nbr_tagged_labels = TP + FN
     labels_diff = nbr_labels - nbr_tagged_labels
     filename = os.path.join(output_dir, 'problematic_objects.gpkg')
