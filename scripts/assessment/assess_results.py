@@ -11,6 +11,7 @@ import argparse
 from loguru import logger
 from yaml import load, FullLoader
 
+import matplotlib as plt
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -82,7 +83,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     labels_gdf = labels_gdf.explode()
     # labels_gdf = labels_gdf[labels_gdf['geometry'].geom_type.values == 'Polygon']
 
-    # Creat geohash to GT shapes
+    # Create geohash to GT shapes
     logger.info("  Geohashing GT")
     # labels_gdf = labels_gdf.explode()
     GT_PREFIX= 'gt_'
@@ -96,7 +97,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info("  Add geometry attributes")
 
     ## Area
-    labels_gdf['label area'] = round(labels_gdf.area, 4)
+    labels_gdf['label_area'] = round(labels_gdf.area, 4)
 
     ## Nearest distance between polygons
     labels_gdf_tmp = labels_gdf.join(roofs_gdf[['EGID', 'geometry']].set_index('EGID'), on='EGID', how='left', lsuffix='_label', rsuffix='_roof', validate='m:1')
@@ -142,18 +143,20 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     # Detections count
     logger.info(f"Method used for detections counting")
     if METHOD == 'one-to-one':
-        logger.info('Using the one-to-one method.')
+        logger.info('Using the one-to-one method')
     elif METHOD == 'one-to-many':
-        logger.info('Using one-to-many method.')
+        logger.info('Using one-to-many method')
     elif METHOD == 'many-to-many':
-        logger.info('Using many-to-many method.')
+        logger.info('Using many-to-many method')
     else:
-        logger.warning('Unknown method, default one-to-one.')
+        logger.warning('Unknown method, default one-to-one')
 
     logger.info(f"Metrics computation:")
     logger.info(f"- Count TP, FP and FN")
 
     metrics_df = pd.DataFrame()
+    metrics_egid_df = pd.DataFrame()
+    metrics_objects_df = pd.DataFrame()
 
     if METHOD == 'many-to-many':
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
@@ -162,19 +165,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
         TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
         metrics_results = metrics.get_metrics(TP, FP, FN)
-        tmp_df = pd.DataFrame.from_records([{'EGID': 'ALL', **metrics_results}])
+        tmp_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         metrics_df = pd.concat([metrics_df, tmp_df])
-
-        logger.info("- Per egid metrics")
-        for egid in sorted(labels_gdf.EGID.unique()):
-            TP, FP, FN = metrics.get_count(
-                tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
-                tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
-            )
-            metrics_results = metrics.get_metrics(TP, FP, FN)
-            tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
-            metrics_df = pd.concat([metrics_df, tmp_df])
-
+ 
         # Get output files 
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
         layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
@@ -183,6 +176,37 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
 
+        # Metrics by attributes 
+        logger.info("- Per egid metrics")
+        for egid in sorted(labels_gdf.EGID.unique()):
+            TP, FP, FN = metrics.get_count(
+                tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
+                tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
+            )
+            metrics_results = metrics.get_metrics(TP, FP, FN)
+            tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
+            metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
+
+        # print(np.min(tagged_gt_gdf['label_area']), np.max(tagged_gt_gdf['label_area']))
+        # print(np.min(tagged_gt_gdf['nearest_distance_border']), np.max(tagged_gt_gdf['nearest_distance_border']))
+
+        # parameters = ['label_area', 'nearest_distance_border']
+        # area_ranges = [0,1], [1,10], [10,50], [50,100] 
+        # distance_ranges = [0,1], [1,10], [10,100]
+        # ranges_dic = {'label_area': area_ranges, 'nearest_distance_border':distance_ranges}
+
+        # for parameter in parameters:
+        #     logger.info("- Per object attributes metrics")
+        #     ranges = ranges_dic[parameter] 
+
+        #     for val in ranges:
+        #         TP, FP, FN = metrics.get_count(
+        #             tagged_gt = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])],
+        #             # tagged_dets = tagged_dets_gdf[(tagged_dets_gdf.detection_area >= area[0]) & (tagged_dets_gdf.detection_area <= area[1])],
+        #         )
+        #         metrics_results = metrics.get_metrics(TP, FP, FN)
+        #         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': val, **metrics_results}])
+        #         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     else:
         # Count 
@@ -239,28 +263,50 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         
 
     logger.info(f"- Compute mean Jaccard index")
-    # Compute Jaccard index at the scale of a roof (by EGID)
-    labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID')
-    iou_average = detections_egid_gdf['IOU_EGID'].mean()
-    metrics_df['IoU'] = 0
-    metrics_df['IoU'] = np.where(metrics_df['EGID'] == 'ALL', iou_average,metrics_df['IoU'])    
 
+    # Compute Jaccard index by EGID
+    metrics_egid_df['IoU'] = 0
     for egid in sorted(labels_gdf.EGID.unique()):
         labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index(
             labels_gdf[labels_gdf.EGID == egid], 
             detections_gdf[detections_gdf.EGID == egid], attribute='EGID'
         )
         iou_average = detections_egid_gdf['IOU_EGID'].mean()
-        metrics_df['IoU'] = np.where(metrics_df['EGID'] == egid, iou_average,metrics_df['IoU'])
+        metrics_egid_df['IoU'] = np.where(metrics_egid_df['EGID'] == egid, iou_average, metrics_egid_df['IoU'])
+
+    # Compute Jaccard index for all buildings
+    iou_average = metrics_egid_df['IoU'].fillna(0).mean()
+    metrics_df['IoU'] = 0
+    metrics_df['IoU'] = np.where(metrics_df['value'] == 'ALL', iou_average, metrics_df['IoU'])    
+    
+    # Concatenate roof attributes by EGID and get attributes keys
+    metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
+    roof_attributes = egids.keys().tolist()
+    roof_attributes.remove('EGID')
+
+    # Compute metrics by roof attributes 
+    for attribute in roof_attributes:
+        metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
+        metrics_iou_df = metrics_egid_df[[attribute, 'IoU']].groupby([attribute], as_index=False).mean()
+
+        for val in metrics_egid_df[attribute].unique():
+            TP = metrics_count_df['TP'][metrics_count_df[attribute] == val].iloc[0]  
+            FP = metrics_count_df['FP'][metrics_count_df[attribute] == val].iloc[0]
+            FN = metrics_count_df['FN'][metrics_count_df[attribute] == val].iloc[0]
+            iou = metrics_iou_df['IoU'][metrics_iou_df[attribute] == val].iloc[0]     
+
+            metrics_results = metrics.get_metrics(TP, FP, FN)
+            tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, **metrics_results, 'IoU': iou}])
+            metrics_df = pd.concat([metrics_df, tmp_df])        
 
     # Sump-up results and save files
-    TP = metrics_df['TP'][metrics_df.EGID == 'ALL'][0]
-    FP = metrics_df['FP'][metrics_df.EGID == 'ALL'][0]
-    FN = metrics_df['FN'][metrics_df.EGID == 'ALL'][0]
-    precision = metrics_df['precision'][metrics_df.EGID == 'ALL'][0]
-    recall = metrics_df['recall'][metrics_df.EGID == 'ALL'][0]
-    f1 = metrics_df['f1'][metrics_df.EGID == 'ALL'][0]
-    iou = metrics_df['IoU'][metrics_df.EGID == 'ALL'][0]
+    TP = metrics_df['TP'][metrics_df.value == 'ALL'][0]
+    FP = metrics_df['FP'][metrics_df.value == 'ALL'][0]
+    FN = metrics_df['FN'][metrics_df.value == 'ALL'][0]
+    precision = metrics_df['precision'][metrics_df.value == 'ALL'][0]
+    recall = metrics_df['recall'][metrics_df.value == 'ALL'][0]
+    f1 = metrics_df['f1'][metrics_df.value == 'ALL'][0]
+    iou = metrics_df['IoU'][metrics_df.value == 'ALL'][0]
 
     written_files[feature_path] = layer_name
     feature_path = os.path.join(output_dir, 'metrics.csv')
@@ -273,7 +319,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"IoU for all EGIDs = {iou:.2f}")
     print('')
 
-    # Check if detection or labels have been lost in the prbbbcocess
+    # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN
     labels_diff = nbr_labels - nbr_tagged_labels
     filename = os.path.join(output_dir, 'problematic_objects.gpkg')

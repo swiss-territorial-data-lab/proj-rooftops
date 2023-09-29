@@ -387,7 +387,7 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
     return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
 
 
-def get_count(tagged_gt, tagged_dets):
+def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[]})):
     """Sum the TP, FP and FN charge for all the labels and detections
 
     Args:
