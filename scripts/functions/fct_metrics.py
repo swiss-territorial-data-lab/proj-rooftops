@@ -408,7 +408,7 @@ def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[
 
     _TP = float(tagged_gt.TP_charge.sum()) # x-check
     FN = float(tagged_gt.FN_charge.sum())
-    
+
     try:
         assert _TP == TP, f"{_TP} != {TP}"
     except AssertionError:

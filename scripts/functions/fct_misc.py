@@ -240,6 +240,18 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
+def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
+        
+    gdf_tmp = gdf1.join(gdf2[[join_key, 'geometry']].set_index(join_key), on=join_key, how='left', lsuffix=lsuffix, rsuffix=rsuffix, validate='m:1')
+
+    geom1 = gdf_tmp['geometry' + rsuffix].to_numpy().tolist()
+    geom2 = gdf_tmp['geometry' + lsuffix].centroid.to_numpy().tolist()
+    gdf1[parameter] = distance_shape(geom1, geom2)
+    gdf1[parameter] = round(gdf1[parameter], 4)
+
+    return gdf1
+
+
 def test_crs(crs1, crs2="EPSG:2056"):
     """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
 

@@ -94,28 +94,16 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"  Read labels file: {nbr_labels} shapes")
 
     # Add geometry attributes
-    logger.info("  Add geometry attributes")
+    logger.info("  Add geometry attributes to GT")
 
     ## Area
-    labels_gdf['label_area'] = round(labels_gdf.area, 4)
+    labels_gdf['area'] = round(labels_gdf.area, 4)
 
     ## Nearest distance between polygons
-    labels_gdf_tmp = labels_gdf.join(roofs_gdf[['EGID', 'geometry']].set_index('EGID'), on='EGID', how='left', lsuffix='_label', rsuffix='_roof', validate='m:1')
+    labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_label', rsuffix='_roof')
+    labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_label', rsuffix='_roof')
 
-    ### Nearest distance between the centroid's polygon of an object to the roof's border 
-    geom1 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
-    geom2 = labels_gdf_tmp['geometry_label'].centroid.to_numpy().tolist()
-    nearest_distance = misc.distance_shape(geom1, geom2)
-    labels_gdf['nearest_distance_centroid'] = nearest_distance
-    labels_gdf['nearest_distance_centroid'] = round(labels_gdf.nearest_distance_centroid, 4)
-
-    ### Nearest distance between the centroid's border of an object to the roof's border 
-    geom1 = labels_gdf_tmp['geometry_roof'].to_numpy().tolist()
-    geom2 = labels_gdf_tmp['geometry_label'].to_numpy().tolist()
-    nearest_distance = misc.distance_shape(geom1, geom2)
-    labels_gdf['nearest_distance_border'] = nearest_distance
-    labels_gdf['nearest_distance_border'] = round(labels_gdf.nearest_distance_border, 4)
-    
+    # Save new labels file     
     labels_gdf = labels_gdf.drop(columns=['fid'], axis=1)
     feature_path = os.path.join(output_dir, 'labels.gpkg')
     labels_gdf.to_file(feature_path, index=False)
@@ -136,9 +124,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     if 'value' in detections_gdf.columns:
         detections_gdf.rename(columns={'value': 'detection_id'}, inplace=True)
     detections_gdf['detection_id'] = detections_gdf['detection_id'].astype(int)
-    detections_gdf = detections_gdf.rename(columns={"area": "detection_area"})
+    # detections_gdf = detections_gdf.rename(columns={"area": "detection_area"})
 
     logger.info(f"Read detection file: {len(detections_gdf)} shapes")
+
+    # Add geometry attributes
+    logger.info("  Add geometry attributes to detection")
+
+    ## Nearest distance between polygons
+    detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
+    detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
+
 
     # Detections count
     logger.info(f"Method used for detections counting")
@@ -187,26 +183,28 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
             tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
             metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
 
-        # print(np.min(tagged_gt_gdf['label_area']), np.max(tagged_gt_gdf['label_area']))
+        # print(np.min(tagged_gt_gdf['area']), np.max(tagged_gt_gdf['area']))
         # print(np.min(tagged_gt_gdf['nearest_distance_border']), np.max(tagged_gt_gdf['nearest_distance_border']))
+        parameters = ['area', 'nearest_distance_border']
+        area_ranges = [0,1], [1,10], [10,50], [50,100] 
+        distance_ranges = [0,1], [1,10], [10,100]
+        ranges_dic = {'area': area_ranges, 'nearest_distance_border':distance_ranges}
 
-        # parameters = ['label_area', 'nearest_distance_border']
-        # area_ranges = [0,1], [1,10], [10,50], [50,100] 
-        # distance_ranges = [0,1], [1,10], [10,100]
-        # ranges_dic = {'label_area': area_ranges, 'nearest_distance_border':distance_ranges}
+        for parameter in parameters:
+            logger.info("- Per object attributes metrics")
+            ranges = ranges_dic[parameter] 
 
-        # for parameter in parameters:
-        #     logger.info("- Per object attributes metrics")
-        #     ranges = ranges_dic[parameter] 
+            for val in ranges:
+                filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])]
+                filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
+                
+                TP = float(filter_gt_gdf['TP_charge'].sum())
+                FP = float(filter_dets_gdf['FP_charge'].sum()) 
+                FN = float(filter_gt_gdf['FN_charge'].sum())
 
-        #     for val in ranges:
-        #         TP, FP, FN = metrics.get_count(
-        #             tagged_gt = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])],
-        #             # tagged_dets = tagged_dets_gdf[(tagged_dets_gdf.detection_area >= area[0]) & (tagged_dets_gdf.detection_area <= area[1])],
-        #         )
-        #         metrics_results = metrics.get_metrics(TP, FP, FN)
-        #         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': val, **metrics_results}])
-        #         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': val, **metrics_results}])
+                metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     else:
         # Count 
@@ -297,7 +295,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
             metrics_results = metrics.get_metrics(TP, FP, FN)
             tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, **metrics_results, 'IoU': iou}])
-            metrics_df = pd.concat([metrics_df, tmp_df])        
+            metrics_df = pd.concat([metrics_df, tmp_df])   
+
+    metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
     # Sump-up results and save files
     TP = metrics_df['TP'][metrics_df.value == 'ALL'][0]
