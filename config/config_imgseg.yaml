@@ -48,7 +48,10 @@ assess_results.py:
   output_dir: output/image_segmentation/assessment/
   method: many-to-many
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
-
+  object_attributes:
+    parameters: ['area', 'nearest_distance_border']
+    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
+    distance_ranges: [[0,1], [1,10], [10,100]]
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:

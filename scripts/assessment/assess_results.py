@@ -24,7 +24,7 @@ logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -185,13 +185,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
         # print(np.min(tagged_gt_gdf['area']), np.max(tagged_gt_gdf['area']))
         # print(np.min(tagged_gt_gdf['nearest_distance_border']), np.max(tagged_gt_gdf['nearest_distance_border']))
-        parameters = ['area', 'nearest_distance_border']
-        area_ranges = [0,1], [1,10], [10,50], [50,100] 
-        distance_ranges = [0,1], [1,10], [10,100]
-        ranges_dic = {'area': area_ranges, 'nearest_distance_border':distance_ranges}
 
-        for parameter in parameters:
-            logger.info("- Per object attributes metrics")
+        ranges_dic = {OBJECT_PARAMETERS[i]: RANGES[i] for i in range(len(OBJECT_PARAMETERS))}
+
+        logger.info("- Per object attributes metrics")
+        for parameter in OBJECT_PARAMETERS:
             ranges = ranges_dic[parameter] 
 
             for val in ranges:
@@ -283,6 +281,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     roof_attributes.remove('EGID')
 
     # Compute metrics by roof attributes 
+    logger.info("- Per roof attributes metrics")
     for attribute in roof_attributes:
         metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
         metrics_iou_df = metrics_egid_df[[attribute, 'IoU']].groupby([attribute], as_index=False).mean()
@@ -354,7 +353,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     for path in written_files.keys():
         logger.success(f'  file: {path}, layer: {written_files[path]}')
 
-    return f1, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
+    return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
 # ------------------------------------------
 
@@ -385,8 +384,13 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
     METHOD = cfg['method']
     THRESHOLD = cfg['threshold']
+    OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
+    AREA_RANGES = cfg['object_attributes']['area_ranges'] 
+    DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
 
-    f1, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD)
+    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
+
+    metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES)
 
     # Stop chronometer  
     toc = time.time()

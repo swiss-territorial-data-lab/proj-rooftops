@@ -241,7 +241,20 @@ def ensure_dir_exists(dirpath):
 
 
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
-        
+    """Prepare the geometries of two gdf to be processed (compute nearest distance between two shapes)
+
+    Args:
+        gdf1: geodataframe 1
+        gdf2: geodataframe 2
+        join_key (str): attribute on which the join between the 2 gdf is done
+        parameter: operation to be performed
+        lsuffix (str)
+        rsuffix (str)
+
+    Return:
+        gdf1: geodataframe 1 + new columns for the computed paramters
+    """
+
     gdf_tmp = gdf1.join(gdf2[[join_key, 'geometry']].set_index(join_key), on=join_key, how='left', lsuffix=lsuffix, rsuffix=rsuffix, validate='m:1')
 
     geom1 = gdf_tmp['geometry' + rsuffix].to_numpy().tolist()
