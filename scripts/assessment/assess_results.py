@@ -11,7 +11,8 @@ import argparse
 from loguru import logger
 from yaml import load, FullLoader
 
-import matplotlib as plt
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 18})
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -23,6 +24,71 @@ import functions.fct_metrics as metrics
 logger = misc.format_logger(logger)
 
 # Define functions --------------------------
+
+
+def plot_stacked_grouped(dir_plots, df, attribute):
+
+    fig, ax = plt.subplots(figsize=(8,6))
+
+    color_list = ['limegreen', 'orange', 'tomato']  
+    count_list = ['TP', 'FP', 'FN']    
+
+    df = df[df['attribute'] == attribute] 
+
+    df[count_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
+
+    for c in ax.containers:
+        labels = [a if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+
+    plt.xticks(rotation=40, ha='right')
+    
+    plt.title(f'Count by {attribute.replace("_", " ")}')
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
+
+    plt.tight_layout() 
+    plot_path = dir_plots + f'bar_{attribute}.png'  
+    plt.savefig(plot_path, bbox_inches='tight')
+    # plt.show()
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_stacked_grouped_percent(dir_plots, df, attribute):
+
+    fig, ax = plt.subplots(figsize=(10,8))
+
+    color_list = ['limegreen', 'orange', 'tomato']  
+    count_list = ['TP', 'FP', 'FN']    
+
+    df = df[df['attribute'] == attribute]  
+    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
+    df['sum'] = df.sum(axis=1)
+
+    for count in count_list:
+        df[count] =  df[count] / df['sum']
+    
+    df[count_list].plot(ax=ax, kind='bar', stacked=True,  color=color_list)
+
+    for c in ax.containers:
+        labels = [f'{"{0:.0%}".format(a)}' if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+
+    plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
+    plt.xticks(rotation=40, ha='right')
+    plt.xlabel('Hello')
+    plt.title(f'Count by {attribute.replace("_", " ")}')
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
+
+    plt.tight_layout() 
+    plot_path = dir_plots + f'bar_{attribute}_percent.png'  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
+
+    return plot_path
+
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES):
     """Assess the results by calculating the precision, recall and f1-score.
@@ -72,12 +138,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     #     labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
 
     # labels_gdf['fid'] = labels_gdf['fid'].astype(int)
-    labels_gdf['type'] = labels_gdf['type'].astype(int)
+    labels_gdf['obj_class'] = labels_gdf['obj_class'].astype(int)
     labels_gdf['EGID'] = labels_gdf['EGID'].astype(int)
+    labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
 
     # Type 12 corresponds to free surfaces, other classes are ojects
     logger.info("  Filter objects and EGID")
-    labels_gdf = labels_gdf[(labels_gdf['type'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
+    labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['label_id'] = labels_gdf.index
     
     labels_gdf = labels_gdf.explode()
@@ -172,8 +239,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
 
-        # Metrics by attributes 
-        logger.info("- Per egid metrics")
+        logger.info("- Metrics per egid")
         for egid in sorted(labels_gdf.EGID.unique()):
             TP, FP, FN = metrics.get_count(
                 tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
@@ -188,10 +254,24 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
         ranges_dic = {OBJECT_PARAMETERS[i]: RANGES[i] for i in range(len(OBJECT_PARAMETERS))}
 
-        logger.info("- Per object attributes metrics")
+        logger.info("- Metrics per object's class")
+        for object_class in sorted(labels_gdf.descr.unique()):
+            filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr']==object_class]
+                
+            TP = float(filter_gt_gdf['TP_charge'].sum())
+            FN = float(filter_gt_gdf['FN_charge'].sum())
+            FP = 0
+
+            metrics_results = metrics.get_metrics(TP, FP, FN)
+            rem_list = ['FP', 'TPplusFP', 'precision', 'f1']
+            [metrics_results.pop(key) for key in rem_list]
+            tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
+            metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
+  
+
+        logger.info("- Metrics per object attributes")
         for parameter in OBJECT_PARAMETERS:
             ranges = ranges_dic[parameter] 
-
             for val in ranges:
                 filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])]
                 filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
@@ -201,7 +281,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
                 FN = float(filter_gt_gdf['FN_charge'].sum())
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
-                tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': val, **metrics_results}])
+                tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     else:
@@ -352,6 +432,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
         logger.success(f'  file: {path}, layer: {written_files[path]}')
+
+
+    # Plots
+    print(metrics_df)
+    print(metrics_df.attribute.unique())
+
+    for i in metrics_df.attribute.unique():
+        feature_path = plot_stacked_grouped(output_dir, metrics_df, attribute=i)
+        written_files = feature_path
+        feature_path = plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i)
+        written_files = feature_path
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
