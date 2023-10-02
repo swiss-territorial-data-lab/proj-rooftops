@@ -25,6 +25,42 @@ logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
+def plot_surface(dir_plots, df, attribute, xlabel):
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16,8))
+
+    color_list = ['limegreen', 'tomato']  
+    counts_list = ['occupied_surface', 'free_surface']    
+
+    df = df[df['attribute'] == attribute]  
+
+    df.plot(ax=ax1, x='value', y=['free_surface_label', 'occupied_surface_label',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax2, x='value', y=['free_surface_det', 'occupied_surface_det',], kind='bar', stacked=True, rot=0, color = color_list)
+    for b, c in zip(ax1.containers, ax2.containers):
+        labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
+        labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
+        ax1.bar_label(b, label_type='center', color = "black", labels=labels1, fontsize=10)
+        ax2.bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=10)
+
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    ax1.set_xlabel(xlabel, fontweight='bold')
+    ax1.set_ylabel('Surface ($m^2$)', fontweight='bold')
+    ax2.set_xlabel(xlabel, fontweight='bold')
+    ax2.set_ylabel('Surface ($m^2$)', fontweight='bold')
+
+    ax1.legend('', frameon=False)  
+    ax2.legend(['Free', 'Occupied'], bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    ax1.set_title(f'GT surfaces by {attribute.replace("_", " ")}')
+    ax2.set_title(f'Detection surfaces by {attribute.replace("_", " ")}')
+
+    plt.tight_layout() 
+    plot_path = dir_plots + f'surface_{attribute}.png'  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
 
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
@@ -164,6 +200,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    roofs_gdf['area'] = round(roofs_gdf['geometry'].area, 4)
+
 
     # Get labels shapefile
     logger.info("- GT")
@@ -374,21 +412,50 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     logger.info(f"- Compute mean Jaccard index")
 
-    # Compute Jaccard index by EGID
-    metrics_egid_df['IoU'] = 0
+    # Compute Jaccard index and free surface by EGID
+    keys = ['IoU', 'occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det']
+    for key in keys:
+        metrics_egid_df[key] = 0
+        metrics_df[key] = 0
     for egid in sorted(labels_gdf.EGID.unique()):
         labels_egid_gdf, detections_egid_gdf = metrics.get_jaccard_index(
             labels_gdf[labels_gdf.EGID == egid], 
             detections_gdf[detections_gdf.EGID == egid], attribute='EGID'
         )
+
+        labels_free_gdf, detections_free_gdf = metrics.get_free_surface(
+            labels_gdf[labels_gdf.EGID == egid], 
+            detections_gdf[detections_gdf.EGID == egid],
+            roofs_gdf[roofs_gdf.EGID == egid], attribute='EGID'
+        )
         iou_average = detections_egid_gdf['IOU_EGID'].mean()
         metrics_egid_df['IoU'] = np.where(metrics_egid_df['EGID'] == egid, iou_average, metrics_egid_df['IoU'])
+        
+        occupied_average_label = labels_free_gdf['occupied_surface'].mean()
+        metrics_egid_df['occupied_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_label, metrics_egid_df['occupied_surface_label'])
+        occupied_average_det = detections_free_gdf['occupied_surface'].mean()
+        metrics_egid_df['occupied_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_det, metrics_egid_df['occupied_surface_det'])
+        free_average_label = labels_free_gdf['free_surface'].mean()
+        metrics_egid_df['free_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, free_average_label, metrics_egid_df['free_surface_label'])
+        free_average_det = detections_free_gdf['free_surface'].mean()
+        metrics_egid_df['free_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, free_average_det, metrics_egid_df['free_surface_det'])
 
-    # Compute Jaccard index for all buildings
-    iou_average = metrics_egid_df['IoU'].fillna(0).mean()
-    metrics_df['IoU'] = 0
+    # Compute Jaccard index and free surface for all buildings
+    metrics_egid_df.fillna(0)
+
+    iou_average = metrics_egid_df['IoU'].mean()
     metrics_df['IoU'] = np.where(metrics_df['value'] == 'ALL', iou_average, metrics_df['IoU'])    
-    
+
+    occupied_label_sum = metrics_egid_df['occupied_surface_label'].sum()
+    metrics_df['occupied_surface_label'] = np.where(metrics_df['value'] == 'ALL', occupied_label_sum, metrics_df['occupied_surface_label'])  
+    occupied_det_sum = metrics_egid_df['occupied_surface_det'].sum()
+    metrics_df['occupied_surface_det'] = np.where(metrics_df['value'] == 'ALL', occupied_det_sum, metrics_df['occupied_surface_det'])  
+    free_label_sum = metrics_egid_df['free_surface_label'].sum()
+    metrics_df['free_surface_label'] = np.where(metrics_df['value'] == 'ALL', free_label_sum, metrics_df['free_surface_label'])  
+    free_det_sum = metrics_egid_df['free_surface_det'].sum()
+    metrics_df['free_surface_det'] = np.where(metrics_df['value'] == 'ALL', free_det_sum, metrics_df['free_surface_det'])  
+
+
     # Concatenate roof attributes by EGID and get attributes keys
     metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
     roof_attributes = egids.keys().tolist()
@@ -399,15 +466,26 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     for attribute in roof_attributes:
         metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
         metrics_iou_df = metrics_egid_df[[attribute, 'IoU']].groupby([attribute], as_index=False).mean()
+        metrics_occupied_label_df = metrics_egid_df[[attribute, 'occupied_surface_label']].groupby([attribute], as_index=False).sum()
+        metrics_occupied_det_df = metrics_egid_df[[attribute, 'occupied_surface_det']].groupby([attribute], as_index=False).sum()
+        metrics_free_label_df = metrics_egid_df[[attribute, 'free_surface_label']].groupby([attribute], as_index=False).sum()
+        metrics_free_det_df = metrics_egid_df[[attribute, 'free_surface_det']].groupby([attribute], as_index=False).sum()
 
         for val in metrics_egid_df[attribute].unique():
             TP = metrics_count_df['TP'][metrics_count_df[attribute] == val].iloc[0]  
             FP = metrics_count_df['FP'][metrics_count_df[attribute] == val].iloc[0]
             FN = metrics_count_df['FN'][metrics_count_df[attribute] == val].iloc[0]
-            iou = metrics_iou_df['IoU'][metrics_iou_df[attribute] == val].iloc[0]     
+            iou = metrics_iou_df['IoU'][metrics_iou_df[attribute] == val].iloc[0]    
+            occupied_surface_label = metrics_occupied_label_df['occupied_surface_label'][metrics_occupied_label_df[attribute] == val].iloc[0]  
+            occupied_surface_det = metrics_occupied_det_df['occupied_surface_det'][metrics_occupied_det_df[attribute] == val].iloc[0]  
+            free_surface_label = metrics_free_label_df['free_surface_label'][metrics_free_label_df[attribute] == val].iloc[0] 
+            free_surface_det = metrics_free_det_df['free_surface_det'][metrics_free_det_df[attribute] == val].iloc[0]   
 
             metrics_results = metrics.get_metrics(TP, FP, FN)
-            tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, **metrics_results, 'IoU': iou}])
+            tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
+                                                **metrics_results, 'IoU': iou,
+                                                'occupied_surface_label': occupied_surface_label, 'occupied_surface_det': occupied_surface_det,
+                                                'free_surface_label': free_surface_label, 'free_surface_det': free_surface_det,}])
             metrics_df = pd.concat([metrics_df, tmp_df])   
 
     metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
@@ -420,6 +498,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     recall = metrics_df['recall'][metrics_df.value == 'ALL'][0]
     f1 = metrics_df['f1'][metrics_df.value == 'ALL'][0]
     iou = metrics_df['IoU'][metrics_df.value == 'ALL'][0]
+    occupied_surface_label = metrics_df['occupied_surface_label'][metrics_df.value == 'ALL'][0]
+    occupied_surface_det = metrics_df['occupied_surface_det'][metrics_df.value == 'ALL'][0]
+    free_surface_label = metrics_df['free_surface_label'][metrics_df.value == 'ALL'][0]
+    free_surface_label = metrics_df['free_surface_label'][metrics_df.value == 'ALL'][0]
 
     written_files[feature_path] = layer_name
     feature_path = os.path.join(output_dir, 'metrics.csv')
@@ -469,9 +551,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
 
     # Plots
-    print(metrics_df)
-    print(metrics_df.attribute.unique())
-
     xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination':'',
                 'object_class':'', 'area': r'Object area ($m^2$)', 
                 'nearest_distance_border': r'Object distance (m)'} 
@@ -482,6 +561,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         feature_path = plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
         feature_path = plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        written_files = feature_path
+        feature_path = plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.

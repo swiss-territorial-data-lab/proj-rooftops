@@ -3,6 +3,7 @@ import sys
 from loguru import logger
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import networkx as nx
 from collections import OrderedDict
@@ -166,6 +167,36 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     fn_gdf['tag'] = 'FN'
 
     return tp_gdf, fp_gdf, fn_gdf
+
+def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute):
+    """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
+
+    Args:
+        detections_gdf (geodataframe): geodataframe of the detection with "detection_geometry" and "EGID" columns
+        labels_gdf (geodataframe): geodataframe of the ground truth with "detection_geometry" and "EGID" columns
+        roofs_gdf (geodataframe): geodataframe of the roofs with the roof "geometry" and "EGID" columns
+
+    Returns:
+        labels_free_gdf: geodataframes of all the labels merged by roof with the occupied and free surface area by roof
+        detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
+    """
+
+    detections_free_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
+    labels_free_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
+    roofs_area_gdf = roofs_gdf['area'].reset_index(drop=True) 
+
+    # print(roofs_area_gdf, labels_free_gdf['area'], detections_free_gdf['area'])
+
+    # print(round(detections_free_gdf['geometry'].area, 4), round(labels_free_gdf['geometry'].area, 4))
+    detections_free_gdf['occupied_surface'] = round(detections_free_gdf['geometry'].area, 4)
+    labels_free_gdf['occupied_surface'] = round(labels_free_gdf['geometry'].area, 4)
+    
+    detections_free_gdf['free_surface'] = roofs_area_gdf - detections_free_gdf['occupied_surface'].replace('',np.nan).fillna(0)
+    labels_free_gdf['free_surface'] = roofs_area_gdf - labels_free_gdf['occupied_surface'].replace('',np.nan).fillna(0)
+    print(labels_free_gdf['occupied_surface'], detections_free_gdf['occupied_surface'], labels_free_gdf['free_surface'],  detections_free_gdf['free_surface'])
+
+    return labels_free_gdf, detections_free_gdf
+
 
 
 def get_jaccard_index(labels_gdf, detections_gdf, attribute):
