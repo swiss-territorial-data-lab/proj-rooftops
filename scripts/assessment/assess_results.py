@@ -26,65 +26,99 @@ logger = misc.format_logger(logger)
 # Define functions --------------------------
 
 
-def plot_stacked_grouped(dir_plots, df, attribute):
+def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(12,8))
 
     color_list = ['limegreen', 'orange', 'tomato']  
-    count_list = ['TP', 'FP', 'FN']    
+    counts_list = ['TP', 'FP', 'FN']    
 
-    df = df[df['attribute'] == attribute] 
-
-    df[count_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
+    df = df[df['attribute'] == attribute]  
+    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
+    
+    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
 
     for c in ax.containers:
-        labels = [a if a > 0 else "" for a in c.datavalues]
+        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
         ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
 
-    plt.xticks(rotation=40, ha='right')
-    
-    plt.title(f'Count by {attribute.replace("_", " ")}')
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
+    # plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel(xlabel, fontweight='bold')
+
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = dir_plots + f'bar_{attribute}.png'  
+    plot_path = dir_plots + f'counts_{attribute}.png'  
     plt.savefig(plot_path, bbox_inches='tight')
-    # plt.show()
     plt.close(fig)
 
     return plot_path
 
 
-def plot_stacked_grouped_percent(dir_plots, df, attribute):
+def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(figsize=(10,8))
+    fig, ax = plt.subplots(figsize=(12,8))
 
     color_list = ['limegreen', 'orange', 'tomato']  
-    count_list = ['TP', 'FP', 'FN']    
+    counts_list = ['TP', 'FP', 'FN']    
 
     df = df[df['attribute'] == attribute]  
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
     df['sum'] = df.sum(axis=1)
 
-    for count in count_list:
+    for count in counts_list:
         df[count] =  df[count] / df['sum']
     
-    df[count_list].plot(ax=ax, kind='bar', stacked=True,  color=color_list)
+    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0, width = 0.5)
 
     for c in ax.containers:
-        labels = [f'{"{0:.0%}".format(a)}' if a > 0 else "" for a in c.datavalues]
+        labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
         ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
 
+    plt.ylim(0, 1)
     plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
-    plt.xticks(rotation=40, ha='right')
-    plt.xlabel('Hello')
-    plt.title(f'Count by {attribute.replace("_", " ")}')
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel(xlabel, fontweight='bold')
+
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = dir_plots + f'bar_{attribute}_percent.png'  
+    plot_path = dir_plots + f'counts_{attribute}_percent.png'  
     plt.savefig(plot_path, bbox_inches='tight')
-    plt.show()
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_metrics(dir_plots, df, attribute, xlabel):
+
+    fig, ax = plt.subplots(figsize=(8,6))
+
+    metrics_list = ['precision', 'recall', 'f1', 'IoU']    
+
+    df = df[df['attribute'] == attribute] 
+    
+    for metric in metrics_list:
+        if not df[metric].isnull().values.any():
+            plt.scatter(df['value'], df[metric], label=metric, s=150)
+
+    plt.ylim(-0.05, 1.05)
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel(xlabel, fontweight='bold')
+
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
+    plt.title(f'Metrics by {attribute.replace("_", " ")}')
+
+   
+    plt.tight_layout() 
+    plot_path = dir_plots + f'metrics_{attribute}.png'  
+    plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
     return plot_path
@@ -438,10 +472,16 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     print(metrics_df)
     print(metrics_df.attribute.unique())
 
+    xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination':'',
+                'object_class':'', 'area': r'Object area ($m^2$)', 
+                'nearest_distance_border': r'Object distance (m)'} 
+
     for i in metrics_df.attribute.unique():
-        feature_path = plot_stacked_grouped(output_dir, metrics_df, attribute=i)
+        feature_path = plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
-        feature_path = plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i)
+        feature_path = plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        written_files = feature_path
+        feature_path = plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
