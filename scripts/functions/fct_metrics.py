@@ -181,22 +181,32 @@ def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute):
         detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
     """
 
-    detections_free_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
-    labels_free_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
-    roofs_area_gdf = roofs_gdf['area'].reset_index(drop=True) 
+    detections_surface_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
+    labels_surface_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
+    roofs_surface_gdf = roofs_gdf.area.reset_index(drop=True) 
 
-    # print(roofs_area_gdf, labels_free_gdf['area'], detections_free_gdf['area'])
+    # Add value to empty gdf
+    if detections_surface_gdf['geometry'].empty:
+        keys_list = detections_surface_gdf.to_dict()
+        dic = dict.fromkeys(keys_list, 0)
+        detections_surface_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        detections_surface_gdf['occupied_surface'] = 0
+        detections_surface_gdf['EGID'] = labels_surface_gdf['EGID']
+        print(detections_surface_gdf)
+    else:
+        detections_surface_gdf['occupied_surface'] = round(detections_surface_gdf['geometry'].area, 4)
+    if labels_surface_gdf['geometry'].empty:
+        keys_list = labels_surface_gdf.to_dict()
+        dic = dict.fromkeys(keys_list, 0)
+        labels_surface_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        labels_surface_gdf['occupied_surface'] = 0
+    else:
+        labels_surface_gdf['occupied_surface'] = round(labels_surface_gdf['geometry'].area, 4)
 
-    # print(round(detections_free_gdf['geometry'].area, 4), round(labels_free_gdf['geometry'].area, 4))
-    detections_free_gdf['occupied_surface'] = round(detections_free_gdf['geometry'].area, 4)
-    labels_free_gdf['occupied_surface'] = round(labels_free_gdf['geometry'].area, 4)
-    
-    detections_free_gdf['free_surface'] = roofs_area_gdf - detections_free_gdf['occupied_surface'].replace('',np.nan).fillna(0)
-    labels_free_gdf['free_surface'] = roofs_area_gdf - labels_free_gdf['occupied_surface'].replace('',np.nan).fillna(0)
-    print(labels_free_gdf['occupied_surface'], detections_free_gdf['occupied_surface'], labels_free_gdf['free_surface'],  detections_free_gdf['free_surface'])
+    detections_surface_gdf['free_surface'] = roofs_surface_gdf - detections_surface_gdf['occupied_surface']
+    labels_surface_gdf['free_surface'] = roofs_surface_gdf - labels_surface_gdf['occupied_surface']
 
-    return labels_free_gdf, detections_free_gdf
-
+    return labels_surface_gdf, detections_surface_gdf
 
 
 def get_jaccard_index(labels_gdf, detections_gdf, attribute):

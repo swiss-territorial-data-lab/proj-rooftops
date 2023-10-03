@@ -28,38 +28,35 @@ logger = misc.format_logger(logger)
 
 def plot_surface(dir_plots, df, attribute, xlabel):
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16,8))
+    fig, ax = plt.subplots(1, 2, sharey= True, figsize=(16,8))
 
     color_list = ['limegreen', 'tomato']  
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax1, x='value', y=['free_surface_label', 'occupied_surface_label',], kind='bar', stacked=True, rot=0, color = color_list)
-    df.plot(ax=ax2, x='value', y=['free_surface_det', 'occupied_surface_det',], kind='bar', stacked=True, rot=0, color = color_list)
-    for b, c in zip(ax1.containers, ax2.containers):
+    df.plot(ax=ax[0], x='value', y=['free_surface_label', 'occupied_surface_label',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax[1], x='value', y=['free_surface_det', 'occupied_surface_det',], kind='bar', stacked=True, rot=0, color = color_list)
+    for b, c in zip(ax[0].containers, ax[1].containers):
         labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
         labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax1.bar_label(b, label_type='center', color = "black", labels=labels1, fontsize=10)
-        ax2.bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=10)
+        ax[0].bar_label(b, label_type='center', color = "black", labels=labels1, fontsize=10)
+        ax[1].bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=10)
 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')  
-    ax1.set_xlabel(xlabel, fontweight='bold')
-    ax1.set_ylabel('Surface ($m^2$)', fontweight='bold')
-    ax2.set_xlabel(xlabel, fontweight='bold')
-    ax2.set_ylabel('Surface ($m^2$)', fontweight='bold')
+    ax[0].set_xlabel(xlabel, fontweight='bold')
+    ax[0].set_ylabel('Surface ($m^2$)', fontweight='bold')
+    ax[1].set_xlabel(xlabel, fontweight='bold')
 
-    ax1.legend('', frameon=False)  
-    ax2.legend(['Free', 'Occupied'], bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    ax1.set_title(f'GT surfaces by {attribute.replace("_", " ")}')
-    ax2.set_title(f'Detection surfaces by {attribute.replace("_", " ")}')
+    ax[0].legend('', frameon=False)  
+    ax[1].legend(['Free', 'Occupied'], bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    ax[0].set_title(f'GT surfaces by {attribute.replace("_", " ")}')
+    ax[1].set_title(f'Detection surfaces by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
     plot_path = dir_plots + f'surface_{attribute}.png'  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
-
-    return plot_path
 
 
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
@@ -89,8 +86,6 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     plot_path = dir_plots + f'counts_{attribute}.png'  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
-
-    return plot_path
 
 
 def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
@@ -127,8 +122,6 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
-    return plot_path
-
 
 def plot_metrics(dir_plots, df, attribute, xlabel):
 
@@ -149,14 +142,11 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
     plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
     plt.title(f'Metrics by {attribute.replace("_", " ")}')
-
-   
+ 
     plt.tight_layout() 
     plot_path = dir_plots + f'metrics_{attribute}.png'  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
-
-    return plot_path
 
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES):
@@ -424,17 +414,19 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         iou_average = detections_egid_gdf['IOU_EGID'].mean()
         metrics_egid_df['IoU'] = np.where(metrics_egid_df['EGID'] == egid, iou_average, metrics_egid_df['IoU'])
         
-        occupied_average_label = labels_free_gdf['occupied_surface'].mean()
+        occupied_average_label = labels_free_gdf['occupied_surface'].sum()
         metrics_egid_df['occupied_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_label, metrics_egid_df['occupied_surface_label'])
-        occupied_average_det = detections_free_gdf['occupied_surface'].mean()
+        occupied_average_det = detections_free_gdf['occupied_surface'].sum()
         metrics_egid_df['occupied_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_det, metrics_egid_df['occupied_surface_det'])
-        free_average_label = labels_free_gdf['free_surface'].mean()
+        free_average_label = labels_free_gdf['free_surface'].sum()
         metrics_egid_df['free_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, free_average_label, metrics_egid_df['free_surface_label'])
-        free_average_det = detections_free_gdf['free_surface'].mean()
+        free_average_det = detections_free_gdf['free_surface'].sum()
         metrics_egid_df['free_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, free_average_det, metrics_egid_df['free_surface_det'])
 
     # Compute Jaccard index and free surface for all buildings
-    metrics_egid_df.fillna(0)
+    metrics_egid_df = metrics_egid_df.fillna(0)
+
+    print(metrics_egid_df)
 
     iou_average = metrics_egid_df['IoU'].mean()
     metrics_df['IoU'] = np.where(metrics_df['value'] == 'ALL', iou_average, metrics_df['IoU'])    
@@ -484,8 +476,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
     # Compute relative error on occupied and free surfaces 
-    metrics_df['occupied_re'] = (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
-    metrics_df['free_re'] = (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
+    # metrics_df['occupied_1-re'] = 1 - (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
+    # metrics_df['free_1-re'] = 1 - (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
 
 
     # Sump-up results and save files
@@ -556,15 +548,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
                 'nearest_distance_border': r'Object distance (m)'} 
 
     for i in metrics_df.attribute.unique():
-        feature_path = plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-        written_files = feature_path
-        feature_path = plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-        written_files = feature_path
-        feature_path = plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-        written_files = feature_path
+        plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         if i in ['EGID', 'roof_type', 'roof_inclination']: 
-            feature_path = plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-        written_files = feature_path
+            plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+
+    print(metrics_df)
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
