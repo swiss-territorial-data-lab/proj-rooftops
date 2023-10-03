@@ -180,10 +180,14 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         LABELS (path): file of the ground truth
         ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
-        METHOD (string): method to use for the assessment of the results, either one-to-one or one-to-many.
+        METHOD (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many.
+        THRESHOLD (float): surface intersection threshold between label shape and detection shape to be considered as the same group
+        OBJECT_PARAMETERS (list): list of object parameter to be processed ('area', 'nearest_distance_border', 'nearest_distance_centroid')
+        RANGES (list): list of list of the bins to process by OBJECT_PARAMETERS
 
     Returns:
-        float, int: f1-score and number of multiple predictions corresponding to one label.
+        df: metrics computed for different attribute.
+        gdf: labels_diff, missing labels (lost during the process)
     """
 
     os.chdir(WORKING_DIR)
