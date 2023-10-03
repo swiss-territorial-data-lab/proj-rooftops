@@ -24,7 +24,7 @@ import functions.fct_metrics as metrics
 logger = misc.format_logger(logger)
 
 
-# Define functions --------------------------
+# Functions --------------------------
 
 def plot_surface(dir_plots, df, attribute, xlabel):
 
@@ -78,7 +78,6 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
         labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
         ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
 
-    # plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     plt.xlabel(xlabel, fontweight='bold')

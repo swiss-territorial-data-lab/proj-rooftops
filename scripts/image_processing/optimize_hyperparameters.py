@@ -25,11 +25,9 @@ import functions.fct_optimization as opti
 
 import segment_images
 import produce_vector_layer
-import assess_results
+import assessment.assess_results as assess_results
 
 logger = misc.format_logger(logger)
-logger.remove()
-logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {message}", level="INFO")
 
 
 ## Functions
@@ -73,9 +71,11 @@ def objective(trial):
             }
     print(dict_params)
 
-    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
-    produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
-    f1, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, METHOD)
+    # segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
+    # produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
+    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES)
+
+    f1 = 0
 
     return f1
 
@@ -100,15 +100,20 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
+    OUTPUT_DIR = cfg['output_dir'] 
     IMAGE_DIR = cfg['image_dir']
     ROOFS = cfg['roofs']
     LABELS = cfg['ground_truth']
-    EGIDS = cfg['egids']
-    METHOD = cfg['method']
-    OUTPUT_DIR = cfg['output_dir']    
+    EGIDS = cfg['egids']   
     DETECTIONS = cfg['detections']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
+    METHOD = cfg['method']
+    THRESHOLD = cfg['threshold']
+    OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
+    AREA_RANGES = cfg['object_attributes']['area_ranges'] 
+    DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
+    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
     CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']

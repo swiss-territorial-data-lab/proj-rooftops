@@ -58,13 +58,18 @@ optimize_hyperparameters.py:
   working_dir: .
   image_dir: input/image_segmentation/tiles/
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_31_08_STDL/roofs_31_08_STDL_corrected.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/gt_all.shp
   output_dir: output/image_segmentation/optimization/
-  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
-  method: one-to-one
-  detections: roof_segmentation.gpkg
+  egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
+  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   srs: "EPSG:2056" # Projection of the input file 
+  method: many-to-many
+  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+  object_attributes:
+    parameters: ['area', 'nearest_distance_border']
+    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
+    distance_ranges: [[0,1], [1,10], [10,100]]
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: false
     size: [0, 1026, 0, 1026] 
