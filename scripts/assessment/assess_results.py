@@ -516,8 +516,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
     # Compute (1 - relative error) on occupied and free surfaces 
-    metrics_df['occupied_1-re'] = 1 - (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
-    metrics_df['free_1-re'] = 1 - (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
+    metrics_df['occupied_re'] = abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label']
+    metrics_df['free_re'] = abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label']
 
     # Sump-up results and save files
     TP = metrics_df['TP'][metrics_df.value == 'ALL'][0]
