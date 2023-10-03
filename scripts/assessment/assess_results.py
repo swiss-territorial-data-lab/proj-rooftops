@@ -221,11 +221,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     # Get labels shapefile
     logger.info("- GT")
     labels_gdf = gpd.read_file(LABELS)
-    # if 'OBSTACLE' in labels_gdf.columns:
-    #     labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
 
-    labels_gdf['obj_class'] = labels_gdf['type'].astype(int)
+    labels_gdf['type'] = labels_gdf['type'].astype(int)
     labels_gdf['EGID'] = labels_gdf['EGID'].astype(int)
+    labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
     labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
 
     # Type 12 corresponds to free surfaces, other classes are ojects

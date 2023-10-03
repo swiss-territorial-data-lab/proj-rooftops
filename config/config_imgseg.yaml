@@ -41,7 +41,7 @@ produce_vector_layer.py:
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/gt_all.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_STDL_proofed_assess_2023-10-03.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
