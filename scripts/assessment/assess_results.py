@@ -23,6 +23,7 @@ import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
+
 # Define functions --------------------------
 
 def plot_surface(dir_plots, df, attribute, xlabel):
@@ -30,7 +31,6 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16,8))
 
     color_list = ['limegreen', 'tomato']  
-    counts_list = ['occupied_surface', 'free_surface']    
 
     df = df[df['attribute'] == attribute]  
 
@@ -43,7 +43,7 @@ def plot_surface(dir_plots, df, attribute, xlabel):
         ax2.bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=10)
 
     if attribute == 'object_class':
-        plt.xticks(rotation=40, ha='right')
+        plt.xticks(rotation=40, ha='right')  
     ax1.set_xlabel(xlabel, fontweight='bold')
     ax1.set_ylabel('Surface ($m^2$)', fontweight='bold')
     ax2.set_xlabel(xlabel, fontweight='bold')
@@ -209,8 +209,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     # if 'OBSTACLE' in labels_gdf.columns:
     #     labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
 
-    # labels_gdf['fid'] = labels_gdf['fid'].astype(int)
-    labels_gdf['obj_class'] = labels_gdf['obj_class'].astype(int)
+    labels_gdf['obj_class'] = labels_gdf['type'].astype(int)
     labels_gdf['EGID'] = labels_gdf['EGID'].astype(int)
     labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
 
@@ -224,7 +223,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     # Create geohash to GT shapes
     logger.info("  Geohashing GT")
-    # labels_gdf = labels_gdf.explode()
     GT_PREFIX= 'gt_'
     labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
     labels_gdf = misc.drop_duplicates(labels_gdf, subset='geohash')
@@ -263,7 +261,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     if 'value' in detections_gdf.columns:
         detections_gdf.rename(columns={'value': 'detection_id'}, inplace=True)
     detections_gdf['detection_id'] = detections_gdf['detection_id'].astype(int)
-    # detections_gdf = detections_gdf.rename(columns={"area": "detection_area"})
 
     logger.info(f"Read detection file: {len(detections_gdf)} shapes")
 
@@ -320,9 +317,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
             metrics_results = metrics.get_metrics(TP, FP, FN)
             tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
             metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
-
-        # print(np.min(tagged_gt_gdf['area']), np.max(tagged_gt_gdf['area']))
-        # print(np.min(tagged_gt_gdf['nearest_distance_border']), np.max(tagged_gt_gdf['nearest_distance_border']))
 
         ranges_dic = {OBJECT_PARAMETERS[i]: RANGES[i] for i in range(len(OBJECT_PARAMETERS))}
 
@@ -490,6 +484,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
+    # Compute relative error on occupied and free surfaces 
+    metrics_df['occupied_re'] = (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
+    metrics_df['free_re'] = (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
+
+
     # Sump-up results and save files
     TP = metrics_df['TP'][metrics_df.value == 'ALL'][0]
     FP = metrics_df['FP'][metrics_df.value == 'ALL'][0]
@@ -512,6 +511,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
     logger.info(f"IoU for all EGIDs = {iou:.2f}")
+    logger.info(f"Occupied surface relative error for all EGIDs = {(abs((occupied_surface_det - occupied_surface_label)/occupied_surface_label)):.2f}")
+    logger.info(f"Free surface relative error for all EGIDs = {(abs((free_surface_det - free_surface_label)/occupied_surface_label)):.2f}")
     print('')
 
     # Check if detection or labels have been lost in the process
@@ -562,7 +563,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         written_files = feature_path
         feature_path = plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
-        feature_path = plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        if i in ['EGID', 'roof_type', 'roof_inclination']: 
+            feature_path = plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         written_files = feature_path
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
