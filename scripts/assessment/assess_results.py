@@ -42,7 +42,7 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
         plt.title(f'Object distribution')
 
         plt.tight_layout() 
-        plot_path = dir_plots + f'histo_{i}.png'  
+        plot_path = os.path.join(dir_plots, f'histo_{i}.png')  
         plt.savefig(plot_path, bbox_inches='tight')
         plt.close(fig)
 
@@ -75,7 +75,7 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     ax[1].set_title(f'Detection surfaces by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = dir_plots + f'surface_{attribute}.png'  
+    plot_path = os.path.join(dir_plots, f'surface_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -104,7 +104,7 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = dir_plots + f'counts_{attribute}.png'  
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -140,7 +140,7 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = dir_plots + f'counts_{attribute}_percent.png'  
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}_percent.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -166,7 +166,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.title(f'Metrics by {attribute.replace("_", " ")}')
  
     plt.tight_layout() 
-    plot_path = dir_plots + f'metrics_{attribute}.png'  
+    plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -194,7 +194,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = os.path.join(OUTPUT_DIR)
+    output_dir = os.path.join(OUTPUT_DIR, METHOD)
     misc.ensure_dir_exists(output_dir)
     threshold_str = str(THRESHOLD).replace('.', 'dot')
     written_files = {}
