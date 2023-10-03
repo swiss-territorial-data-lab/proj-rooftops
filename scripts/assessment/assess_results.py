@@ -26,6 +26,27 @@ logger = misc.format_logger(logger)
 
 # Functions --------------------------
 
+
+def plot_histo(dir_plots, df1, df2, attribute, xlabel):
+
+    fig = plt.figure(figsize =(12, 8))
+
+    for i in attribute:
+        bins=np.histogram(np.hstack((df1[i],df2[i])), bins=10)[1]
+        df1[i].plot.hist(bins=bins, alpha=0.5, label='GT')
+        df2[i].plot.hist(bins=bins, alpha=0.5, label='Detections')
+
+        plt.xlabel(xlabel[i] , fontweight='bold')
+
+        plt.legend(frameon=False)  
+        plt.title(f'Object distribution')
+
+        plt.tight_layout() 
+        plot_path = dir_plots + f'histo_{i}.png'  
+        plt.savefig(plot_path, bbox_inches='tight')
+        plt.close(fig)
+
+
 def plot_surface(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(1, 2, sharey= True, figsize=(16,8))
@@ -234,6 +255,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     feature_path = os.path.join(output_dir, 'labels.gpkg')
     labels_gdf.to_file(feature_path, index=False)
 
+
+
     # Get detections shapefile
     logger.info("- Detections")
     detections_gdf = gpd.read_file(DETECTIONS)
@@ -414,20 +437,18 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         iou_average = detections_egid_gdf['IOU_EGID'].mean()
         metrics_egid_df['IoU'] = np.where(metrics_egid_df['EGID'] == egid, iou_average, metrics_egid_df['IoU'])
         
-        occupied_average_label = labels_free_gdf['occupied_surface'].sum()
-        metrics_egid_df['occupied_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_label, metrics_egid_df['occupied_surface_label'])
-        occupied_average_det = detections_free_gdf['occupied_surface'].sum()
-        metrics_egid_df['occupied_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, occupied_average_det, metrics_egid_df['occupied_surface_det'])
-        free_average_label = labels_free_gdf['free_surface'].sum()
-        metrics_egid_df['free_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, free_average_label, metrics_egid_df['free_surface_label'])
-        free_average_det = detections_free_gdf['free_surface'].sum()
-        metrics_egid_df['free_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, free_average_det, metrics_egid_df['free_surface_det'])
+        occupied_surface_label = labels_free_gdf['occupied_surface'].sum()
+        metrics_egid_df['occupied_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, occupied_surface_label, metrics_egid_df['occupied_surface_label'])
+        occupied_surface_det = detections_free_gdf['occupied_surface'].sum()
+        metrics_egid_df['occupied_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, occupied_surface_det, metrics_egid_df['occupied_surface_det'])
+        free_surface_label = labels_free_gdf['free_surface'].sum()
+        metrics_egid_df['free_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, free_surface_label, metrics_egid_df['free_surface_label'])
+        free_surface_det = detections_free_gdf['free_surface'].sum()
+        metrics_egid_df['free_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, free_surface_det, metrics_egid_df['free_surface_det'])
 
     # Compute Jaccard index and free surface for all buildings
     metrics_egid_df = metrics_egid_df.fillna(0)
-
-    print(metrics_egid_df)
-
+    
     iou_average = metrics_egid_df['IoU'].mean()
     metrics_df['IoU'] = np.where(metrics_df['value'] == 'ALL', iou_average, metrics_df['IoU'])    
 
@@ -475,10 +496,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
-    # Compute relative error on occupied and free surfaces 
-    # metrics_df['occupied_1-re'] = 1 - (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
-    # metrics_df['free_1-re'] = 1 - (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
-
+    # Compute (1 - relative error) on occupied and free surfaces 
+    metrics_df['occupied_1-re'] = 1 - (abs(metrics_df['occupied_surface_det'] - metrics_df['occupied_surface_label']) / metrics_df['occupied_surface_label'])
+    metrics_df['free_1-re'] = 1 - (abs(metrics_df['free_surface_det'] - metrics_df['free_surface_label']) / metrics_df['free_surface_label'])
 
     # Sump-up results and save files
     TP = metrics_df['TP'][metrics_df.value == 'ALL'][0]
@@ -505,6 +525,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"Occupied surface relative error for all EGIDs = {(abs((occupied_surface_det - occupied_surface_label)/occupied_surface_label)):.2f}")
     logger.info(f"Free surface relative error for all EGIDs = {(abs((free_surface_det - free_surface_label)/occupied_surface_label)):.2f}")
     print('')
+
 
     # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN
@@ -547,6 +568,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
                 'object_class':'', 'area': r'Object area ($m^2$)', 
                 'nearest_distance_border': r'Object distance (m)'} 
 
+    plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dic)
     for i in metrics_df.attribute.unique():
         plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
         plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
@@ -554,7 +576,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         if i in ['EGID', 'roof_type', 'roof_inclination']: 
             plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
 
-    print(metrics_df)
 
     return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 

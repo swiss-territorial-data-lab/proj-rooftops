@@ -192,16 +192,15 @@ def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute):
         detections_surface_gdf = pd.DataFrame.from_dict(dic, orient='index').T
         detections_surface_gdf['occupied_surface'] = 0
         detections_surface_gdf['EGID'] = labels_surface_gdf['EGID']
-        print(detections_surface_gdf)
     else:
-        detections_surface_gdf['occupied_surface'] = round(detections_surface_gdf['geometry'].area, 4)
+        detections_surface_gdf['occupied_surface'] = detections_surface_gdf.area
     if labels_surface_gdf['geometry'].empty:
         keys_list = labels_surface_gdf.to_dict()
         dic = dict.fromkeys(keys_list, 0)
         labels_surface_gdf = pd.DataFrame.from_dict(dic, orient='index').T
         labels_surface_gdf['occupied_surface'] = 0
     else:
-        labels_surface_gdf['occupied_surface'] = round(labels_surface_gdf['geometry'].area, 4)
+        labels_surface_gdf['occupied_surface'] = labels_surface_gdf.area
 
     detections_surface_gdf['free_surface'] = roofs_surface_gdf - detections_surface_gdf['occupied_surface']
     labels_surface_gdf['free_surface'] = roofs_surface_gdf - labels_surface_gdf['occupied_surface']
