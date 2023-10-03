@@ -259,8 +259,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     feature_path = os.path.join(output_dir, 'labels.gpkg')
     labels_gdf.to_file(feature_path, index=False)
 
-
-
     # Get detections shapefile
     logger.info("- Detections")
     detections_gdf = gpd.read_file(DETECTIONS)
@@ -315,7 +313,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         metrics_results = metrics.get_metrics(TP, FP, FN)
         tmp_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         metrics_df = pd.concat([metrics_df, tmp_df])
- 
+
         # Get output files 
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
         layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
@@ -372,22 +370,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         TP = len(tp_gdf)
         FP = len(fp_gdf)
         FN = len(fn_gdf)
-        
+
         # Compute metrics
         logger.info("- Global metrics")
         metrics_results = metrics.get_metrics(TP, FP, FN)
-        tmp_df = pd.DataFrame.from_records([{'EGID': 'ALL', **metrics_results}])
+        tmp_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         metrics_df = pd.concat([metrics_df, tmp_df])
-
-        logger.info("- Per egid metrics")
-        for egid in sorted(labels_gdf.EGID.unique()):
-            tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
-            TP = len(tp_gdf)
-            FP = len(fp_gdf)
-            FN = len(fn_gdf)
-            metrics_results = metrics.get_metrics(TP, FP, FN)
-            tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
-            metrics_df = pd.concat([metrics_df, tmp_df])
 
         if METHOD == 'one-to-many':
             tp_with_duplicates = tp_gdf.copy()
@@ -407,7 +395,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
         # Set the final dataframe with tagged prediction
         tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
-        tagged_dets_gdf.drop(['index_right', 'label_geometry', 'detection_geometry', 'detection_id'], axis=1, inplace=True)
+
+        tagged_dets_gdf.drop(['label_geometry', 'detection_geometry', 'detection_id'], axis=1, inplace=True)
         tagged_dets_gdf = tagged_dets_gdf.round({'IOU': 4})
         tagged_dets_gdf = tagged_dets_gdf.round({'detection_area': 4})
         tagged_dets_gdf.reset_index(drop=True, inplace=True)
@@ -418,11 +407,38 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         tagged_dets_gdf.to_file(feature_path, layer=layer_name, index=False)
 
         written_files[feature_path] = layer_name
-        
 
-    logger.info(f"- Compute mean Jaccard index")
+
+        logger.info("- Metrics per egid")
+        for egid in sorted(labels_gdf.EGID.unique()):
+            tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
+            TP = len(tp_gdf)
+            FP = len(fp_gdf)
+            FN = len(fn_gdf)
+            metrics_results = metrics.get_metrics(TP, FP, FN)
+            tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
+            metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
+
+        ranges_dic = {OBJECT_PARAMETERS[i]: RANGES[i] for i in range(len(OBJECT_PARAMETERS))}
+
+        logger.info("- Metrics per object's class")
+        for object_class in sorted(labels_gdf.descr.unique()):
+            
+            filter_gt_gdf = tagged_dets_gdf[tagged_dets_gdf['descr']==object_class]
+            
+            TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
+            FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
+            FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
+
+            metrics_results = metrics.get_metrics(TP, FP, FN)
+            rem_list = ['FP', 'TPplusFP', 'precision', 'f1']
+            [metrics_results.pop(key) for key in rem_list]
+            tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
+            metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     # Compute Jaccard index and free surface by EGID
+    logger.info(f"- Compute mean Jaccard index")
+    
     keys = ['IoU', 'occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det']
     for key in keys:
         metrics_egid_df[key] = 0
@@ -452,7 +468,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     # Compute Jaccard index and free surface for all buildings
     metrics_egid_df = metrics_egid_df.fillna(0)
-    
+
     iou_average = metrics_egid_df['IoU'].mean()
     metrics_df['IoU'] = np.where(metrics_df['value'] == 'ALL', iou_average, metrics_df['IoU'])    
 
@@ -464,7 +480,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     metrics_df['free_surface_label'] = np.where(metrics_df['value'] == 'ALL', free_label_sum, metrics_df['free_surface_label'])  
     free_det_sum = metrics_egid_df['free_surface_det'].sum()
     metrics_df['free_surface_det'] = np.where(metrics_df['value'] == 'ALL', free_det_sum, metrics_df['free_surface_det'])  
-
 
     # Concatenate roof attributes by EGID and get attributes keys
     metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
@@ -529,7 +544,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     logger.info(f"Occupied surface relative error for all EGIDs = {(abs((occupied_surface_det - occupied_surface_label)/occupied_surface_label)):.2f}")
     logger.info(f"Free surface relative error for all EGIDs = {(abs((free_surface_det - free_surface_label)/occupied_surface_label)):.2f}")
     print('')
-
 
     # Check if detection or labels have been lost in the process
     nbr_tagged_labels = TP + FN

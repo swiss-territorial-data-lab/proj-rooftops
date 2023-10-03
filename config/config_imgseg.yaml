@@ -49,9 +49,9 @@ assess_results.py:
   method: many-to-many
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
-    parameters: ['area', 'nearest_distance_border']
+    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10,100]]
+    distance_ranges: [[0,1], [1,10], [10, 100]]
 
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
@@ -69,7 +69,7 @@ optimize_hyperparameters.py:
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10,100]]
+    distance_ranges: [[0,1], [1,10], [10, 100]]
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: false
     size: [0, 1026, 0, 1026] 

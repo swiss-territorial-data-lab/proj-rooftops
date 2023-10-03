@@ -149,7 +149,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
 
 
     # FALSE NEGATIVES -> objects that have been missed by the detection algorithm
-    right_join = gpd.sjoin(labels_gdf, detections_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
+    right_join = gpd.sjoin(labels_gdf, detections_gdf, how='left', predicate='intersects', lsuffix='label', rsuffix='det')
     
     id_label_tp = tp_gdf['label_id'].unique().tolist()
     suppressed_tp = tp_gdf_temp[~tp_gdf_temp['label_id'].isin(id_label_tp)]
