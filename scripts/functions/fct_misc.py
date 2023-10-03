@@ -259,7 +259,10 @@ def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     gdf_tmp = gdf1.join(gdf2[[join_key, 'geometry']].set_index(join_key), on=join_key, how='left', lsuffix=lsuffix, rsuffix=rsuffix, validate='m:1')
 
     geom1 = gdf_tmp['geometry' + rsuffix].to_numpy().tolist()
-    geom2 = gdf_tmp['geometry' + lsuffix].centroid.to_numpy().tolist()
+    if parameter == 'nearest_distance_centroid':
+        geom2 = gdf_tmp['geometry' + lsuffix].centroid.to_numpy().tolist()
+    elif parameter == 'nearest_distance_border':
+        geom2 = gdf_tmp['geometry' + lsuffix].to_numpy().tolist()
     gdf1[parameter] = distance_shape(geom1, geom2)
     gdf1[parameter] = round(gdf1[parameter], 4)
 
