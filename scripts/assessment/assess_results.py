@@ -130,6 +130,7 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
         ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
 
     plt.ylim(0, 1)
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
     plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
