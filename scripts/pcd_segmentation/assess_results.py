@@ -52,11 +52,17 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
     egids=pd.read_csv(EGIDS)
     # Open shapefiles
     labels_gdf = gpd.read_file(GT)
+
     if 'OBSTACLE' in labels_gdf.columns:
         labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
+    if labels_gdf.EGID.dtype != 'int64':
+        labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
     labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['ID_GT'] = labels_gdf.index
-    labels_gdf = labels_gdf.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
+
+    labels_gdf.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'}, inplace=True)
+    labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+
     nbr_labels=labels_gdf.shape[0]
     logger.info(f"Read GT file: {nbr_labels} shapes")
 

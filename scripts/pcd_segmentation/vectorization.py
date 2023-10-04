@@ -8,8 +8,10 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
 import argparse
+import os
+import sys
+import warnings
 from loguru import logger
 from time import time
 from tqdm import tqdm
@@ -26,11 +28,14 @@ import functions.fct_pcdseg as fct_seg
 from functions.fct_metrics import intersection_over_union
 from functions.fct_misc import ensure_dir_exists, format_logger
 
+warnings.filterwarnings("ignore", message="CRS not set for some of the concatenation inputs")
+warnings.filterwarnings("ignore", message="root:Singular matrix")
+
 logger = format_logger(logger)
 
 # Define functions ----------------------
 
-def handel_overlapping_cluster(clusters_gdf):
+def handle_overlapping_cluster(clusters_gdf):
     """Delete clusters inside another cluster.
 
     Args:
@@ -113,7 +118,10 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         file_name = 'EGID_' + str(egid)
 
         input_dir = os.path.join(INPUT_DIR, file_name + "_segmented.csv")
-        pcd_df = pd.read_csv(input_dir)
+        try:
+            pcd_df = pd.read_csv(input_dir)
+        except FileNotFoundError:
+            logger.error(f"No segmentation file for the EGID {egid}.")
 
         # Create a plane dataframe
         plane_df = pcd_df[pcd_df['type'] == 'plane']
@@ -149,7 +157,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
                 cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
             del small_plane_gdf
 
-        # Filtering: identify and isolate plane that are too big
+        # Filtering: identify and isolate objects that are too big
         if not cluster_vec_gdf.empty:
             large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
             cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
@@ -169,7 +177,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             boundary.plot(color = 'red')
             plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
 
-        cluster_vec_gdf = handel_overlapping_cluster(cluster_vec_gdf)
+        # cluster_vec_gdf = handle_overlapping_cluster(cluster_vec_gdf)
 
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
