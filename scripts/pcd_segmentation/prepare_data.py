@@ -156,7 +156,11 @@ for egid in tqdm(egids.EGID.to_numpy()):
         clip_path = os.path.join(output_dir, file_name + '_' + tile.fme_basena + PCD_EXT)
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
-        clipped_inputs=clipped_inputs + ', ' + clip_path
+        with laspy.open(clip_path) as src:
+            nbr_points=len(src.read().points)
+
+        if nbr_points > 10:
+            clipped_inputs=clipped_inputs + ', ' + clip_path
 
     # Join the PCD if the EGID expands over serveral tiles
     if useful_tiles.shape[0]==1:
@@ -169,8 +173,15 @@ for egid in tqdm(egids.EGID.to_numpy()):
             whole_pcd_path,
         )
     
-    # Open and read clipped .las file 
-    las = laspy.read(whole_pcd_path)
+    # Open and read clipped .las file
+    try:
+        las = laspy.read(whole_pcd_path)
+    except FileNotFoundError:
+        if useful_tiles.shape[0] == 1:
+            logger.error(f"Problem with the tile {tile.fme_basena} and the EGID {egid}.")
+        else:
+            logger.error(f"Problem with the EGID {egid}.")
+        continue
 
     # Filter point cloud data by class value 
     if FILTER_CLASS:
