@@ -8,15 +8,16 @@
 #      Alessandro Cerioni 
 
 
-import os, sys
-import time
 import argparse
+import os
+import time
+import sys
 from loguru import logger
 from yaml import load, FullLoader
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc

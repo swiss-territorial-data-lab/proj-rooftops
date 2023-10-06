@@ -7,19 +7,18 @@
 #      Gwenaelle Salamin
 #      Alessandro Cerioni 
 
-
-import os, sys
 import argparse
+import os
+import sys
 from loguru import logger
 from time import time
 from tqdm import tqdm
 from yaml import load, FullLoader
 
-import numpy as np
-import pandas as pd
-import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
 import open3d as o3d
+import pandas as pd
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc

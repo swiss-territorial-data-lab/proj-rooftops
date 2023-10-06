@@ -1,11 +1,21 @@
-import os, sys
+#!/bin/python
+# -*- coding: utf-8 -*-
+
+#  proj-rooftops
+#
+#      Clemence Herny 
+#      Gwenaelle Salamin
+#      Alessandro Cerioni 
+
 import argparse
+import os
+import sys
 from loguru import logger
 from time import time
 from yaml import load, FullLoader
 
-import pandas as pd
 import geopandas as gpd
+import pandas as pd
 
 import joblib
 import optuna

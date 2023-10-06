@@ -17,10 +17,10 @@ from time import time
 from tqdm import tqdm
 from yaml import load, FullLoader
 
-import numpy as np
-import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
