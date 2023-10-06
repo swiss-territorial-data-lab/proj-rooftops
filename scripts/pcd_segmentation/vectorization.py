@@ -162,7 +162,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
             cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
 
-            # If it exists, add cluster previously classified as plane to the object class 
+            # If it exists, add cluster previously classified as object to the plane class 
             if not large_objects_gdf.empty:
                 print("")
                 logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf)>1 else ''} to the roof sections.") 
