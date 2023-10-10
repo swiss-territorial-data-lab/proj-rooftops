@@ -136,7 +136,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     tp_gdf_temp['IOU'] = iou
 
     iou_threshold = 0.1
-    if method == 'one-to-many':
+    if method == 'one-to-many' or method == 'fusion':
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
     else:
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, iou_threshold)
@@ -343,6 +343,7 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
     _gt = gt.copy()
     _gt['geometry'] = _gt.geometry.buffer(gt_buffer, join_style=2)
     _dets = dets.copy()
+    # _dets['geometry'] = _dets.geometry.buffer(gtbuffer, join_style=2)
 
     charges_dict = {}
 
@@ -417,6 +418,7 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
 
     # remove the buffer applied before group assignement to recover original geometry 
     _gt['geometry'] = _gt.geometry.buffer(-gt_buffer, join_style=2)
+    # _dets['geometry'] = _dets.geometry.buffer(-gt_buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)

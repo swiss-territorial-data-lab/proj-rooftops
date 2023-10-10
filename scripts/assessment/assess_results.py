@@ -171,7 +171,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.close(fig)
 
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -182,7 +182,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
         METHOD (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many.
-        THRESHOLD (float): surface intersection threshold between label shape and detection shape to be considered as the same group
+        IOU_THD (float): surface intersection threshold between label shape and detection shape to be considered as the same group
+        AREA_THD_FACTOR (float): factor apply to the minimum label area to define the area threshold under which detections are discarded
         OBJECT_PARAMETERS (list): list of object parameter to be processed ('area', 'nearest_distance_border', 'nearest_distance_centroid')
         RANGES (list): list of list of the bins to process by OBJECT_PARAMETERS
 
@@ -196,7 +197,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     # Create an output directory in case it doesn't exist
     output_dir = os.path.join(OUTPUT_DIR, METHOD)
     misc.ensure_dir_exists(output_dir)
-    threshold_str = str(THRESHOLD).replace('.', 'dot')
+    threshold_str = str(IOU_THD).replace('.', 'dot')
     written_files = {}
 
     logger.info("Get input data")
@@ -210,13 +211,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
     original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
     
     roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
     roofs_gdf['area'] = round(roofs_gdf['geometry'].area, 4)
-
 
     # Get labels shapefile
     logger.info("- GT")
@@ -279,6 +279,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     logger.info(f"Read detection file: {len(detections_gdf)} shapes")
 
+    # Filter detections by area
+    area_threshold = AREA_THD_FACTOR * np.min(labels_gdf['area'])
+    detections_gdf = detections_gdf[detections_gdf.area >= area_threshold]
+
     # Add geometry attributes
     logger.info("  Add geometry attributes to detection")
 
@@ -304,7 +308,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
 
     if METHOD == 'many-to-many':
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
 
         logger.info("- Global metrics")
 
@@ -366,7 +370,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     else:
         # Count 
         if METHOD == 'fusion':
-            tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
+            tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
         
             unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
             unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
@@ -641,14 +645,16 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
     METHOD = cfg['method']
-    THRESHOLD = cfg['threshold']
+    IOU_THD = cfg['filters']['iou_threshold']
+    AREA_THD_FACTOR = cfg['filters']['area_threshold_factor'] 
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges'] 
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
 
+
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
 
-    metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRESHOLD, OBJECT_PARAMETERS, RANGES)
+    metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
 
     # Stop chronometer  
     toc = time.time()
