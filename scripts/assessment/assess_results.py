@@ -289,14 +289,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     # Detections count
     logger.info(f"Method used for detections counting")
-    if METHOD == 'one-to-one':
-        logger.info('Using the one-to-one method')
-    elif METHOD == 'one-to-many':
-        logger.info('Using one-to-many method')
-    elif METHOD == 'many-to-many':
-        logger.info('Using many-to-many method')
+    methods_list =  ['one-to-one', 'one-to-many', 'many-to-many', 'fusion']
+    if METHOD in methods_list:
+        logger.info(f'Using the {METHOD} method')
     else:
-        logger.warning('Unknown method, default one-to-one')
+        logger.warning('Unknown method, default method = one-to-one')
 
     logger.info(f"Metrics computation:")
     logger.info(f"- Count TP, FP and FN")
