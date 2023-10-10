@@ -293,7 +293,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
 
     # Detections count
     logger.info(f"Method used for detections counting")
-    methods_list =  ['one-to-one', 'one-to-many', 'many-to-many', 'fusion']
+    methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
     if METHOD in methods_list:
         logger.info(f'Using the {METHOD} method')
     else:
@@ -307,8 +307,20 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
     metrics_objects_df = pd.DataFrame()
 
 
-    if METHOD == 'many-to-many':
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
+    if METHOD == 'charges' or METHOD=='fusion':
+
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD, method=METHOD)
+
+        if METHOD=='fusion':
+            unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
+            unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
+
+            dissolve_gt_gdf = tagged_gt_gdf.dissolve(by='group_id', as_index=False)
+            dissolve_dets_gdf = tagged_dets_gdf.dissolve(by='group_id', as_index=False)
+
+            tagged_gt_gdf = pd.concat([unique_gt_gdf, dissolve_gt_gdf]).reset_index(drop=True)
+            tagged_dets_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).reset_index(drop=True)
+            
 
         logger.info("- Global metrics")
 
@@ -316,7 +328,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
         metrics_results = metrics.get_metrics(TP, FP, FN)
         tmp_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         metrics_df = pd.concat([metrics_df, tmp_df])
-
+ 
         # Get output files 
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
         layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
@@ -369,17 +381,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
 
     else:
         # Count 
-        if METHOD == 'fusion':
-            tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
+        # if METHOD == 'fusion':
+        #     tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
         
-            unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
-            unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
+        #     unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
+        #     unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
 
-            dissolve_gt_gdf = tagged_gt_gdf.dissolve(by='group_id')
-            dissolve_dets_gdf = tagged_dets_gdf.dissolve(by='group_id')
+        #     dissolve_gt_gdf = tagged_gt_gdf.dissolve(by='group_id')
+        #     dissolve_dets_gdf = tagged_dets_gdf.dissolve(by='group_id')
 
-            labels_gdf = pd.concat([unique_gt_gdf, dissolve_gt_gdf]).drop(columns=['TP_charge', 'FN_charge'])
-            detections_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).drop(columns=['TP_charge', 'FP_charge'])
+        #     labels_gdf = pd.concat([unique_gt_gdf, dissolve_gt_gdf]).drop(columns=['TP_charge', 'FN_charge'])
+        #     detections_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).drop(columns=['TP_charge', 'FP_charge'])
 
             # labels_gdf.to_file(output_dir + "/dissolve_gt.gpkg", index=False)
             # detections_gdf.to_file(output_dir + "/dissolve_dets.gpkg", index=False)
@@ -423,6 +435,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
         tagged_dets_gdf = tagged_dets_gdf.round({'detection_area': 4})
         tagged_dets_gdf.reset_index(drop=True, inplace=True)
         tagged_dets_gdf['fid'] = tagged_dets_gdf.index
+        
 
         layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         feature_path = os.path.join(output_dir, 'detection_tags.gpkg')        
@@ -562,39 +575,40 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
     logger.info(f"IoU for all EGIDs = {iou:.2f}")
     logger.info(f"Occupied surface relative error for all EGIDs = {(abs((occupied_surface_det - occupied_surface_label)/occupied_surface_label)):.2f}")
-    logger.info(f"Free surface relative error for all EGIDs = {(abs((free_surface_det - free_surface_label)/occupied_surface_label)):.2f}")
+    logger.info(f"Free surface relative error for all EGIDs = {(abs((free_surface_det - free_surface_label)/free_surface_label)):.2f}")
     print('')
 
-    # Check if detection or labels have been lost in the process
-    nbr_tagged_labels = TP + FN
-    labels_diff = nbr_labels - nbr_tagged_labels
-    filename = os.path.join(output_dir, 'problematic_objects.gpkg')
-    if os.path.exists(filename):
-        os.remove(filename)
-    if labels_diff != 0:
-        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-        logger.info(f'The list of the problematic labels in exported to {filename}.')
 
-        if labels_diff > 0:
-            tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
+    # # Check if detection or labels have been lost in the process
+    # nbr_tagged_labels = TP + FN
+    # labels_diff = nbr_labels - nbr_tagged_labels
+    # filename = os.path.join(output_dir, 'problematic_objects.gpkg')
+    # if os.path.exists(filename):
+    #     os.remove(filename)
+    # if labels_diff != 0:
+    #     logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+    #     logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-            untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
-            untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
+    #     if labels_diff > 0:
+    #         tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
-            layer_name = 'missing_label_tags'
-            untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
+    #         untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+    #         untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
 
-        elif labels_diff < 0:
-            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+    #         layer_name = 'missing_label_tags'
+    #         untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-            duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
-            duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+    #     elif labels_diff < 0:
+    #         all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
-            layer_name = 'duplicated_label_tags'
-            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+    #         duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+    #         duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+    #         duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+
+    #         layer_name = 'duplicated_label_tags'
+    #         duplicated_labels.to_file(filename, layer=layer_name, index=False)
             
-        written_files[filename] = layer_name
+    #     written_files[filename] = layer_name
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
@@ -615,7 +629,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
             plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
 
 
-    return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
+    return metrics_df # , labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
 # ------------------------------------------
 
@@ -654,7 +668,8 @@ if __name__ == "__main__":
 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
 
-    metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    metrics_df = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    # metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
 
     # Stop chronometer  
     toc = time.time()

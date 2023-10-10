@@ -233,7 +233,7 @@ def get_jaccard_index(labels_gdf, detections_gdf, attribute):
     return labels_egid_gdf, detections_egid_gdf
 
 
-def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
+def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     """Tag labels and detections with "charges". 
     This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
     A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
@@ -341,9 +341,9 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
 
     # init
     _gt = gt.copy()
-    _gt['geometry'] = _gt.geometry.buffer(gt_buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
     _dets = dets.copy()
-    # _dets['geometry'] = _dets.geometry.buffer(gtbuffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
 
     charges_dict = {}
 
@@ -401,24 +401,36 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
 
+        
         for el in group:
             if el.startswith(dets_prefix):
-                this_group_charges_dict[el] = {
-                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
-                    'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])      
-                }
-        
+                if method == 'charges':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
+                        'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])
+                        }
+                elif method == 'fusion':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(1, 1),
+                        'FP_charge': Fraction(0, 1)
+                        }        
             if el.startswith(gt_prefix):
-                this_group_charges_dict[el] = {
-                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
-                    'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
-                }
+                if method == 'charges':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
+                        'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
+                        }
+                elif method == 'fusion':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(1, 1), 
+                        'FN_charge': Fraction(0, 1)
+                        }  
         
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(-gt_buffer, join_style=2)
-    # _dets['geometry'] = _dets.geometry.buffer(-gt_buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
