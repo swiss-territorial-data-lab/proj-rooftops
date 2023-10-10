@@ -272,6 +272,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
     detections_gdf['EGID'] = detections_gdf['EGID'].astype(int)
+   
     if 'value' in detections_gdf.columns:
         detections_gdf.rename(columns={'value': 'detection_id'}, inplace=True)
     detections_gdf['detection_id'] = detections_gdf['detection_id'].astype(int)
@@ -303,6 +304,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     metrics_df = pd.DataFrame()
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
+
 
     if METHOD == 'many-to-many':
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
@@ -366,6 +368,21 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
 
     else:
         # Count 
+        if METHOD == 'fusion':
+            tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=THRESHOLD)
+        
+            unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
+            unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
+
+            dissolve_gt_gdf = tagged_gt_gdf.dissolve(by='group_id')
+            dissolve_dets_gdf = tagged_dets_gdf.dissolve(by='group_id')
+
+            labels_gdf = pd.concat([unique_gt_gdf, dissolve_gt_gdf]).drop(columns=['TP_charge', 'FN_charge'])
+            detections_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).drop(columns=['TP_charge', 'FP_charge'])
+
+            # labels_gdf.to_file(output_dir + "/dissolve_gt.gpkg", index=False)
+            # detections_gdf.to_file(output_dir + "/dissolve_dets.gpkg", index=False)
+
         tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
         TP = len(tp_gdf)
         FP = len(fp_gdf)
@@ -376,6 +393,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         metrics_results = metrics.get_metrics(TP, FP, FN)
         tmp_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         metrics_df = pd.concat([metrics_df, tmp_df])
+
 
         if METHOD == 'one-to-many':
             tp_with_duplicates = tp_gdf.copy()
@@ -397,17 +415,18 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
         tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
 
         tagged_dets_gdf.drop(['label_geometry', 'detection_geometry', 'detection_id'], axis=1, inplace=True)
+        if METHOD == 'fusion':
+            tagged_dets_gdf = tagged_dets_gdf.drop(['index_det'], axis=1) 
+
         tagged_dets_gdf = tagged_dets_gdf.round({'IOU': 4})
         tagged_dets_gdf = tagged_dets_gdf.round({'detection_area': 4})
         tagged_dets_gdf.reset_index(drop=True, inplace=True)
         tagged_dets_gdf['fid'] = tagged_dets_gdf.index
 
         layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
-        feature_path = os.path.join(output_dir, 'detection_tags.gpkg')
+        feature_path = os.path.join(output_dir, 'detection_tags.gpkg')        
         tagged_dets_gdf.to_file(feature_path, layer=layer_name, index=False)
-
         written_files[feature_path] = layer_name
-
 
         logger.info("- Metrics per egid")
         for egid in sorted(labels_gdf.EGID.unique()):
@@ -530,7 +549,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THRE
     occupied_surface_label = metrics_df['occupied_surface_label'][metrics_df.value == 'ALL'][0]
     occupied_surface_det = metrics_df['occupied_surface_det'][metrics_df.value == 'ALL'][0]
     free_surface_label = metrics_df['free_surface_label'][metrics_df.value == 'ALL'][0]
-    free_surface_label = metrics_df['free_surface_label'][metrics_df.value == 'ALL'][0]
+    free_surface_det = metrics_df['free_surface_det'][metrics_df.value == 'ALL'][0]
 
     written_files[feature_path] = layer_name
     feature_path = os.path.join(output_dir, 'metrics.csv')

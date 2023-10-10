@@ -41,12 +41,12 @@ produce_vector_layer.py:
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/roofs_STDL_proofed_assess_2023-10-03.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: output/image_segmentation/assessment/
-  method: many-to-many
+  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: many-to-many, 4: fusion 
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
@@ -60,7 +60,7 @@ optimize_hyperparameters.py:
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/gt_all.shp
   output_dir: output/image_segmentation/optimization/
-  egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_selected_GT.csv
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   srs: "EPSG:2056" # Projection of the input file 

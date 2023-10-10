@@ -341,8 +341,8 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
 
     # init
     _gt = gt.copy()
-    _dets = dets.copy()
     _gt['geometry'] = _gt.geometry.buffer(gt_buffer, join_style=2)
+    _dets = dets.copy()
 
     charges_dict = {}
 
