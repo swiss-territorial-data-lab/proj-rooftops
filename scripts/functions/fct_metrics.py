@@ -8,6 +8,7 @@ import pandas as pd
 import networkx as nx
 from collections import OrderedDict
 from fractions import Fraction
+from shapely.ops import unary_union
    
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
@@ -167,7 +168,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     fn_gdf['tag'] = 'FN'
 
     return tp_gdf, fp_gdf, fn_gdf
-    
+
 
 def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute):
     """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
@@ -384,21 +385,22 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
 
         # Filter detection based on intersection/overlap fraction threshold with the GT 
-        for (i, ii, iii, iv) in zip(geom1, geom2, geohash1, geohash2):
+        for (i, ii) in zip(geom2, geohash2):
             # % of overlap of GT and detection shape 
-            polygon1_shape = i
-            polygon2_shape = ii
+            polygon1_shape = unary_union(geom1)
+            polygon2_shape = i
+
             intersection = polygon1_shape.intersection(polygon2_shape).area
-            if intersection / polygon1_shape.area <= threshold and intersection / polygon2_shape.area <= threshold:
-                group.remove(iv)
+            if intersection / polygon2_shape.area <= threshold:
+                group.remove(ii)
                 charges_dict = {
                     **charges_dict,
-                    iv: {
+                    ii: {
                     'FP_charge': Fraction(1, 1),
                     'TP_charge': Fraction(0, 1)
                     }
                 }
-
+        
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
         

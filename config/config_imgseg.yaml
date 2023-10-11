@@ -48,7 +48,8 @@ assess_results.py:
   output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   filters:
-    iou_threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+    interaction_threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+    iou_threshold: 0.1 # Threshold value to consider that a detection match a label
     area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 

@@ -183,7 +183,7 @@ def tags(gdf):
         return 'mixt charge'
 
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -194,7 +194,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
         ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
         METHOD (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many.
-        IOU_THD (float): surface intersection threshold between label shape and detection shape to be considered as the same group
+        INT_THD (float): surface fraction threshold under which the detection is not considered to overlap a label
+        IOU_THD (float): IoU threshold between label shape and detection shape to be considered matching
         AREA_THD_FACTOR (float): factor apply to the minimum label area to define the area threshold under which detections are discarded
         OBJECT_PARAMETERS (list): list of object parameter to be processed ('area', 'nearest_distance_border', 'nearest_distance_centroid')
         RANGES (list): list of list of the bins to process by OBJECT_PARAMETERS
@@ -321,7 +322,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_
 
     if METHOD == 'charges' or METHOD == 'fusion':
 
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD, method=METHOD)
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=INT_THD, method=METHOD)
 
         if METHOD=='fusion':
             # unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
@@ -715,6 +716,7 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
     METHOD = cfg['method']
+    INT_THD = cfg['filters']['interaction_threshold']
     IOU_THD = cfg['filters']['iou_threshold']
     AREA_THD_FACTOR = cfg['filters']['area_threshold_factor'] 
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
@@ -724,7 +726,7 @@ if __name__ == "__main__":
 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
 
-    metrics_df = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    metrics_df = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
     # metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
 
     # Stop chronometer  
