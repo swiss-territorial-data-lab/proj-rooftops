@@ -171,18 +171,6 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.close(fig)
 
 
-def tags(gdf):
-
-    if gdf['TP_charge'] == 1:
-        return 'TP'
-    elif gdf['FP_charge'] == 1:
-        return 'FP'
-    elif gdf['FN_charge'] == 1:
-        return 'FN'
-    else:
-        return 'mixt charge'
-
-
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES):
     """Assess the results by calculating the precision, recall and f1-score.
 
