@@ -136,7 +136,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     tp_gdf_temp['IOU'] = iou
 
     iou_threshold = 0.1
-    if method == 'one-to-many' or method == 'fusion':
+    if method == 'one-to-many':
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
     else:
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, iou_threshold)
@@ -167,6 +167,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one'):
     fn_gdf['tag'] = 'FN'
 
     return tp_gdf, fp_gdf, fn_gdf
+    
 
 def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute):
     """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
@@ -400,7 +401,6 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
 
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
-
         
         for el in group:
             if el.startswith(dets_prefix):
@@ -409,10 +409,10 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                         'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
                         'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])
                         }
-                elif method == 'fusion':
+                else:
                     this_group_charges_dict[el] = {
-                        'TP_charge': Fraction(1, 1),
-                        'FP_charge': Fraction(0, 1)
+                        'TP_charge': group_assessment['cnt_gt'],
+                        'FP_charge': 0
                         }        
             if el.startswith(gt_prefix):
                 if method == 'charges':
@@ -420,10 +420,10 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                         'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
                         'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
                         }
-                elif method == 'fusion':
+                else:
                     this_group_charges_dict[el] = {
-                        'TP_charge': Fraction(1, 1), 
-                        'FN_charge': Fraction(0, 1)
+                        'TP_charge': 1, 
+                        'FN_charge': 0
                         }  
         
         charges_dict = {**charges_dict, **this_group_charges_dict}

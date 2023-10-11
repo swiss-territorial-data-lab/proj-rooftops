@@ -46,7 +46,7 @@ assess_results.py:
   egids: input/image_segmentation/ground_truth/egid/EGIDs_selected_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: output/image_segmentation/assessment/
-  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: many-to-many, 4: fusion 
+  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   filters:
     iou_threshold: 0.1 # Threshold value to consider that a detection overlaps a label
     area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
