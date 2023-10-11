@@ -398,20 +398,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
 
     else:
         # Count 
-        # if METHOD == 'fusion':
-        #     tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=IOU_THD)
-        
-        #     unique_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['group_id'].isna()] 
-        #     unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
-
-        #     dissolve_gt_gdf = tagged_gt_gdf.dissolve(by='group_id')
-        #     dissolve_dets_gdf = tagged_dets_gdf.dissolve(by='group_id')
-
-        #     labels_gdf = pd.concat([unique_gt_gdf, dissolve_gt_gdf]).drop(columns=['TP_charge', 'FN_charge'])
-        #     detections_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).drop(columns=['TP_charge', 'FP_charge'])
-
-            # labels_gdf.to_file(output_dir + "/dissolve_gt.gpkg", index=False)
-            # detections_gdf.to_file(output_dir + "/dissolve_dets.gpkg", index=False)
 
         tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
         TP = len(tp_gdf)
@@ -512,10 +498,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
         metrics_egid_df['free_surface_label'] = np.where(metrics_egid_df['EGID'] == egid, free_surface_label, metrics_egid_df['free_surface_label'])
         free_surface_det = detections_free_gdf['free_surface'].sum()
         metrics_egid_df['free_surface_det'] = np.where(metrics_egid_df['EGID'] == egid, free_surface_det, metrics_egid_df['free_surface_det'])
-
-
-    # Compute Jaccard index and free surface by EGID
-    logger.info(f"- Compute mean Jaccard index")
     
     keys = ['IoU', 'occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det']
     for key in keys:
