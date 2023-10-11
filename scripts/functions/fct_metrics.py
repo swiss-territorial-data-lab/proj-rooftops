@@ -386,11 +386,12 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
 
         # Filter detection based on intersection/overlap fraction threshold with the GT 
         for (i, ii) in zip(geom2, geohash2):
-            # % of overlap of GT and detection shape 
+             
             polygon1_shape = unary_union(geom1)
             polygon2_shape = i
-
+            
             intersection = polygon1_shape.intersection(polygon2_shape).area
+            # % of overlap of GT and detection shape
             if intersection / polygon2_shape.area <= threshold:
                 group.remove(ii)
                 charges_dict = {

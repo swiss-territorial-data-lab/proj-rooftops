@@ -233,7 +233,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
     labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     labels_gdf['label_id'] = labels_gdf.index
     
-    labels_gdf = labels_gdf.explode()
+    labels_gdf = labels_gdf.explode(index_parts=True)
     # labels_gdf = labels_gdf[labels_gdf['geometry'].geom_type.values == 'Polygon']
 
     # Create geohash to GT shapes
@@ -265,7 +265,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
     detections_gdf = gpd.read_file(DETECTIONS)
 
     # detections_gdf = detections_gdf[detections_gdf['geometry'].geom_type.values == 'Polygon']
-    detections_gdf = detections_gdf.explode()
+    detections_gdf = detections_gdf.explode(index_parts=True)
 
     logger.info("  Geohashing detections")
     DETS_PREFIX = "dt_"
