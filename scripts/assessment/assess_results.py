@@ -643,7 +643,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
 
 
     # Plots
-    xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination':'',
+    xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
                 'object_class':'', 'area': r'Object area ($m^2$)', 
                 'nearest_distance_border': r'Object distance (m)'} 
 
@@ -656,7 +656,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
             plot_surface(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
 
 
-    return metrics_df # , labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
+    return metrics_df, labels_diff       # change for 1/(1 + diff_in_labels) if metrics can only be maximized.
 
 # ------------------------------------------
 
@@ -696,8 +696,7 @@ if __name__ == "__main__":
 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
 
-    metrics_df = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
-    # metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    metrics_df, labels_diff = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
 
     # Stop chronometer  
     toc = time.time()
