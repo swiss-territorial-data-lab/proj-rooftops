@@ -5,7 +5,7 @@ prepare_data.py:
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_full_GT.csv
+    egids: EGIDs.csv
   output_dir: processed/PCD_segmentation
   filters:
     building_type: 'all'
@@ -53,16 +53,27 @@ assess_results.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   output_dir: processed/PCD_segmentation
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-  gt: ground_truth/objects_on_roofs.shp
-  egids: EGIDs_full_GT.csv
+  ground_truth: ground_truth/objects_on_roofs.shp
+  egids: EGIDs.csv
   method: one-to-one
+  threshold: 0.1
+  additional_metrics: True
+  visualisation: True
+
+# 5 - Estimate the free surface
+calculate_free_surface.py:
+    working_dir: /home/gsalamin/Documents/project_data/rooftops
+    output_dir: processed/PCD_segmentation
+    detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
+    ground_truth: ground_truth/objects_on_roofs.shp
+    egids: EGIDs_full_GT.csv
 
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
-  egids: EGIDs_full_GT.csv
-  gt: ../../ground_truth/objects_on_roofs.shp
+  egids: completed_egids.csv
+  ground_truth: ../../ground_truth/objects_on_roofs.shp
   detections: all_EGID_occupation.gpkg
   epsg: 2056
   parameters:

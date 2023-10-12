@@ -82,7 +82,7 @@ def save_best_hyperparameters(study, targets={0: 'f1 score'}, output_dir='.'):
 
             trials_df=study.trials_dataframe()
             numbers_best_trials=[trial.number for trial in study.best_trials]
-            best_hyperparam_df=trials_df[trials_df.number.isin(numbers_best_trials)]
+            best_hyperparam_df=trials_df[trials_df.number.isin(numbers_best_trials)].copy()
 
             for target in targets.keys():
                 best_hyperparam_df.rename(columns={f'values_{target}':targets[target]}, inplace=True)

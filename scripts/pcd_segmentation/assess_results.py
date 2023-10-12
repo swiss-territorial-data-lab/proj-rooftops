@@ -13,6 +13,7 @@ import os
 import time
 import sys
 from loguru import logger
+from tqdm import tqdm
 from yaml import load, FullLoader
 
 import geopandas as gpd
@@ -20,162 +21,345 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_figures as figures
+import functions.fct_misc as misc
 import functions.fct_metrics as metrics
 
-logger = fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one', threshold=0.1, additional_metrics=False, visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
         WORKING_DIR (path): working directory
         OUTPUT_DIR (path): output directory
+        LABELS (path): file of the ground truth
         DETECTIONS (path): file of the detections
-        GT (path): file of the ground truth
         EGIDS (list): EGIDs of interest
-        METHOD (string): method to use for the assessment of the results, either one-to-one or one-to-many.
+        ranges (list): list of list of the bins to process by object_parameters. Defaults to empty list.
+        method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many. Defaults ot one-to-one.
+        threshold (float): surface intersection threshold between label shape and detection shape to be considered as the same group. Defaults to 0.1.
+        additional_metrics (bool): wheter or not to do the by-EGID, by-object, by-class metrics. Defaults to False.
+        visualisation (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:
-        float, int: f1-score and number of multiple predictions corresponding to one label.
+        tuple:
+            - float: f1 score of the labels and predictions
+            - float: average of the intersections over unions over each building
+            - dict: written files and layers
     """
 
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    _ = fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, method))
+    threshold_str = str(threshold).replace('.', 'dot')
 
     written_files={}
 
+    logger.info('Get input data...')
+
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
-    # Open shapefiles
-    labels_gdf = gpd.read_file(GT)
+    logger.info(f'Working on {egids.shape[0]} EGIDs.')
 
-    if 'OBSTACLE' in labels_gdf.columns:
-        labels_gdf.rename(columns={'OBSTACLE': 'occupation'}, inplace=True)
+    # Open shapefiles
+    labels_gdf = gpd.read_file(LABELS)
+
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
-    labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
+    if 'occupation' in labels_gdf.columns:
+        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
+    else:
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())]
+
     labels_gdf['ID_GT'] = labels_gdf.index
 
-    labels_gdf.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'}, inplace=True)
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+    labels_gdf=labels_gdf.explode(index_part=False)
 
     nbr_labels=labels_gdf.shape[0]
-    logger.info(f"Read GT file: {nbr_labels} shapes")
+    logger.info(f"Read the file for labels: {nbr_labels} shapes")
 
     if isinstance(DETECTIONS, str):
-        detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
+        detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
         detections_gdf = DETECTIONS
     else:
-        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}')
-    detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1]
-    detections_gdf['ID_DET'] = detections_gdf.pred_id
-    detections_gdf = detections_gdf.rename(columns={"area": "area_DET"})
-    logger.info(f"Read detection file: {len(detections_gdf)} shapes")
-
-    logger.info(f"Metrics computation")
-    if METHOD=='one-to-one':
-        logger.info('Using the one-to-one method.')
-    elif METHOD=='one-to-many':
-        logger.info('Using one-to-many method.')
+        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}.')
+        sys.exit(1)
+    if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1]
+    detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
+    if 'det_id' in detections_gdf.columns:
+        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
     else:
-        logger.warning('Unknown method, defaulting to one-to-one.')
+        detections_gdf['ID_DET'] = detections_gdf.index
+    detections_gdf = detections_gdf.rename(columns={"area": "area_DET"})
+    detections_gdf=detections_gdf.explode(index_part=False)
+    # detections_gdf.drop(columns=['level_0', 'level_1', 'TP_charge', 'FN_charge', 'geohash', 'area_DET', 'nearest_distance_centroid','nearest_distance_border', 'group_id',], inplace=True)
+    logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
 
-    logger.info(f"Metrics computation:")
-    logger.info(f" - Compute TP, FP and FN")
 
-    tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=METHOD)
+    # Detections count
+    logger.info(f"Method used for detections counting:")
+    if method == 'one-to-one':
+        logger.info('    using the one-to-one method.')
+    elif method == 'one-to-many':
+        logger.info('    using one-to-many method.')
+    elif method == 'many-to-many':
+        logger.info('    using many-to-many method.')
+    else:
+        logger.warning('    unknown method, defaults to one-to-one.')
 
-    # Compute metrics
-    precision, recall, f1 = metrics.get_metrics(tp_gdf, fp_gdf, fn_gdf)
 
-    TP = tp_gdf.shape[0]
-    FP = fp_gdf.shape[0]
-    FN = fn_gdf.shape[0]
+    metrics_egid_df = pd.DataFrame()
+    metrics_objects_df = pd.DataFrame()
+    if method == 'many-to-many':
 
-    if METHOD=='one-to-many':
-        tp_with_duplicates=tp_gdf.copy()
-        dissolved_tp_gdf=tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
+        logger.info("Geohash the labels and detections to use them in graphs...")
+        GT_PREFIX= 'gt_'
+        labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
+        labels_gdf = misc.drop_duplicates(labels_gdf, subset='geohash')
+        nbr_labels = labels_gdf.shape[0]
 
-        geom1 = dissolved_tp_gdf.geometry.values.tolist()
-        geom2 = dissolved_tp_gdf['geom_GT'].values.tolist()
-        iou = []
-        for (i, ii) in zip(geom1, geom2):
-            iou.append(metrics.intersection_over_union(i, ii))
-        dissolved_tp_gdf['IOU'] = iou
+        DETS_PREFIX = "dt_"
+        detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
+        detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
-        tp_gdf=dissolved_tp_gdf.copy()
+        logger.info(f"Metrics computation:")
+        logger.info(f"     - Compute TP, FP and FN")
 
-        logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
+                                                     gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold)
 
-    logger.info(f"   TP = {TP}, FP = {FP}, FN = {FN}")
-    logger.info(f"   precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
-    logger.info(f" - Compute mean Jaccard index")
-    if TP!=0:
-        iou_average = tp_gdf['IOU'].mean()
-        logger.info(f"   IOU average for TP = {iou_average:.2f}")
+        logger.info("    - Global metrics")
 
-    nbr_tagged_labels = TP + FN
-    diff_in_labels = nbr_labels - nbr_tagged_labels
-    filename=os.path.join(OUTPUT_DIR, 'problematic_objects.gpkg')
-    if os.path.exists(filename):
-        os.remove(filename)
-    if diff_in_labels != 0:
-        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-        logger.info(f'The list of the problematic labels in exported to {filename}.')
+        TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
+        metrics_results = metrics.get_metrics(TP, FP, FN)
+        metrics_df = pd.DataFrame(metrics_results, index=[0])
 
-        if diff_in_labels > 0:
-            tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+        # Get output files 
+        feature_path = os.path.join(output_dir, 'tagged_detections.gpkg')
+        layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
+        tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
+        written_files[feature_path] = layer_name
+        layer_name = 'tagged_detections_' + method + '_thd_' + threshold_str
+        tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
 
-            untagged_gt_gdf=labels_gdf[~labels_gdf['ID_GT'].isin(tagged_labels)]
-            untagged_gt_gdf.drop(columns=['geom_GT', 'OBSTACLE'], inplace=True)
+        if additional_metrics:
+            logger.info("    - Metrics per egid")
+            for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
+                TP, FP, FN = metrics.get_count(
+                    tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
+                    tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
+                )
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
+                metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
 
-            layer_name='missing_label_tags'
-            untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+            logger.info("    - Metrics per object's class")
+            for object_class in sorted(labels_gdf.descr.unique()):
+                filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr']==object_class]
+                    
+                TP = float(filter_gt_gdf['TP_charge'].sum())
+                FN = float(filter_gt_gdf['FN_charge'].sum())
+                FP = 0
 
-        elif diff_in_labels < 0:
-            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                rem_list = ['FP', 'precision', 'f1']
+                [metrics_results.pop(key) for key in rem_list]
+                tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
+                metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
-            duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
-            duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
-            duplicated_labels.drop(columns=['geom_GT', 'geom_DET', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+    
+    else:
 
-            layer_name='duplicated_label_tags'
-            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+        logger.info(f"Metrics computation:")
+        logger.info(f"    - Compute TP, FP and FN")
+
+        renamed_labels_gdf = labels_gdf.rename(columns={"area": "area_GT", 'EGID': 'EGID_GT'})
+        tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, renamed_labels_gdf, method=method)
+        TP = len(tp_gdf)
+        FP = len(fp_gdf)
+        FN = len(fn_gdf)
+
+        # Compute metrics
+        logger.info("    - Global metrics")
+        metrics_results = metrics.get_metrics(TP, FP, FN)
+        metrics_df = pd.DataFrame(metrics_results, index=[0])
+
+        if method=='one-to-many':
+            tp_with_duplicates=tp_gdf.copy()
+            dissolved_tp_gdf=tp_with_duplicates.dissolve(by=['ID_DET'], as_index=False)
+
+            geom1 = dissolved_tp_gdf.geometry.values.tolist()
+            geom2 = dissolved_tp_gdf['label_geometry'].values.tolist()
+            iou = []
+            for (i, ii) in zip(geom1, geom2):
+                iou.append(metrics.intersection_over_union(i, ii))
+            dissolved_tp_gdf['IOU'] = iou
+
+            tp_gdf=dissolved_tp_gdf.copy()
+
+            logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
+
+        # Control the number of labels
+        nbr_tagged_labels = TP + FN
+        diff_in_labels = nbr_labels - nbr_tagged_labels
+        filename=os.path.join(output_dir, 'problematic_objects.gpkg')
+        if os.path.exists(filename):
+            os.remove(filename)
+        if diff_in_labels != 0:
+            logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+            logger.info(f'The list of the problematic labels in exported to {filename}.')
+
+            if diff_in_labels > 0:
+                tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+
+                untagged_gt_gdf=labels_gdf[~labels_gdf['ID_GT'].isin(tagged_labels)]
+                untagged_gt_gdf.drop(columns=['label_geometry', 'OBSTACLE'], inplace=True)
+
+                layer_name='missing_label_tags'
+                untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+
+            elif diff_in_labels < 0:
+                all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+
+                duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
+                duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)]
+                duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+
+                layer_name='duplicated_label_tags'
+                duplicated_labels.to_file(filename, layer=layer_name, index=False)
         
-        written_files[filename]=layer_name
+            written_files[filename]=layer_name
 
 
-    # Set the final dataframe with tagged prediction
-    tagged_preds_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
+        # Set the final dataframe with tagged prediction
+        tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
 
-    tagged_preds_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'geom_GT', 'geom_DET', 'ID_DET', 'area_DET'], axis = 1, inplace=True)
-    tagged_preds_gdf=tagged_preds_gdf.round({'IOU': 2})
-    tagged_preds_gdf.reset_index(drop=True, inplace=True)
+        tagged_dets_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'label_geometry', 'detection_geometry', 'ID_DET', 'area_DET', 'EGID_GT'], 
+                             axis = 1, inplace=True, errors='ignore')
+        tagged_dets_gdf=tagged_dets_gdf.round({'IOU': 2, 'detection_area': 4})
+        tagged_dets_gdf.reset_index(drop=True, inplace=True)
 
-    layer_name='tagged_predictions'
-    feature_path = os.path.join(OUTPUT_DIR, 'tagged_predictions.gpkg')
-    tagged_preds_gdf.to_file(feature_path, layer=layer_name, index=False)
-    written_files[feature_path]=layer_name
+        layer_name = 'tagged_detections_' + method + '_thd_' + threshold_str
+        feature_path = os.path.join(output_dir, 'tagged_detections.gpkg')
+        tagged_dets_gdf.to_file(feature_path, layer=layer_name, index=False)
+        written_files[feature_path]=layer_name
+
+        if additional_metrics:
+            logger.info("    - Metrics per egid")
+            for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
+                tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=method)
+                TP = len(tp_gdf)
+                FP = len(fp_gdf)
+                FN = len(fn_gdf)
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
+                metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
 
 
-    # Compute Jaccard index at the scale of the EGIDs
-    labels_gdf.rename(columns={'EGID_GT': 'EGID'}, inplace=True)
-    egid_iou_gdf = metrics.get_jaccard_index_roof(labels_gdf, detections_gdf)
-    iou_average = egid_iou_gdf['IOU_EGID'].mean()
-    logger.info(f"Averaged IOU at the EGID scale = {iou_average:.2f}")
+            logger.info("    - Metrics per object's class")
+            for object_class in sorted(labels_gdf.descr.unique()):
+                
+                filter_gt_gdf = tagged_dets_gdf[tagged_dets_gdf['descr']==object_class].copy()
+                
+                TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
+                FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
+                FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
+
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                rem_list = ['FP', 'precision', 'f1']
+                [metrics_results.pop(key) for key in rem_list]
+                tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
+                metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
 
-    logger.success("The following files were written. Let's check them out!")
-    for path in written_files.keys():
-        logger.success(f'  file: {path}, layer: {written_files[path]}')
+    # Compute Jaccard index by EGID
+    logger.info(f"- Compute mean Jaccard index")
 
-    return f1, iou_average
+    labels_by_attr_gdf = metrics.get_jaccard_index(labels_gdf, detections_gdf)
+
+    if 'EGID' not in metrics_egid_df.columns:
+        metrics_egid_df['EGID'] = labels_by_attr_gdf.EGID
+
+    metrics_egid_df['IoU_EGID'] = [
+        labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID==egid, 'IOU_EGID'].iloc[0]
+        if egid in labels_by_attr_gdf.EGID.unique() else 0
+        for egid in metrics_egid_df.EGID 
+    ]
+    feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
+    metrics_egid_df.round(3).to_csv(feature_path, index=False)
+    written_files[feature_path] = ''
+        
+    # Compute Jaccard index for all buildings
+
+    iou_average = round(metrics_egid_df['IoU_EGID'].mean(), 3)
+    metrics_df['average_IoU_EGID'] = iou_average
+
+    feature_path = os.path.join(output_dir, 'metrics.csv')
+    metrics_df.to_csv(feature_path, index=False)
+    written_files[feature_path] = ''
+
+    # Concatenate roof attributes by EGID and get attributes keys
+    metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
+    roof_attributes = egids.keys().tolist()
+    roof_attributes.remove('EGID')
+
+    # Compute metrics by roof attributes 
+    if additional_metrics:
+        logger.info("- Metrics per roof attributes")
+        for attribute in roof_attributes:
+            metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
+            metrics_iou_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            
+            for val in metrics_egid_df[attribute].unique():
+                TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
+                FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
+                FN = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FN'].iloc[0]
+                iou = metrics_iou_df.loc[metrics_iou_df[attribute] == val, 'IoU_EGID'].iloc[0]    
+
+                metrics_results = metrics.get_metrics(TP, FP, FN)
+                tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
+                                                    **metrics_results, 'IoU_EGID': iou,}])
+                metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])   
+        
+        feature_path = os.path.join(output_dir, 'per_attribute_metrics.csv')
+        metrics_objects_df.to_csv(feature_path)
+        written_files[feature_path] = ''
+
+    # Sump-up results and save files
+    TP = metrics_df.loc[0, 'TP']
+    FP = metrics_df.loc[0, 'FP'] 
+    FN = metrics_df.loc[0, 'FN']
+    precision = metrics_df.loc[0, 'precision']
+    recall = metrics_df.loc[0, 'recall']
+    f1 = metrics_df.loc[0, 'f1']
+    iou = metrics_df.loc[0, 'average_IoU_EGID']
+
+    print()
+    logger.info(f"TP = {TP}, FP = {FP}, FN = {FN}")
+    logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
+    logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
+    logger.info(f"average IoU for all EGIDs = {iou:.2f}")
+    print()
+
+    if visualisation and additional_metrics:
+        # Plots
+        xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination':'',
+                    'object_class':''} 
+
+        for i in metrics_objects_df.attribute.unique():
+            figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+            figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+            figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+
+            
+    return f1, iou_average, written_files
 
 # ------------------------------------------
 
@@ -199,11 +383,22 @@ if __name__ == "__main__":
     OUTPUT_DIR = cfg['output_dir']
 
     DETECTIONS=cfg['detections']
-    GT = cfg['gt']
+    LABELS = cfg['ground_truth']
     EGIDS = cfg['egids']
-    METHOD = cfg['method']
 
-    f1, diff_in_labels=main(WORKING_DIR, OUTPUT_DIR, DETECTIONS, GT, EGIDS, METHOD)
+    METHOD = cfg['method']
+    THRESHOLD = cfg['threshold']
+    ADDITIONAL_METRICS = cfg['additional_metrics'] if 'additional_metrics' in cfg.keys() else False
+    VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
+
+
+    f1, diff_in_labels, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
+                                             method=METHOD, threshold=THRESHOLD,
+                                             additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
+
+    logger.success("The following files were written. Let's check them out!")
+    for path in written_files.keys():
+        logger.success(f'  file: {path}{"" if written_files[path] == "" else f", layer: {written_files[path]}"}')
 
     # Stop chronometer  
     toc = time.time()

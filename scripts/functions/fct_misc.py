@@ -1,7 +1,10 @@
-import os, sys
-import pandas as pd
-import geopandas as gpd
+import os
+import sys
 from loguru import logger
+
+import geopandas as gpd
+import pandas as pd
+import pygeohash as pgh
 
 
 def format_logger(logger):
@@ -52,3 +55,69 @@ def ensure_dir_exists(dirpath):
         print(f"The directory {dirpath} was created.")
 
     return dirpath
+
+
+def drop_duplicates(gdf, subset=None):
+    """Delete duplicate rows based on the values in a subset column.
+
+    Args:
+        gdf : geodataframe
+
+    Returns:
+        out_gdf (gdf): clean geodataframe
+    """
+
+    out_gdf = gdf.copy()
+    out_gdf.drop_duplicates(subset=subset, inplace=True)
+
+    return out_gdf
+
+
+def geohash(row):
+    """Geohash encoding (https://en.wikipedia.org/wiki/Geohash) of a location (point).
+    If geometry type is a point then (x, y) coordinates of the point are considered. 
+    If geometry type is a polygon then (x, y) coordinates of the polygon centroid are considered. 
+    Other geometries are not handled at the moment    
+
+    Args:
+        row: geodaframe row
+
+    Raises:
+        Error: geometry error
+
+    Returns:
+        out (str): geohash code for a given geometry
+    """
+    
+    if row.geometry.geom_type == 'Point':
+        out = pgh.encode(latitude=row.geometry.y, longitude=row.geometry.x, precision=16)
+    elif row.geometry.geom_type == 'Polygon':
+        out = pgh.encode(latitude=row.geometry.centroid.y, longitude=row.geometry.centroid.x, precision=16)
+    else:
+        logger.error(f"{row.geometry.geom_type} type is not handled (only Point or Polygon geometry type)")
+        sys.exit()
+
+    return out
+
+def add_geohash(gdf, prefix=None, suffix=None):
+    """Add geohash column to a geodaframe.
+
+    Args:
+        gdf: geodaframe
+        prefix (string): custom geohash string with a chosen prefix 
+        suffix (string): custom geohash string with a chosen suffix
+
+    Returns:
+        out (gdf): geodataframe with geohash column
+    """
+
+    out_gdf = gdf.copy()
+    out_gdf['geohash'] = gdf.to_crs(epsg=4326).apply(geohash, axis=1)
+
+    if prefix is not None:
+        out_gdf['geohash'] = prefix + out_gdf['geohash'].astype(str)
+
+    if suffix is not None:
+        out_gdf['geohash'] = out_gdf['geohash'].astype(str) + suffix
+
+    return out_gdf

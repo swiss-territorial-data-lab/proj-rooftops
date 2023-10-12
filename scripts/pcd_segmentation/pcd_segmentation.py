@@ -50,7 +50,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         visu (boolean): visualize the results. Default to false
 
     Returns:
-        _type_: _description_
+        list: list of the written files
     """
     
     os.chdir(WORKING_DIR)
@@ -176,13 +176,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     # written_files.append(feature_path)  
     # logger.info(f"...done. A file was written: {feature_path}")
 
-    print()
-    logger.success("The following files were written. Let's check them out!")
-    for written_file in written_files:
-        logger.info(written_file)
-    print()
-
-    return 0
+    return written_files
 
 
 # ------------------------------------------
@@ -221,11 +215,18 @@ if __name__ == "__main__":
 
     VISU = cfg['visualisation']
 
-    success=main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
+    written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
          EGIDS, 
          DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
         #  NB_PLANES, 
          )
+    
+    print()
+    logger.success("The following files were written. Let's check them out!")
+    for written_file in written_files:
+        logger.info(written_file)
+    print()
+
     
     # Stop chronometer  
     toc = time()

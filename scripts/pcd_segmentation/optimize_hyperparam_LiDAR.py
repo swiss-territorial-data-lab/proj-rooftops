@@ -22,7 +22,7 @@ import optuna
 
 sys.path.insert(1, 'scripts')
 from functions.fct_misc import format_logger, ensure_dir_exists
-import functions.fct_optimization as fct_opti
+import functions.fct_optimization as optimization
 import pcd_segmentation
 import vectorization
 import assess_results
@@ -72,18 +72,18 @@ def objective(trial):
     # print(dict_parameters_vect)
 
 
-    pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
+    _ = pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                   EGIDS,
                                 #   DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS, number_planes=NUMBER_PLANES)
                                   **dict_parameters_pcd_seg)
-    all_occupation_gdf = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
+    all_occupation_gdf, _ = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                                     EGIDS, EPSG,
                                                     alpha_shape=ALPHA_SHAPE
                                                     # **dict_parameters_vect
     )
-    f1, averaged_iou = assess_results.main(WORKING_DIR, OUTPUT_DIR,
-                                                     all_occupation_gdf, GT,
-                                                     EGIDS, METHOD)
+    f1, averaged_iou, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
+                                                    LABELS, all_occupation_gdf,
+                                                    EGIDS, method=METHOD)
 
     return f1, averaged_iou
 
@@ -106,7 +106,7 @@ INPUT_DIR='.'
 OUTPUT_DIR='.'
 
 EGIDS=cfg['egids']
-GT=cfg['gt']
+LABELS=cfg['ground_truth']
 DETECTIONS=cfg['detections']
 EPSG=cfg['epsg']
 
@@ -136,7 +136,7 @@ written_files = []
 logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
-study.optimize(objective, n_trials=100)
+study.optimize(objective, n_trials=10)
 
 study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
 joblib.dump(study, study_path)
@@ -145,10 +145,10 @@ written_files.append(study_path)
 targets = {0: 'f1 score', 1: 'average IoU'}
 
 logger.info('Plot results')
-written_files.extend(fct_opti.plot_optimization_results(study, targets, output_path=output_plots))
+written_files.extend(optimization.plot_optimization_results(study, targets, output_path=output_plots))
 
 logger.info('Save the best hyperparameters')
-written_files.append(fct_opti.save_best_hyperparameters(study, targets))
+written_files.append(optimization.save_best_hyperparameters(study, targets))
 
 print()
 logger.success("The following files were written. Let's check them out!")

@@ -81,6 +81,35 @@ def handle_overlapping_cluster(clusters_gdf):
 
     return reviewed_cluster
 
+def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
+    """Transform multipolygons into polygons
+
+    Args:
+        gdf (GeoDataFrame): geodataframe to control
+        limit_number (int, optional): Limit number of parts for pruning. Defaults to 10.
+        limit_area (float, optional): Limit area in square meter for pruning. Defaults to 0.01.
+
+    Returns:
+        GeoDataFrame: the same dataframe but with only polygons and an adjusted id.
+    """
+
+    exploded_gdf = gdf.explode(index_parts=False)
+    exploded_gdf['area'] = exploded_gdf.area
+    if exploded_gdf.shape[0] == gdf.shape[0]:
+        return exploded_gdf
+
+    number_parts_df = exploded_gdf['multipoly_id'].value_counts()
+    for multipoly_id, number_parts in number_parts_df.items():
+        if number_parts > 100:
+            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=0.5))].copy()
+        elif number_parts > limit_number:
+            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=limit_area))].copy()
+
+    exploded_gdf.reset_index(drop=True, inplace=True)
+
+    return exploded_gdf
+
+
 def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
@@ -96,7 +125,9 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         visu (bool, optional): make the vizualisation. Defaults to False.
 
     Returns:
-        _type_: _description_
+        tuple: 
+            - GeoDataFrame: free and occupied surfaces
+            - dict: dictonnary with the path as key and the layers in the path as list.
     """
 
     logger.info(f"Planes smaller than {min_plane_area} m2 will be considered as object and not as roof sections.") 
@@ -108,7 +139,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
     _ = ensure_dir_exists(OUTPUT_DIR)
     feature_path = os.path.join(OUTPUT_DIR, "all_EGID_occupation.gpkg")
 
-    written_layers = []
+    written_layers = {feature_path: []}
 
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
@@ -130,8 +161,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Plane vectorization
         if plane_df.empty:
             logger.error('No planes to vectorize')
-        plane_vec_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
-        # plane_vec_gdf = fct_seg.vectorize_convex(plane_df, plane) 
+        plane_multipoly_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
+        # plane_multipoly_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
         cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -141,8 +172,17 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Cluster vectorisation
         if cluster_df.empty:
             logger.error('No clusters to vectorize')
-        cluster_vec_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
-        # cluster_vec_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
+        cluster_multipoly_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
+        # cluster_multipoly_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
+
+
+        # Deal with multipolygon
+        plane_multipoly_gdf['multipoly_id'] = plane_multipoly_gdf.index
+        plane_vec_gdf = handle_multipolygon(plane_multipoly_gdf) if not plane_multipoly_gdf.empty else plane_multipoly_gdf
+
+        cluster_multipoly_gdf['multipoly_id'] = cluster_multipoly_gdf.index
+        cluster_vec_gdf = handle_multipolygon(cluster_multipoly_gdf) if not cluster_multipoly_gdf.empty else cluster_multipoly_gdf
+
 
         # Filtering: identify and isolate plane that are too small
         if not plane_vec_gdf.empty:
@@ -181,12 +221,14 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
 
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
-            cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.015]
+            cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
+            cluster_vec_gdf.set_geometry('geometry', inplace=True)
 
             # Free polygon = Plane polygon(s) - Object polygon(s)
             diff_geom=[]
             i=0
             if not plane_vec_gdf.empty:
+                plane_vec_gdf.set_geometry('geometry', inplace=True)
                 for geom in plane_vec_gdf.geometry.to_numpy():
                     diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
 
@@ -218,23 +260,18 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         if not occupation_df.empty:
             occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
             # occupation_gdf.to_file(feature_path, layer=file_name, index=False)
-            # written_layers.append(file_name)  
+            # written_layers[feature_path].append(file_name)  
 
             occupation_gdf['EGID']=egid
             all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
 
-    all_occupation_gdf['pred_id']=all_occupation_gdf.index
+    all_occupation_gdf['det_id']=all_occupation_gdf.index
     all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)
-    written_layers.append('occupation_for_all_EGIDs')
+    written_layers[feature_path].append('occupation_for_all_EGIDs')
 
-    print()
-    logger.success(f"The following layers were written in the file '{feature_path}'. Let's check them out!")
-    for layer in written_layers:
-        logger.info(layer)
-    print()
 
-    return all_occupation_gdf
+    return all_occupation_gdf, written_layers
 
 
 # ------------------------------------------
@@ -266,7 +303,14 @@ if __name__ == "__main__":
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
-    all_occupation_gdf=main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+    all_occupation_gdf, written_files =main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+
+    print()
+    dict_only_key=list(written_files.keys())[0]
+    logger.success(f"The following layers were written in the file '{dict_only_key}'. Let's check them out!")
+    for layer in written_files[dict_only_key]:
+        logger.info(f'    - {layer}')
+    print()
 
     # Stop chronometer  
     toc = time()
