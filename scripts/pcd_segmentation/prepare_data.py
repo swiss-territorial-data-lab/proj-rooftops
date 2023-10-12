@@ -96,7 +96,8 @@ ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
-    
+
+rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    
 completed_egids=pd.merge(egids, rooftops, on='EGID')
 
 feature_path=os.path.join(output_dir, 'completed_egids.csv')

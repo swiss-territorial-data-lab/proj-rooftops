@@ -29,7 +29,7 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
     return polygon_intersection / polygon_union
 
 
-def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
+def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can correspond to several labels.
 
@@ -61,7 +61,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
     return tp_gdf, fp_gdf_temp
 
 
-def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
+def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can only correspond to one label.
 
@@ -93,15 +93,16 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     return tp_gdf, fp_gdf_temp
 
 
-def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one'):
+def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold=0.1):
     """Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
     One prediction can either correspond to one (one-to-one) or several (one-to-many) labels.
 
     Args:
-        dets_gdf (geodataframe): geodataframe of the prediction with the id "ID_DET"
-        labels_gdf (geodataframe): threshold to apply on the IoU to determine TP and FP
+        dets_gdf (geodataframe): geodataframe of the detections with the id "ID_DET"
+        labels_gdf (geodataframe): geodataframe of the labels with the id "ID_GT"
         method (str, optional): string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels. 
                 Defaults to 'one-to-one'.
+        iou_thrshold (flaot, optional): threshold to apply on the IoU to determine the tags. Defaults to 0.1.
 
     Raises:
         Exception: CRS mismatch
@@ -137,7 +138,6 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one'):
         iou.append(intersection_over_union(i, ii))
     tp_gdf_temp['IOU'] = iou
 
-    iou_threshold=0.1
     if method=='one-to-many':
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
     else:

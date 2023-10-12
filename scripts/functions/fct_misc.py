@@ -100,14 +100,22 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         logger.info(f"File {name}_{attribute}.shp does not exist")
         logger.info(f"Create it")
         gdf = gpd.read_file(original_file)
+
         logger.info(f"Dissolved shapes by {attribute}")
         gdf['geometry'] = gdf['geometry'].buffer(0.001)   # apply a buffer to prevent thin spaces due to polyons gaps   
-        gdf = gdf.dissolve(attribute, as_index=False)
-        gdf['geometry'] = gdf['geometry'].buffer(-0.001)   
-        gdf.to_file(desired_file)
+        dissolved_gdf = gdf.dissolve(attribute, as_index=False)
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.001)   
+
+        gdf_considered_sections=gdf[gdf.area > 2].copy()
+        attribute_count=gdf_considered_sections.EGID.value_counts()
+        dissolved_gdf=dissolved_gdf.join(attribute_count, on=attribute)
+        dissolved_gdf.rename(columns={'count': 'nbr_elements'}, inplace=True)
+        dissolved_gdf=dissolved_gdf[~dissolved_gdf.nbr_elements.isna()].reset_index()
+
+        dissolved_gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
 
-    return gdf
+    return dissolved_gdf
 
 
 def distance_shape(geom1, geom2):

@@ -33,7 +33,7 @@ pcd_segmentation.py:
     clusters:
       eps: 0.59
       min_points: 20
-  visualisation: false
+  visualisation: True
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
@@ -46,7 +46,7 @@ vectorization.py:
     min: 18        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
     max: 42       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
-  visualisation: False
+  visualisation: True
 
 # 4 - Evaluate the results
 assess_results.py: 
@@ -58,8 +58,8 @@ assess_results.py:
   egids: EGIDs.csv
   method: many-to-many
   threshold: 0.1
-  additional_metrics: True
-  visualisation: True
+  additional_metrics: False
+  visualisation: False
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 

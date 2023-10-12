@@ -93,7 +93,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
 
         if not number_planes_ini:
-            number_planes = int(egid_info.nbr_planes)
+            number_planes = int(egid_info.nbr_elements)
 
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
@@ -160,21 +160,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius = 0.5, max_nn = 16), fast_normal_computation = True)
             pcd.paint_uniform_color([0.6, 0.6, 0.6])
             o3d.visualization.draw_geometries([segments[i] for i in range(number_planes)] + [remaining_pts])
-
-    # Save the parameter values used for pcd segmentation
-    parameters_df = pd.DataFrame({'number_plane': [number_planes], 
-                                'distance_threshold': [distance_threshold],
-                                'ransac': [ransac], 
-                                'iteration': [iterations], 
-                                'eps_plane': [eps_planes],
-                                'min_points_plane': [min_points_planes],                                
-                                'eps_cluster': [eps_clusters],
-                                'min_points_clusters': [min_points_clusters]   
-                                })
-    # feature_path = os.path.join(OUTPUT_DIR, file_name + '_parameters.csv')
-    # parameters_df.to_csv(feature_path)
-    # written_files.append(feature_path)  
-    # logger.info(f"...done. A file was written: {feature_path}")
 
     return written_files
 

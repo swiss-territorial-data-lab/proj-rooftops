@@ -218,7 +218,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"Metrics computation:")
         logger.info(f"    - Compute TP, FP and FN")
 
-        tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[['ID_DET', 'geometry']], labels_gdf, method=method)
+        tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[['ID_DET', 'geometry']], labels_gdf, method=method, threhold=threshold)
         TP = len(tp_gdf)
         FP = len(fp_gdf)
         FN = len(fn_gdf)
