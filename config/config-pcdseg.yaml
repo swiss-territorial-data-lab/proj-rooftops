@@ -54,11 +54,16 @@ assess_results.py:
   output_dir: processed/PCD_segmentation
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   ground_truth: ground_truth/objects_on_roofs.shp
+  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: EGIDs.csv
-  method: one-to-one
+  method: many-to-many
   threshold: 0.1
   additional_metrics: True
   visualisation: True
+  object_attributes:
+    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
+    distance_ranges: [[0,1], [1,10], [10, 100]]
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
@@ -66,7 +71,11 @@ calculate_free_surface.py:
     output_dir: processed/PCD_segmentation
     detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
     ground_truth: ground_truth/objects_on_roofs.shp
-    egids: EGIDs_full_GT.csv
+    roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: EGIDs.csv
+    method: many-to-many
+    threshold: 0.1
+    visualisation: True
 
 
 # 2 & 3 & 4 - Optimization of the hyperparameters

@@ -126,7 +126,7 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one'):
     dets_gdf['detection_geometry'] = dets_gdf.geometry
 
     # TRUE POSITIVES
-    left_join = gpd.sjoin(dets_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
+    left_join = gpd.sjoin(dets_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='_det', rsuffix='_label')
     tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
@@ -457,10 +457,10 @@ def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
 
 
     detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surfaces
+    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
 
     labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.free_area - labels_with_area_gdf.occupied_surfaces
+    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
 
     return labels_with_area_gdf, detections_with_area_gdf
 

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
 
+    written_file = []
     fig = plt.figure(figsize =(12, 8))
 
     for i in attribute:
@@ -22,6 +23,10 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
         plot_path = os.path.join(dir_plots, f'histo_{i}.png')  
         plt.savefig(plot_path, bbox_inches='tight')
         plt.close(fig)
+
+        written_file.append(plot_path)
+    
+    return written_file
 
 
 def plot_surface(dir_plots, df, attribute, xlabel):
@@ -56,6 +61,7 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
+    return plot_path
 
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
@@ -84,6 +90,8 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
+    
+    return plot_path
 
 
 def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
@@ -121,6 +129,8 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
+    return plot_path
+
 
 def plot_metrics(dir_plots, df, attribute, xlabel):
 
@@ -146,3 +156,5 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
+
+    return plot_path

@@ -13,6 +13,7 @@ matplotlib
 numpy
 open3d
 pyyaml
+rasterio
 requests
 shapely
 whitebox

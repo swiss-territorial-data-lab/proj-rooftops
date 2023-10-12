@@ -26,9 +26,9 @@ import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger = fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 
 # Start chronometer
@@ -76,7 +76,7 @@ if FILTER_ROOF:
 os.chdir(WORKING_DIR) # WARNING: wbt requires absolute paths as input
 
 # Create an output directory in case it doesn't exist
-output_dir = fct_misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
+output_dir = misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
 
 written_files = []
 
@@ -84,7 +84,7 @@ written_files = []
 egids=pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'contemporary', 'industrial', 'residential', 'villa']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
-    egids = egids[egids.type==BUILDING_TYPE]
+    egids = egids[egids.type==BUILDING_TYPE].copy()
 elif BUILDING_TYPE!='all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
@@ -95,30 +95,7 @@ logger.info(f'The algorithm will be working on {egids.shape[0]} egids.')
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
-if os.path.exists(feature_path):
-    logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp already exists")
-    rooftops = gpd.read_file(feature_path)
-else:
-    logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
-    logger.info(f"Create it")
-    gdf_roof_sections = gpd.read_file(SHP_ROOFS)
-    gdf_roof_sections.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)
-
-    logger.info(f"Dissolved shapes by EGID number")
-    rooftops_per_EGIDS = gdf_roof_sections.dissolve('EGID', as_index=False, aggfunc='min')
-
-    gdf_roof_sections['area']=gdf_roof_sections.area
-    gdf_considered_sections=gdf_roof_sections[gdf_roof_sections.area > 2].copy()
-    EGID_count=gdf_considered_sections.EGID.value_counts()
-    rooftops=rooftops_per_EGIDS.join(EGID_count, on='EGID')
-    rooftops.rename(columns={'count': 'nbr_planes'}, inplace=True)
-    rooftops=rooftops[~rooftops.nbr_planes.isna()].reset_index()
-
-    rooftops.to_file(feature_path)
-    written_files.append(feature_path)  
-    logger.info(f"...done. A file was written: {feature_path}")
-
-    del gdf_roof_sections, gdf_considered_sections, EGID_count
+rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     
 completed_egids=pd.merge(egids, rooftops, on='EGID')
 
@@ -139,14 +116,14 @@ for egid in tqdm(egids.EGID.to_numpy()):
     if (not OVERWRITE) & os.path.exists(final_path):
         continue
     
-    shape = rooftops.loc[rooftops['EGID'] == int(egid)]
+    shape = rooftops.loc[rooftops['EGID'] == int(egid)].copy()
 
     # Write it to use it with WBT
     shape_path = os.path.join(output_dir, file_name + ".shp")
     shape.to_file(shape_path)
 
     # Select corresponding tiles
-    useful_tiles=rooftops_on_tiles.loc[rooftops_on_tiles.EGID == int(egid), tile_delimitation.columns]
+    useful_tiles=rooftops_on_tiles.loc[rooftops_on_tiles.EGID == int(egid), tile_delimitation.columns].copy()
     useful_tiles['filepath']=[os.path.join(PCD_DIR, name + PCD_EXT) for name in useful_tiles.fme_basena.to_numpy()]
 
     clipped_inputs=str()
@@ -194,7 +171,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
     # Filter point cloud with min roof altitude (remove points below the roof) 
     if FILTER_ROOF:  
         alti_roof = rooftops.loc[rooftops['EGID'] == int(egid), 'ALTI_MIN'].iloc[0] - DISTANCE_BUFFER
-        pcd_filter = pcd_points[pcd_points[:, 2] > alti_roof]
+        pcd_filter = pcd_points[pcd_points[:, 2] > alti_roof].copy()
 
     # Conversion of numpy array to Open3D format + visualisation
     pcd = o3d.geometry.PointCloud()
