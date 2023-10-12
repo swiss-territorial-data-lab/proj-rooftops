@@ -3,9 +3,9 @@ generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
-  egids: input/image_segmentation/ground_truth/EGIDs_selected_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles/
+  output_dir: input/image_segmentation/tiles/optimization
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
@@ -59,11 +59,11 @@ assess_results.py:
 # 5 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/
+  image_dir: input/image_segmentation/tiles/optimization
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/optimization/
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_selected_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   srs: "EPSG:2056" # Projection of the input file 
@@ -73,7 +73,7 @@ optimize_hyperparameters.py:
     iou_threshold: 0.1 # Threshold value to consider that a detection match a label
     area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
   object_attributes:
-    parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
   image_crop: # Activate the option to crop the input image according to pixel coordinates
@@ -90,7 +90,7 @@ optimize_hyperparameters.py:
     custom_SAM: False
     show_masks: False 
   optimization:
-    n_trials: 6 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    n_trials: 100 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]
