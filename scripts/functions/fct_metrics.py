@@ -384,24 +384,24 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         geom2 = dets[dets['geohash'].isin(group)].geometry.values.tolist()
         geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
 
+        # filter detections and labels based on intersection area fraction
         keep_geohash1 = []
         keep_geohash2 = [] 
         for (i, ii) in zip(geom1, geohash1):
-        # Filter detection based on intersection/overlap fraction threshold with the GT 
             for (iii, iv) in zip(geom2, geohash2):
-                
                 polygon1_shape = i
                 polygon2_shape = iii
-                
                 intersection = polygon1_shape.intersection(polygon2_shape).area
-                # % of overlap of GT and detection shape
+                # keep element if intersection overlap % of GT and detection shape is >= THD
                 if intersection / polygon2_shape.area >= threshold:
                     keep_geohash1.append(ii)
                     keep_geohash2.append(iv)
 
+        # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
         remove_geohash1 = [x for x in geohash1 if x not in np.unique(keep_geohash1).astype(str)]
         remove_geohash2 = [x for x in geohash2 if x not in np.unique(keep_geohash2).astype(str)]
         
+        # remove elements from the labels and detections list and attribute TP, FP and FN charges 
         for i in remove_geohash1:
             group.remove(i)
             charges_dict = {
@@ -421,6 +421,7 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                 }
             }
         
+        # attriute TP, FP and FN charges of remaining elements
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
         
