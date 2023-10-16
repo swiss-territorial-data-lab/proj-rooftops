@@ -128,19 +128,16 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     # Detections count
     logger.info(f"Method used for detections counting:")
-    if method == 'one-to-one':
-        logger.info('    using the one-to-one method.')
-    elif method == 'one-to-many':
-        logger.info('    using one-to-many method.')
-    elif method == 'many-to-many':
-        logger.info('    using many-to-many method.')
+    methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
+    if METHOD in methods_list:
+        logger.info(f'Using the {METHOD} method')
     else:
-        logger.warning('    unknown method, defaults to one-to-one.')
+        logger.warning('    unknown method, default method = one-to-one.')
 
 
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
-    if method == 'many-to-many':
+    if METHOD == 'charges' or METHOD == 'fusion':
 
         logger.info("Geohash the labels and detections to use them in graphs...")
         GT_PREFIX= 'gt_'
@@ -157,28 +154,61 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
                                                      gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold)
+        feature_path = os.path.join(output_dir, 'tags.gpkg')
+        
+        if METHOD=='fusion':
+            unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
+            dissolved_dets_gdf = tagged_dets_gdf.dissolve(by='group_id', aggfunc='sum', as_index=False)
+            fused_dets_gdf = pd.concat([unique_dets_gdf, dissolved_dets_gdf]).reset_index(drop=True)
+    
+            tagged_final_gdf = pd.concat([fused_dets_gdf, 
+                                        tagged_gt_gdf[tagged_gt_gdf.FN_charge == 1]
+                                        ]).reset_index(drop=True)
 
-        logger.info("    - Global metrics")
-
-        TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
-        metrics_results = metrics.get_metrics(TP, FP, FN)
-        metrics_df = pd.DataFrame(metrics_results, index=[0])
+            tagged_final_gdf['tag'] = None
+            tagged_final_gdf.loc[tagged_final_gdf['TP_charge'] >= 1, 'tag'] = 'TP' 
+            tagged_final_gdf.loc[(tagged_final_gdf['FP_charge'] >= 1) & (tagged_final_gdf['TP_charge'] == 0), 'tag'] = 'FP' 
+            tagged_final_gdf.loc[(tagged_final_gdf['FN_charge'] >= 1) & (tagged_final_gdf['TP_charge'] == 0), 'tag'] = 'FN' 
+            tagged_final_gdf = tagged_final_gdf.reindex(columns=['id', 'EGID', 'geohash', 'label_id', 'detection_id', 'obj_class', 
+                                                        'descr', 'area', 'nearest_distance_centroid', 'nearest_distance_border', 
+                                                        'group_id', 'TP_charge', 'FN_charge', 'FP_charge', 'tag', 'geometry'])
+            
+            layer_name = 'tagged_final_' + METHOD + '_thd_' + threshold_str
+            tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
+            written_files[feature_path] = layer_name
 
         # Get output files 
-        feature_path = os.path.join(output_dir, 'tagged_detections.gpkg')
-        layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
+        layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
         written_files[feature_path] = layer_name
-        layer_name = 'tagged_detections_' + method + '_thd_' + threshold_str
+        layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
+        written_files[feature_path] = layer_name
+
+        logger.info("    - Global metrics")
+        if METHOD=='charges':
+            TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
+        elif METHOD=='fusion':
+            TP = tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0]
+            FP = tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0]
+            FN = tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0]
+        metrics_results = metrics.get_metrics(TP, FP, FN)
+        metrics_df = pd.DataFrame(metrics_results, index=[0])
 
         if additional_metrics:
             logger.info("    - Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
-                TP, FP, FN = metrics.get_count(
-                    tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
-                    tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
-                )
+                if METHOD=='charges':
+                    TP, FP, FN = metrics.get_count(
+                        tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
+                        tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
+                    )
+                elif METHOD=='fusion':
+                    subset_gdf=tagged_final_gdf[tagged_final_gdf.EGID == egid]
+                    TP = subset_gdf[subset_gdf.tag == 'TP'].shape[0]
+                    FP = subset_gdf[subset_gdf.tag == 'FP'].shape[0]
+                    FN = subset_gdf[subset_gdf.tag == 'FN'].shape[0]
+                
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
                 metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
@@ -243,37 +273,36 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
             logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
 
-        # Control the number of labels
+        # Check if detection or labels have been lost in the process
         nbr_tagged_labels = TP + FN
-        diff_in_labels = nbr_labels - nbr_tagged_labels
-        filename=os.path.join(output_dir, 'problematic_objects.gpkg')
+        labels_diff = nbr_labels - nbr_tagged_labels
+        filename = os.path.join(output_dir, 'problematic_objects.gpkg')
         if os.path.exists(filename):
             os.remove(filename)
-        if diff_in_labels != 0:
+        if labels_diff != 0:
             logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-            logger.info(f'The list of the problematic labels in exported to {filename}.')
+            logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-            if diff_in_labels > 0:
-                tagged_labels=tp_gdf['ID_GT'].unique().tolist() + fn_gdf['ID_GT'].unique().tolist()
+            if labels_diff > 0:
+                tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
-                untagged_gt_gdf=labels_gdf[~labels_gdf['ID_GT'].isin(tagged_labels)].copy()
-                untagged_gt_gdf.drop(columns=['label_geometry', 'OBSTACLE'], inplace=True)
+                untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+                untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
 
-                layer_name='missing_label_tags'
-                untagged_gt_gdf.to_file(filename, layer=layer_name, index=False)
+                layer_name = 'missing_label_tags'
+                untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-            elif diff_in_labels < 0:
+            elif labels_diff < 0:
                 all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
-                duplicated_id_gt=all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['ID_GT']), 'ID_GT'].unique().tolist()
-                duplicated_labels=all_tagged_labels_gdf[all_tagged_labels_gdf['ID_GT'].isin(duplicated_id_gt)].copy()
+                duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+                duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
                 duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
-                layer_name='duplicated_label_tags'
+                layer_name = 'duplicated_label_tags'
                 duplicated_labels.to_file(filename, layer=layer_name, index=False)
-        
-            written_files[filename]=layer_name
-
+                
+            written_files[filename] = layer_name
 
         # Set the final dataframe with tagged prediction
         tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])

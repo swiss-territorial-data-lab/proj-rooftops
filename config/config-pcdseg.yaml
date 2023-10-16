@@ -5,7 +5,7 @@ prepare_data.py:
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs.csv
+    egids: EGIDs_full_GT.csv
   output_dir: processed/PCD_segmentation
   filters:
     building_type: 'all'
@@ -33,7 +33,7 @@ pcd_segmentation.py:
     clusters:
       eps: 0.59
       min_points: 20
-  visualisation: True
+  visualisation: False
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
@@ -46,7 +46,7 @@ vectorization.py:
     min: 18        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
     max: 42       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
-  visualisation: True
+  visualisation: False
 
 # 4 - Evaluate the results
 assess_results.py: 
@@ -55,8 +55,8 @@ assess_results.py:
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   ground_truth: ground_truth/objects_on_roofs.shp
   roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs.csv
-  method: many-to-many
+  egids: EGIDs_full_GT.csv
+  method: fusion
   threshold: 0.1
   additional_metrics: False
   visualisation: False

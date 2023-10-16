@@ -79,8 +79,8 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         # Conversion of numpy array to Open3D format + visualisation
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(array_pts)
-        if visu:
-            o3d.visualization.draw_geometries([pcd])
+        # if visu:
+        #     o3d.visualization.draw_geometries([pcd])
 
         # Point cloud plane segmentation  
 
@@ -93,7 +93,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
 
         if not number_planes_ini:
-            number_planes = int(egid_info.nbr_elements)
+            number_planes = int(egid_info.nbr_elemen)
 
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
@@ -132,6 +132,8 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             if len(remaining_pts.points)<=ransac:
                 break
 
+        number_planes = i
+
         # Cluster remaining points (not belonging to a plane) of the pcd after plane segmentation
         labels = np.array(remaining_pts.cluster_dbscan(eps = eps_clusters, min_points = min_points_clusters))
         if labels.size == 0:
@@ -160,6 +162,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius = 0.5, max_nn = 16), fast_normal_computation = True)
             pcd.paint_uniform_color([0.6, 0.6, 0.6])
             o3d.visualization.draw_geometries([segments[i] for i in range(number_planes)] + [remaining_pts])
+            print()
 
     return written_files
 
@@ -200,10 +203,10 @@ if __name__ == "__main__":
 
     VISU = cfg['visualisation']
 
-    written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
-         EGIDS, 
-         DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
+    written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, 
+        DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
         #  NB_PLANES, 
+        visu=VISU
          )
     
     print()

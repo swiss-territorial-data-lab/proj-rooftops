@@ -1,10 +1,10 @@
 # Folders/Files
-tests/*
-output/*
-data/*
-model/*
-WBT/*
-input/*
+tests/
+output/
+data/
+model/
+WBT/
+input/
 scripts/plots.py
 **/*/test*.ipynb
 

@@ -96,6 +96,8 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
     if os.path.exists(desired_file):
         logger.info(f"File {name}_{attribute}.shp already exists")
         gdf = gpd.read_file(desired_file)
+        return gdf
+    
     else:
         logger.info(f"File {name}_{attribute}.shp does not exist")
         logger.info(f"Create it")
@@ -115,7 +117,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         dissolved_gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
 
-    return dissolved_gdf
+        return dissolved_gdf
 
 
 def distance_shape(geom1, geom2):
