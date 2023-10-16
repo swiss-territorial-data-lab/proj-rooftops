@@ -77,7 +77,7 @@ def objective(trial):
 
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
-    iou = metrics_df['iou'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    iou = metrics_df['IoU'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
     return f1, iou
 
@@ -181,13 +181,17 @@ if __name__ == "__main__":
         study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameters optimization') 
     study.optimize(objective, n_trials=N_TRIALS)
 
+    study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
+    joblib.dump(study, study_path)
+    written_files.append(study_path)
+
     targets = {0: 'f1 score', 1: 'average IoU'}
 
     logger.info('Plot results')
     written_files.extend(opti.plot_optimization_results(study, targets, output_plots))
 
     logger.info('Save the best hyperparameters')
-    written_files.append(opti.save_best_hyperparameters(study, targets, OUTPUT_DIR))
+    written_files.append(opti.save_best_hyperparameters(study, targets, output_plots))
 
     print()
     logger.info("The following files were written. Let's check them out!")

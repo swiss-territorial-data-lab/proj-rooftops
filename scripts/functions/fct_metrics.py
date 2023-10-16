@@ -384,23 +384,42 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         geom2 = dets[dets['geohash'].isin(group)].geometry.values.tolist()
         geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
 
+        keep_geohash1 = []
+        keep_geohash2 = [] 
+        for (i, ii) in zip(geom1, geohash1):
         # Filter detection based on intersection/overlap fraction threshold with the GT 
-        for (i, ii) in zip(geom2, geohash2):
-             
-            polygon1_shape = unary_union(geom1)
-            polygon2_shape = i
-            
-            intersection = polygon1_shape.intersection(polygon2_shape).area
-            # % of overlap of GT and detection shape
-            if intersection / polygon2_shape.area <= threshold:
-                group.remove(ii)
-                charges_dict = {
-                    **charges_dict,
-                    ii: {
-                    'FP_charge': Fraction(1, 1),
-                    'TP_charge': Fraction(0, 1)
-                    }
+            for (iii, iv) in zip(geom2, geohash2):
+                
+                polygon1_shape = i
+                polygon2_shape = iii
+                
+                intersection = polygon1_shape.intersection(polygon2_shape).area
+                # % of overlap of GT and detection shape
+                if intersection / polygon2_shape.area >= threshold:
+                    keep_geohash1.append(ii)
+                    keep_geohash2.append(iv)
+
+        remove_geohash1 = [x for x in geohash1 if x not in np.unique(keep_geohash1).astype(str)]
+        remove_geohash2 = [x for x in geohash2 if x not in np.unique(keep_geohash2).astype(str)]
+        
+        for i in remove_geohash1:
+            group.remove(i)
+            charges_dict = {
+                **charges_dict,
+                i: {
+                'FN_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
                 }
+            }
+        for i in remove_geohash2:
+            group.remove(i)
+            charges_dict = {
+                **charges_dict,
+                i: {
+                'FP_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
+                }
+            }
         
         group_assessment = assess_group(group)
         this_group_charges_dict = {}

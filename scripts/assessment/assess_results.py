@@ -321,6 +321,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_
             tagged_dets_gdf = pd.concat([unique_dets_gdf, dissolve_dets_gdf]).reset_index(drop=True)
 
     
+    
             tagged_final_gdf = pd.concat([tagged_gt_gdf[tagged_gt_gdf.TP_charge == 1],
                                         tagged_dets_gdf[tagged_dets_gdf.FP_charge == 1], 
                                         tagged_gt_gdf[tagged_gt_gdf.FN_charge == 1]
