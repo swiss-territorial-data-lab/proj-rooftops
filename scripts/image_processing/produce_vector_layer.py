@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 import re
 import geopandas as gpd
+import pandas as pd
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -22,7 +23,7 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
+def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
 
     os.chdir(WORKING_DIR)
 
@@ -33,8 +34,23 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
 
     written_files = []
 
+    # Get the EGIDS of interest
+    logger.info("- List of selected EGID")
+    egids = pd.read_csv(EGIDS)
+
     # Get the rooftops shapes
-    roofs = gpd.read_file(ROOFS)
+    logger.info("- Roofs shapes")
+    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
+    attribute = 'EGID'
+    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
+    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    
+    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+
+    logger.info(f"  Number of building to process: {len(roofs_gdf)}")
+
 
     # Read all the shapefile produced, filter them with rooftop extension and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
@@ -47,19 +63,33 @@ def main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS):
 
         # Set CRS
         objects.crs = SRS
-        object_shp = objects.dissolve('value', as_index=False) 
+
+        # object_shp = objects.explode(index_parts=True)
+        object_shp = objects
+        object_shp['area_shp'] = object_shp.area 
+        object_shp['geometry_shp'] = object_shp.geometry
         # object_shp = objects.dissolve('mask_value', as_index=False)
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
 
         egid_shp = roofs[roofs['EGID'] == egid]
-        egid_shp.buffer(0)
-        # egid_shp.geometry = egid_shp.geometry.buffer(1)
+        # egid_shp = egid_shp.explode(index_parts=True)
+        egid_shp['area_roof'] = egid_shp.area
+        egid_shp['geometry_roof'] = egid_shp.geometry
+        egid_shp.geometry = egid_shp.geometry.buffer(1.0)
 
         misc.test_crs(object_shp, egid_shp)
 
-        selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
-        selection['area'] = selection.area 
-        final_gdf = selection.drop(['index_right'], axis=1)
+        object_selection = object_shp.sjoin(egid_shp, how='inner', predicate="within")
+
+        object_selection['intersection_frac'] = object_selection['geometry_roof'].intersection(object_selection['geometry_shp']).area / object_selection['area_shp']
+        object_filtered = object_selection[(object_selection['area_shp'] >= 0.1) &
+                                            (object_selection['area_shp'] <= 0.8 * object_selection['area_roof']) &
+                                            (object_selection['intersection_frac'] >= 0.5)]
+
+        
+        object_filtered['area'] = object_filtered.area 
+        final_gdf = object_filtered.drop(['geometry_shp', 'geometry_roof'], axis=1)
+        final_gdf = gpd.clip(final_gdf, egid_shp)
         
         # Merge/Combine multiple shapefiles into one gdf
         vector_layer = gpd.pd.concat([vector_layer, final_gdf], ignore_index=True)
@@ -103,12 +133,13 @@ if __name__ == "__main__":
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
     # detection_dir = cfg['detection_dir']
+    EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
 
-    main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
+    main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
 
     # Stop chronometer  
     toc = time.time()
