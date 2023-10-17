@@ -445,30 +445,58 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     groups = make_groups()
 
     for group in groups:
-        geom1 = gt[gt['geohash'].isin(group)].geometry.values.tolist()
-        geohash1 = gt[gt['geohash'].isin(group)].geohash.values.tolist()        
-        geom2 = dets[dets['geohash'].isin(group)].geometry.values.tolist()
-        geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
+        all_geoms_gt = gt[gt['geohash'].isin(group)].geometry.values.tolist()
+        all_geohashes_gt = gt[gt['geohash'].isin(group)].geohash.values.tolist()        
+        all_geoms_dets = dets[dets['geohash'].isin(group)].geometry.values.tolist()
+        all_geohashes_dets = dets[dets['geohash'].isin(group)].geohash.values.tolist()
 
         # filter detections and labels based on intersection area fraction
-        keep_geohash1 = []
-        keep_geohash2 = [] 
-        for (i, ii) in zip(geom1, geohash1):
-            for (iii, iv) in zip(geom2, geohash2):
-                polygon1_shape = i
-                polygon2_shape = iii
-                intersection = polygon1_shape.intersection(polygon2_shape).area
-                # keep element if intersection overlap % of GT and detection shape is >= THD
-                if intersection / polygon2_shape.area >= threshold:
-                    keep_geohash1.append(ii)
-                    keep_geohash2.append(iv)
+        keep_geohashes_gt = []
+        keep_geohashes_dets = [] 
+        # for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
+        #     for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+        #         polygon_gt_shape = geom_gt
+        #         polygon_det_shape = geom_det
+        #         if polygon_gt_shape.intersect(polygon_det_shape):
+        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+        #         else:
+        #             continue
+        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+        #         if intersection / polygon_det_shape.area >= threshold:
+        #             keep_geohashes_gt.append(geohash_gt)
+        #             keep_geohashes_dets.append(geohash_det)
+
+        
+        for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+            for geom_gt in all_geoms_gt:
+                polygon_gt_shape = geom_gt
+                polygon_det_shape = geom_det
+                if polygon_gt_shape.intersects(polygon_det_shape):
+                    intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+                else:
+                    continue
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+                if intersection / polygon_det_shape.area >= threshold:
+                    keep_geohashes_dets.append(geohash_det)
+
+        for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
+            for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+                polygon_gt_shape = geom_gt
+                polygon_det_shape = geom_det
+                if polygon_gt_shape.intersects(polygon_det_shape):
+                    intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+                else:
+                    continue
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+                if intersection / polygon_det_shape.area >= threshold or ((geohash_det in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.9)):
+                    keep_geohashes_gt.append(geohash_gt)
 
         # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
-        remove_geohash1 = [x for x in geohash1 if x not in np.unique(keep_geohash1).astype(str)]
-        remove_geohash2 = [x for x in geohash2 if x not in np.unique(keep_geohash2).astype(str)]
+        remove_geohashes_gt = [x for x in all_geohashes_gt if x not in np.unique(keep_geohashes_gt).astype(str)]
+        remove_geohashes_dets = [x for x in all_geohashes_dets if x not in np.unique(keep_geohashes_dets).astype(str)]
         
         # remove elements from the labels and detections list and attribute TP, FP and FN charges 
-        for i in remove_geohash1:
+        for i in remove_geohashes_gt:
             group.remove(i)
             charges_dict = {
                 **charges_dict,
@@ -477,7 +505,7 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                 'TP_charge': Fraction(0, 1)
                 }
             }
-        for i in remove_geohash2:
+        for i in remove_geohashes_dets:
             group.remove(i)
             charges_dict = {
                 **charges_dict,
