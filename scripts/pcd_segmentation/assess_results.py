@@ -128,15 +128,15 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     # Detections count
     logger.info(f"Method used for detections counting:")
     methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
-    if METHOD in methods_list:
-        logger.info(f'Using the {METHOD} method')
+    if method in methods_list:
+        logger.info(f'Using the {method} method')
     else:
         logger.warning('    unknown method, default method = one-to-one.')
 
 
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
-    if METHOD == 'charges' or METHOD == 'fusion':
+    if method == 'charges' or method == 'fusion':
 
         logger.info("Geohash the labels and detections to use them in graphs...")
         GT_PREFIX= 'gt_'
@@ -152,10 +152,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"     - Compute TP, FP and FN")
 
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                     buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=METHOD)
+                                                     buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=method)
         feature_path = os.path.join(output_dir, 'tags.gpkg')
         
-        if METHOD=='fusion':
+        if method=='fusion':
             tagged_final_gdf = pd.concat([tagged_dets_gdf, 
                                         tagged_gt_gdf[tagged_gt_gdf.FN_charge == 1]
                                         ]).reset_index(drop=True)
@@ -168,22 +168,22 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                                                         'descr', 'area', 'nearest_distance_centroid', 'nearest_distance_border', 
                                                         'group_id', 'TP_charge', 'FN_charge', 'FP_charge', 'tag', 'geometry'])
             
-            layer_name = 'tagged_final_' + METHOD + '_thd_' + threshold_str
+            layer_name = 'tagged_final_' + method + '_thd_' + threshold_str
             tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
             written_files[feature_path] = layer_name
 
         # Get output files 
-        layer_name = 'tagged_labels_' + METHOD + '_thd_' + threshold_str
+        layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
         written_files[feature_path] = layer_name
-        layer_name = 'tagged_detections_' + METHOD + '_thd_' + threshold_str
+        layer_name = 'tagged_detections_' + method + '_thd_' + threshold_str
         tagged_dets_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
         written_files[feature_path] = layer_name
 
         logger.info("    - Global metrics")
-        if METHOD=='charges':
+        if method=='charges':
             TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
-        elif METHOD=='fusion':
+        elif method=='fusion':
             TP = tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0]
             FP = tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0]
             FN = tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0]
@@ -193,12 +193,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         if additional_metrics:
             logger.info("    - Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
-                if METHOD=='charges':
+                if method=='charges':
                     TP, FP, FN = metrics.get_count(
                         tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
                         tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
                     )
-                elif METHOD=='fusion':
+                elif method=='fusion':
                     subset_gdf=tagged_final_gdf[tagged_final_gdf.EGID == egid]
                     TP = subset_gdf[subset_gdf.tag == 'TP'].shape[0]
                     FP = subset_gdf[subset_gdf.tag == 'FP'].shape[0]
@@ -403,7 +403,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
         logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-        if labels_diff > 0 and METHOD != 'fusion':
+        if (labels_diff > 0) and (method != 'fusion'):
             tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
             untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
@@ -412,7 +412,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             layer_name = 'missing_label_tags'
             untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-        elif labels_diff < 0 and METHOD != 'fusion':
+        elif (labels_diff < 0 )and (method != 'fusion'):
             all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
