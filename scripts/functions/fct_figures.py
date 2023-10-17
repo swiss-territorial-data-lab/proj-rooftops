@@ -9,6 +9,9 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
     written_file = []
     fig = plt.figure(figsize =(12, 8))
 
+    df1 = df1.fillna(0)
+    df2 = df2.fillna(0)
+
     for i in attribute:
         bins=np.histogram(np.hstack((df1[i],df2[i])), bins=10)[1]
         df1[i].plot.hist(bins=bins, alpha=0.5, label='GT')

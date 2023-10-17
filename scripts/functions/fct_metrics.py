@@ -3,12 +3,12 @@ import os
 import sys
 from loguru import logger
 
-import networkx as nx
-import pandas as pd
 import geopandas as gpd
-from collections import OrderedDict
+import numpy as np
+import pandas as pd
+
+import networkx as nx
 from fractions import Fraction
-from shapely import unary_union
 from shapely.geometry import GeometryCollection
     
 
@@ -93,6 +93,37 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
     return tp_gdf, fp_gdf_temp
 
 
+def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[]})):
+    """Sum the TP, FP and FN charge for all the labels and detections
+
+    Args:
+        tagged_gt (gdf): geodataframe with TP and FP charges
+        tagged_dets (gdf): geodataframe with TP and FN charges
+
+    Returns:
+        TP, FP, FN (float): values of TP, FP and FN
+    """
+
+    assert 'TP_charge' in tagged_dets.columns.tolist()
+    assert 'TP_charge' in tagged_gt.columns.tolist()
+    assert 'FP_charge' in tagged_dets.columns.tolist()
+    assert 'FN_charge' in tagged_gt.columns.tolist()
+    
+    TP = float(tagged_dets.TP_charge.sum())
+    FP = float(tagged_dets.FP_charge.sum())
+
+    _TP = float(tagged_gt.TP_charge.sum()) # x-check
+    FN = float(tagged_gt.FN_charge.sum())
+
+    try:
+        assert _TP == TP, f"{_TP} != {TP}"
+    except AssertionError:
+        logger.error(f"{_TP} != {TP}")
+        sys.exit()
+
+    return TP, FP, FN
+
+
 def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold=0.1):
     """Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
     One prediction can either correspond to one (one-to-one) or several (one-to-many) labels.
@@ -171,27 +202,51 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
     return tp_gdf, fp_gdf, fn_gdf
 
 
-def get_metrics(TP, FP, FN):
-    """Determine the metrics precision, recall and f1-score based on the TP, FP and FN
+def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
+    """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
 
     Args:
-        TP (float): number of true positive detections
-        FP (float): number of false positive detections
-        FN (float): number of false negative labels
+        detections_gdf (geodataframe): geodataframe of the detections
+        labels_gdf (geodataframe): geodataframe of the ground truth
+        roofs_gdf (geodataframe): geodataframe of the roofs
+        attribute (string): attribute to dissolve by. Defaults to 'EGID'.
 
     Returns:
-        metrics_dic (dic): dictionary returning count + metrics
+        labels_free_gdf: geodataframes of all the labels merged by roof with the occupied and free surface area by roof
+        detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
     """
-        
-    precision = 0. if TP == 0.0 else TP / (TP + FP)
-    recall = 0. if TP == 0.0 else TP / (TP + FN)
-    f1 = 0. if precision == 0.0 or recall == 0.0 else 2 * precision * recall / (precision + recall)
 
-    metrics_dict = dict(TP=TP, FP=FP, FN=FN,
-                        precision=precision, recall=recall, f1=f1
-                        )
+    detections_by_attribute_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
+    labels_by_attribute_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
+    roofs_by_attribute_gdf = roofs_gdf.dissolve(by=attribute, as_index=False)
+    roofs_by_attribute_gdf['roof_area'] = roofs_by_attribute_gdf.area
 
-    return metrics_dict
+    # Add value to empty gdf
+    if detections_by_attribute_gdf['geometry'].empty:
+        keys_list = detections_by_attribute_gdf.to_dict()
+        dic = dict.fromkeys(keys_list, 0)
+        detections_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        detections_by_attribute_gdf['occupied_surface'] = 0
+        detections_by_attribute_gdf['EGID'] = labels_by_attribute_gdf['EGID']
+    else:
+        detections_by_attribute_gdf['occupied_surface'] = detections_by_attribute_gdf.area
+
+    if labels_by_attribute_gdf['geometry'].empty:
+        keys_list = labels_by_attribute_gdf.to_dict()
+        dic = dict.fromkeys(keys_list, 0)
+        labels_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        labels_by_attribute_gdf['occupied_surface'] = 0
+    else:
+        labels_by_attribute_gdf['occupied_surface'] = labels_by_attribute_gdf.area
+
+
+    detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
+
+    labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
+
+    return labels_with_area_gdf, detections_with_area_gdf
 
 
 def get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID'):
@@ -222,16 +277,40 @@ def get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID'):
 
     return labels_by_attr_gdf
 
-def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
+
+def get_metrics(TP, FP, FN):
+    """Determine the metrics precision, recall and f1-score based on the TP, FP and FN
+
+    Args:
+        TP (float): number of true positive detections
+        FP (float): number of false positive detections
+        FN (float): number of false negative labels
+
+    Returns:
+        metrics_dic (dic): dictionary returning count + metrics
+    """
+        
+    precision = 0. if TP == 0.0 else TP / (TP + FP)
+    recall = 0. if TP == 0.0 else TP / (TP + FN)
+    f1 = 0. if precision == 0.0 or recall == 0.0 else 2 * precision * recall / (precision + recall)
+
+    metrics_dict = dict(TP=TP, FP=FP, FN=FN,
+                        precision=precision, recall=recall, f1=f1
+                        )
+
+    return metrics_dict
+
+
+def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     """Tag labels and detections with "charges". 
-    This method preserves the label and detection numbers by not duplicating or omitting to count a label or detection.
+    This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
     A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
     cf https://tech.stdl.ch/PROJ-TREEDET/#24-post-processing-assessment-algorithm-and-metrics-computation for more information
 
     Args:
         gt (geodataframe): geodataframe of the detection with the id "detection_idection"
         dets (geodataframe): threshold to apply on the IoU to determine TP and FP
-        gt_buffer (float): buffer (in meter) applied to gt shape to avoid shape sharing border to be assigned to the same group if no common detection overlap them
+        buffer (float): buffer (in meter) applied to shapes to avoid them sharing border and being assigned to the same group without proper overlap
         gt_prefix (str): prefix used to identified labels groups 
         det_prefix (str): prefix used to identified detections groups 
 
@@ -330,8 +409,9 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
 
     # init
     _gt = gt.copy()
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
     _dets = dets.copy()
-    _gt['geometry'] = _gt.geometry.buffer(gt_buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
 
     charges_dict = {}
 
@@ -370,44 +450,76 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
         geom2 = dets[dets['geohash'].isin(group)].geometry.values.tolist()
         geohash2 = dets[dets['geohash'].isin(group)].geohash.values.tolist()
 
-        # Filter detection based on intersection/overlap fraction threshold with the GT 
-        for (i, ii) in zip(geom2, geohash2):
-             
-            polygon1_shape = unary_union(geom1)
-            polygon2_shape = i
-            
-            intersection = polygon1_shape.intersection(polygon2_shape).area
-            # % of overlap of GT and detection shape
-            if intersection / polygon2_shape.area <= threshold:
-                group.remove(ii)
-                charges_dict = {
-                    **charges_dict,
-                    ii: {
-                    'FP_charge': Fraction(1, 1),
-                    'TP_charge': Fraction(0, 1)
-                    }
-                }
+        # filter detections and labels based on intersection area fraction
+        keep_geohash1 = []
+        keep_geohash2 = [] 
+        for (i, ii) in zip(geom1, geohash1):
+            for (iii, iv) in zip(geom2, geohash2):
+                polygon1_shape = i
+                polygon2_shape = iii
+                intersection = polygon1_shape.intersection(polygon2_shape).area
+                # keep element if intersection overlap % of GT and detection shape is >= THD
+                if intersection / polygon2_shape.area >= threshold:
+                    keep_geohash1.append(ii)
+                    keep_geohash2.append(iv)
 
+        # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
+        remove_geohash1 = [x for x in geohash1 if x not in np.unique(keep_geohash1).astype(str)]
+        remove_geohash2 = [x for x in geohash2 if x not in np.unique(keep_geohash2).astype(str)]
+        
+        # remove elements from the labels and detections list and attribute TP, FP and FN charges 
+        for i in remove_geohash1:
+            group.remove(i)
+            charges_dict = {
+                **charges_dict,
+                i: {
+                'FN_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
+                }
+            }
+        for i in remove_geohash2:
+            group.remove(i)
+            charges_dict = {
+                **charges_dict,
+                i: {
+                'FP_charge': Fraction(1, 1),
+                'TP_charge': Fraction(0, 1)
+                }
+            }
+        
+        # attriute TP, FP and FN charges of remaining elements
         group_assessment = assess_group(group)
         this_group_charges_dict = {}
-
+        
         for el in group:
             if el.startswith(dets_prefix):
-                this_group_charges_dict[el] = {
-                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
-                    'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])      
-                }
-        
+                if method == 'charges':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
+                        'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])
+                        }
+                else:
+                    this_group_charges_dict[el] = {
+                        'TP_charge': group_assessment['cnt_gt'],
+                        'FP_charge': 0
+                        }        
             if el.startswith(gt_prefix):
-                this_group_charges_dict[el] = {
-                    'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
-                    'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
-                }
+                if method == 'charges':
+                    this_group_charges_dict[el] = {
+                        'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_gt']),
+                        'FN_charge': Fraction(group_assessment['FN_charge'], group_assessment['cnt_gt'])
+                        }
+                else:
+                    this_group_charges_dict[el] = {
+                        'TP_charge': 1, 
+                        'FN_charge': 0
+                        }  
         
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(-gt_buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
@@ -415,81 +527,12 @@ def tag(gt, dets, gt_buffer, gt_prefix, dets_prefix, threshold):
     _gt = _gt.apply(lambda row: assign_charges(row), axis=1)
     _dets = _dets.apply(lambda row: assign_charges(row), axis=1)
 
-    return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
+    if method == 'fusion':
+        unique_dets_gdf = _dets[_dets['group_id'].isna()] 
+        dissolved_dets_gdf = _dets.dissolve(by='group_id', as_index=False)
+        fused_dets_gdf = pd.concat([unique_dets_gdf, dissolved_dets_gdf]).reset_index(drop=True)
 
+        return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], fused_dets_gdf[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
 
-def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
-    """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
-
-    Args:
-        detections_gdf (geodataframe): geodataframe of the detections
-        labels_gdf (geodataframe): geodataframe of the ground truth
-        roofs_gdf (geodataframe): geodataframe of the roofs
-        attribute (string): attribute to dissolve by. Defaults to 'EGID'.
-
-    Returns:
-        labels_free_gdf: geodataframes of all the labels merged by roof with the occupied and free surface area by roof
-        detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
-    """
-
-    detections_by_attribute_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
-    labels_by_attribute_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
-    roofs_by_attribute_gdf = roofs_gdf.dissolve(by=attribute, as_index=False)
-    roofs_by_attribute_gdf['roof_area'] = roofs_by_attribute_gdf.area
-
-    # Add value to empty gdf
-    if detections_by_attribute_gdf['geometry'].empty:
-        keys_list = detections_by_attribute_gdf.to_dict()
-        dic = dict.fromkeys(keys_list, 0)
-        detections_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        detections_by_attribute_gdf['occupied_surface'] = 0
-        detections_by_attribute_gdf['EGID'] = labels_by_attribute_gdf['EGID']
     else:
-        detections_by_attribute_gdf['occupied_surface'] = detections_by_attribute_gdf.area
-
-    if labels_by_attribute_gdf['geometry'].empty:
-        keys_list = labels_by_attribute_gdf.to_dict()
-        dic = dict.fromkeys(keys_list, 0)
-        labels_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        labels_by_attribute_gdf['occupied_surface'] = 0
-    else:
-        labels_by_attribute_gdf['occupied_surface'] = labels_by_attribute_gdf.area
-
-
-    detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
-
-    labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
-
-    return labels_with_area_gdf, detections_with_area_gdf
-
-def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[]})):
-    """Sum the TP, FP and FN charge for all the labels and detections
-
-    Args:
-        tagged_gt (gdf): geodataframe with TP and FP charges
-        tagged_dets (gdf): geodataframe with TP and FN charges
-
-    Returns:
-        TP, FP, FN (float): values of TP, FP and FN
-    """
-
-    assert 'TP_charge' in tagged_dets.columns.tolist()
-    assert 'TP_charge' in tagged_gt.columns.tolist()
-    assert 'FP_charge' in tagged_dets.columns.tolist()
-    assert 'FN_charge' in tagged_gt.columns.tolist()
-    
-    TP = float(tagged_dets.TP_charge.sum())
-    FP = float(tagged_dets.FP_charge.sum())
-
-    _TP = float(tagged_gt.TP_charge.sum()) # x-check
-    FN = float(tagged_gt.FN_charge.sum())
-
-    try:
-        assert _TP == TP, f"{_TP} != {TP}"
-    except AssertionError:
-        logger.error(f"{_TP} != {TP}")
-        sys.exit()
-
-    return TP, FP, FN
+        return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]

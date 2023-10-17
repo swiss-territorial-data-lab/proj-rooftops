@@ -102,7 +102,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     else:
         detections_gdf['ID_DET'] = detections_gdf.index
     detections_gdf=detections_gdf.explode(index_part=False)
-    # detections_gdf.drop(columns=['level_0', 'level_1', 'TP_charge', 'FN_charge', 'geohash', 'area_DET', 'nearest_distance_centroid','nearest_distance_border', 'group_id',], inplace=True)
     logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
 
     if (len(object_parameters) > 0) and additional_metrics and roofs:
@@ -153,15 +152,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"     - Compute TP, FP and FN")
 
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                     gt_buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold)
+                                                     buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=METHOD)
         feature_path = os.path.join(output_dir, 'tags.gpkg')
         
         if METHOD=='fusion':
-            unique_dets_gdf = tagged_dets_gdf[tagged_dets_gdf['group_id'].isna()] 
-            dissolved_dets_gdf = tagged_dets_gdf.dissolve(by='group_id', aggfunc='sum', as_index=False)
-            fused_dets_gdf = pd.concat([unique_dets_gdf, dissolved_dets_gdf]).reset_index(drop=True)
-    
-            tagged_final_gdf = pd.concat([fused_dets_gdf, 
+            tagged_final_gdf = pd.concat([tagged_dets_gdf, 
                                         tagged_gt_gdf[tagged_gt_gdf.FN_charge == 1]
                                         ]).reset_index(drop=True)
 
@@ -272,37 +267,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             tp_gdf=dissolved_tp_gdf.copy()
 
             logger.info(f'{tp_with_duplicates.shape[0]-tp_gdf.shape[0]} labels are under a shared predictions with at least one other label.')
-
-        # Check if detection or labels have been lost in the process
-        nbr_tagged_labels = TP + FN
-        labels_diff = nbr_labels - nbr_tagged_labels
-        filename = os.path.join(output_dir, 'problematic_objects.gpkg')
-        if os.path.exists(filename):
-            os.remove(filename)
-        if labels_diff != 0:
-            logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
-            logger.info(f'The list of the problematic labels is exported to {filename}.')
-
-            if labels_diff > 0:
-                tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
-
-                untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
-                untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
-
-                layer_name = 'missing_label_tags'
-                untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
-
-            elif labels_diff < 0:
-                all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
-
-                duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-                duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
-                duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
-
-                layer_name = 'duplicated_label_tags'
-                duplicated_labels.to_file(filename, layer=layer_name, index=False)
-                
-            written_files[filename] = layer_name
 
         # Set the final dataframe with tagged prediction
         tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
@@ -428,6 +392,38 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
     logger.info(f"average IoU for all EGIDs = {iou:.2f}")
     print()
+
+    # Check if detection or labels have been lost in the process
+    nbr_tagged_labels = TP + FN
+    labels_diff = nbr_labels - nbr_tagged_labels
+    filename = os.path.join(output_dir, 'problematic_objects.gpkg')
+    if os.path.exists(filename):
+        os.remove(filename)
+    if labels_diff != 0:
+        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+        logger.info(f'The list of the problematic labels is exported to {filename}.')
+
+        if labels_diff > 0 and METHOD != 'fusion':
+            tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
+
+            untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+            untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
+
+            layer_name = 'missing_label_tags'
+            untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
+
+        elif labels_diff < 0 and METHOD != 'fusion':
+            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+
+            duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+            duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+
+            layer_name = 'duplicated_label_tags'
+            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+            
+        written_files[filename] = layer_name
+
 
     if visualisation and additional_metrics:
         # Plots
