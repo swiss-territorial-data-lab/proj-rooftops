@@ -73,7 +73,7 @@ def objective(trial):
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
     produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
-    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, INT_THD, IOU_THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
 
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
@@ -112,8 +112,7 @@ if __name__ == "__main__":
     SHP_EXT = cfg['vector_extension']
     SRS = cfg['srs']
     METHOD = cfg['method']
-    INT_THD = cfg['filters']['interaction_threshold']
-    IOU_THD = cfg['filters']['iou_threshold']
+    THD = cfg['filters']['threshold']
     AREA_THD_FACTOR = cfg['filters']['area_threshold_factor']
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges'] 

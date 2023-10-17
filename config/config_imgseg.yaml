@@ -68,11 +68,10 @@ optimize_hyperparameters.py:
   srs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   filters:
-    interaction_threshold: 0.1 # Threshold value to consider that a detection overlaps a label
-    iou_threshold: 0.1 # Threshold value to consider that a detection match a label
+    threshold: 0.1 # Threshold value to consider that a detection overlaps a label
     area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
   object_attributes:
-    parameters: ['area', 'nearest_distance_centroid', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
   image_crop: # Activate the option to crop the input image according to pixel coordinates
