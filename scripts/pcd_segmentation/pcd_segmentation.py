@@ -111,7 +111,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
             elif len(candidates)==1:
                 best_candidate=candidates.iloc[0,0]
             else:
-                best_candidate = int(candidates.loc[candidates.value_count==candidates.value_count.max(), 'value'])
+                best_candidate = int(candidates.loc[candidates.value_count==candidates.value_count.max(), 'value'].iloc[0])
             logger.info(f"   - The best candidate is: {best_candidate}")
             
             # Select the remaining points in the pcd to find a new plane
