@@ -68,7 +68,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_shp.crs = CRS
         objects_shp['area_shp'] = objects_shp.area 
         objects_shp['geometry_shp'] = objects_shp.geometry
-        objects_shp['geometry_noholes_shp'] = objects_shp.apply(fillit, axis=1)
+        objects_shp['geometry_noholes_shp'] = objects_shp.apply(misc.fillit, axis=1)
         objects_shp['area_noholes_shp'] = objects_shp.geometry_noholes_shp.area 
 
         # Prepare roofs shp
@@ -81,14 +81,11 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
         misc.test_crs(objects_shp, egid_shp)
 
-        # multi_polygon = loads()
-        # no_holes = MultiPolygon(Polygon(geom.exterior) for geom in multi_polygon.geoms)
-
         # Filter vectorised objects. Threshold values have been set
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.1) &
-                                            (objects_selection['area_shp'] <= 0.8 * objects_selection['area_roof']) &
+                                            (objects_selection['area_noholes_shp'] <= 0.8 * objects_selection['area_roof']) &
                                             (objects_selection['intersection_frac'] >= 0.5)]
 
         objects_filtered['area'] = objects_filtered.area 
@@ -105,7 +102,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     #     vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
     # written_files.append(feature_path)  
     # logger.info(f"...done. A file was written: {feature_path}")
-    print(vector_layer)
+
     # Save the vectors layer in a gpkg 
     vector_layer['fid'] = vector_layer.index
     feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
