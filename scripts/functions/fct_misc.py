@@ -8,7 +8,6 @@ import pandas as pd
 import pygeohash as pgh
 
 from shapely.geometry import Polygon
-from functools import reduce
 from rasterio.windows import Window
 
 
@@ -33,8 +32,6 @@ def format_logger(logger):
             level="ERROR")
 
     return logger
-    
-logger = format_logger(logger)
 
 
 def add_geohash(gdf, prefix=None, suffix=None):
@@ -82,43 +79,6 @@ def bbox(bounds):
                     [minx, maxy]])
 
 
-def crop(source, size, output):
-    """Crop raster
-
-    Args:
-        source (str): path to the raster
-        size (array): array(x1, x2, y1, y2) of cropping rectangle coordinates
-        output (str): path to the cropped raster
-
-    Returns:
-        file_path (str): path to the saved cropped raster
-    """
-
-    with rasterio.open(source) as src:
-
-        # The size in pixels of the desired window
-        x1, x2, y1, y2 = size[0], size[1], size[2], size[3]
-
-        # Create a Window and calculate the transform from the source dataset    
-        window = Window(x1, y1, x2, y2)
-        transform = src.window_transform(window)
-
-        # Create a new cropped raster to write to
-        profile = src.profile
-        profile.update({
-            'height': x2 - x1,
-            'width': y2 - y1,
-            'transform': transform})
-
-        file_path = os.path.join(ensure_dir_exists(os.path.join(output, 'crop')),
-                                 source.split('/')[-1].split('.')[0] + '_crop.tif')   
-
-        with rasterio.open(file_path, 'w', **profile) as dst:
-            # Read the data from the window and write it to the output raster
-            dst.write(src.read(window=window))  
-
-        return file_path
-
 
 def dissolve_by_attribute(desired_file, original_file, name, attribute):
     """Dissolve shape according to a given attribute in the gdf
@@ -136,18 +96,28 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
     if os.path.exists(desired_file):
         logger.info(f"File {name}_{attribute}.shp already exists")
         gdf = gpd.read_file(desired_file)
+        return gdf
+    
     else:
         logger.info(f"File {name}_{attribute}.shp does not exist")
         logger.info(f"Create it")
         gdf = gpd.read_file(original_file)
+
         logger.info(f"Dissolved shapes by {attribute}")
-        gdf['geometry'] = gdf['geometry'].buffer(0.0001)   # apply a buffer to prevent thin polygons due to polyons gaps   
-        gdf = gdf.dissolve(attribute, as_index=False)
-        gdf['geometry'] = gdf['geometry'].buffer(-0.0001)   # apply a buffer to prevent thin polygons due to polyons gaps   
-        gdf.to_file(desired_file)
+        gdf['geometry'] = gdf['geometry'].buffer(0.001)   # apply a buffer to prevent thin spaces due to polyons gaps   
+        dissolved_gdf = gdf.dissolve(attribute, as_index=False)
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.001)   
+
+        gdf_considered_sections=gdf[gdf.area > 2].copy()
+        attribute_count=gdf_considered_sections.EGID.value_counts()
+        dissolved_gdf=dissolved_gdf.join(attribute_count, on=attribute)
+        dissolved_gdf.rename(columns={'count': 'nbr_elements'}, inplace=True)
+        dissolved_gdf=dissolved_gdf[~dissolved_gdf.nbr_elements.isna()].reset_index()
+
+        dissolved_gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
 
-    return gdf
+        return dissolved_gdf
 
 
 def distance_shape(geom1, geom2):
@@ -242,29 +212,6 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
-def fillit(row):
-    """A function to fill holes below an area threshold in a polygon
-
-    Args
-        row: gdf row
-
-    Return
-        new geometry without holes
-    """
-
-    newgeom=None
-    rings = [i for i in row["geometry"].interiors] #List all interior rings
-    if len(rings) > 0: # If there are any rings
-        # to_fill = [Polygon(ring) for ring in rings if Polygon(ring).area<sizelim] #List the ones to fill
-        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
-        if len(to_fill) > 0: # If there are any to fill
-            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2), [row["geometry"]] + to_fill) # Union the original geometry with all holes
-    if newgeom:
-        return newgeom
-    else:
-        return row["geometry"]
-
-
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     """Prepare the geometries of two gdf to be processed (compute nearest distance between two shapes)
 
@@ -314,3 +261,6 @@ def test_crs(crs1, crs2="EPSG:2056"):
     except AssertionError:
         logger.error(f"CRS mismatch between the two files ({crs1} vs {crs2}")
         sys.exit()
+
+
+logger = format_logger(logger)
