@@ -8,6 +8,7 @@ import pandas as pd
 import pygeohash as pgh
 
 from shapely.geometry import Polygon
+from functools import reduce
 from rasterio.windows import Window
 
 
@@ -239,6 +240,29 @@ def ensure_dir_exists(dirpath):
         logger.info(f"The directory {dirpath} was created.")
     
     return dirpath
+
+
+def fillit(row):
+    """A function to fill holes below an area threshold in a polygon
+
+    Args
+        row: gdf row
+
+    Return
+        new geometry without holes
+    """
+
+    newgeom=None
+    rings = [i for i in row["geometry"].interiors] #List all interior rings
+    if len(rings) > 0: # If there are any rings
+        # to_fill = [Polygon(ring) for ring in rings if Polygon(ring).area<sizelim] #List the ones to fill
+        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
+        if len(to_fill) > 0: # If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2), [row["geometry"]] + to_fill) # Union the original geometry with all holes
+    if newgeom:
+        return newgeom
+    else:
+        return row["geometry"]
 
 
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
