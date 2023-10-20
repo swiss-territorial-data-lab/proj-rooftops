@@ -5,15 +5,15 @@ generate_tiles.py:
   tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
   egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles/test
+  output_dir: input/image_segmentation/tiles
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/test/
-  output_dir: output/image_segmentation/test/
+  image_dir:  input/image_segmentation/tiles
+  output_dir: output/image_segmentation
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: False
@@ -27,26 +27,27 @@ segment_images.py:
     unique: True
     mask_multiplier: 255
     custom_SAM: False
-    show_masks: False # Enable to show binary and annotated masks (save annotated mask) 
+    show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  detection_dir: output/image_segmentation/test/segmented_images/
+  detection_dir: output/image_segmentation/segmented_images/
   egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/test/
+  # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
+  output_dir: output/image_segmentation/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
-  srs: "EPSG:2056" # Projection of the input file
+  crs: "EPSG:2056" # Projection of the input file
 
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
-  detections: output/image_segmentation/test/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/test/assessment/
+  output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   filters:
     threshold: 0.1 # Threshold value to consider that a detection overlaps a label
