@@ -9,6 +9,7 @@ import pygeohash as pgh
 
 from shapely.geometry import Polygon
 from rasterio.windows import Window
+from functools import reduce
 
 
 def format_logger(logger):
@@ -104,9 +105,9 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf = gpd.read_file(original_file)
 
         logger.info(f"Dissolved shapes by {attribute}")
-        gdf['geometry'] = gdf['geometry'].buffer(0.001)   # apply a buffer to prevent thin spaces due to polyons gaps   
+        gdf['geometry'] = gdf['geometry'].buffer(0.05)   # apply a buffer to prevent thin spaces due to polyons gaps   
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
-        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.001)   
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.05)   
 
         gdf_considered_sections=gdf[gdf.area > 2].copy()
         attribute_count=gdf_considered_sections.EGID.value_counts()
@@ -264,3 +265,19 @@ def test_crs(crs1, crs2="EPSG:2056"):
 
 
 logger = format_logger(logger)
+
+
+
+
+def fillit(row):
+    """A function to fill holes below an area threshold in a polygon"""
+    newgeom=None
+    rings = [i for i in row["geometry"].interiors] #List all interior rings
+    if len(rings)>0: #If there are any rings
+        to_fill = [Polygon(ring) for ring in rings] #List the ones to fill
+        if len(to_fill)>0: #If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) #Union the original geometry with all holes
+    if newgeom:
+        return newgeom
+    else:
+        return row["geometry"]

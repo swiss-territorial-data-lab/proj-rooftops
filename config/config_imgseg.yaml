@@ -3,7 +3,7 @@ generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: input/image_segmentation/tiles
@@ -33,8 +33,8 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  detection_dir: output/image_segmentation/segmented_images/
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/
@@ -46,15 +46,14 @@ assess_results.py:
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
   visualisation: False
-  filters:
-    threshold: 0.1 # Threshold value to consider that a detection overlaps a label
-    area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
+  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
@@ -65,7 +64,7 @@ calculate_free_surface.py:
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
@@ -79,7 +78,7 @@ optimize_hyperparameters.py:
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/optimization/
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   srs: "EPSG:2056" # Projection of the input file 

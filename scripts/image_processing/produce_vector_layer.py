@@ -3,19 +3,19 @@
 
 #  proj-rooftops
 
-
+import argparse
 import os
+import re
 import sys
 import time
-import argparse
 import yaml
 from glob import glob
 from loguru import logger
 from tqdm import tqdm
 
-import re
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 
 # the following allows us to import modules from within this file's parent folder
@@ -25,9 +25,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 
-
-
-def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
+def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     os.chdir(WORKING_DIR)
 
@@ -54,6 +52,9 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     logger.info(f"  Number of building to process: {len(roofs_gdf)}")
 
+    # Read labels shapefile and compute shape area
+    labels_gdf = gpd.read_file(LABELS)
+    labels_gdf['area'] = round(labels_gdf.area, 4)
 
     # Read all the shapefiles produced, filter them and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
@@ -84,13 +85,15 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         # Filter vectorised objects. Threshold values have been set
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
-        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.1) &
+        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.01) & # Remove noise
+                                            (objects_selection['area_shp'] >= 0.5 * np.min(labels_gdf['area'])) &
                                             (objects_selection['area_noholes_shp'] <= 0.8 * objects_selection['area_roof']) &
                                             (objects_selection['intersection_frac'] >= 0.5)]
 
+
         objects_filtered['area'] = objects_filtered.area 
 
-        objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof'], axis=1)
+        objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof', 'index_right'], axis=1)
         objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-roof_buffer))
         
         # Merge/Combine multiple shapefiles into one gdf
@@ -135,14 +138,14 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    # detection_dir = cfg['detection_dir']
+    LABELS = cfg['ground_truth']
     EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     CRS = cfg['crs']
 
-    main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
+    main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
 
     # Stop chronometer  
     toc = time.time()

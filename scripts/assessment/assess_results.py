@@ -105,12 +105,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     else:
         detections_gdf['detection_id'] = detections_gdf.index
 
-    # !!! To be corrected in vector script !!! 
-    detections_gdf.drop(columns=['index_right','descr'], inplace=True, errors='ignore') 
-
-    # Filter detections by area
-    area_threshold = AREA_THD_FACTOR * np.min(labels_gdf['area'])
-    detections_gdf = detections_gdf[detections_gdf.area >= area_threshold]
 
     detections_gdf = detections_gdf.explode(index_part=False)
     logger.info(f"- {len(detections_gdf)} detection's shapes")
@@ -477,8 +471,7 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
 
     METHOD = cfg['method']
-    THRESHOLD = cfg['filters']['threshold']
-    AREA_THD_FACTOR = cfg['filters']['area_threshold_factor'] 
+    THRESHOLD = cfg['threshold']
     ADDITIONAL_METRICS = cfg['additional_metrics'] if 'additional_metrics' in cfg.keys() else False
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges']
