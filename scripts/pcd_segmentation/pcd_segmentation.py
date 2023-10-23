@@ -94,6 +94,10 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
 
         if not number_planes_ini:
             number_planes = int(egid_info.nbr_elemen)
+            if number_planes > 100:
+                number_planes = 100
+            
+            logger.info(f'Working on EGID {egid_info.EGID} with {number_planes} planes...')
 
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering

@@ -90,9 +90,9 @@ def save_best_hyperparameters(study, targets={0: 'f1 score'}, output_dir='.'):
             best_hyperparam_df.drop(columns=['datetime_start', 'datetime_complete', 'duration', 'state'], inplace=True)
 
             for col in best_hyperparam_df.columns:
-                str_to_remove = 'params'
+                str_to_remove = 'params_'
                 if col.startswith(str_to_remove):
-                    best_hyperparam_df.rename(columns={col: col.lstrip(str_to_remove + '_')}, inplace=True)
+                    best_hyperparam_df.rename(columns={col: col.replace(str_to_remove, '')}, inplace=True)
 
     feature_path=os.path.join(output_dir, 'best_hyperparams.csv')
     best_hyperparam_df.to_csv(feature_path, index=False, header=True)

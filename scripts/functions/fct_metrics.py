@@ -10,6 +10,7 @@ import pandas as pd
 import networkx as nx
 from fractions import Fraction
 from shapely.geometry import GeometryCollection
+from shapely.validation import make_valid
     
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
@@ -471,6 +472,8 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
             for geom_gt in all_geoms_gt:
                 polygon_gt_shape = geom_gt
                 polygon_det_shape = geom_det
+                if not polygon_det_shape.is_valid:
+                    polygon_det_shape = make_valid(polygon_det_shape)
                 if polygon_gt_shape.intersects(polygon_det_shape):
                     intersection = polygon_gt_shape.intersection(polygon_det_shape).area
                 else:
