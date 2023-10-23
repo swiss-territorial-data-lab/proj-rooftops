@@ -95,24 +95,17 @@ if __name__ == "__main__":
     feature_path = os.path.join(OUTPUT_DIR, 'bbox.gpkg')
 
     logger.info("Produce building bounding box")
-    if os.path.exists(feature_path):
-        logger.info(f"- File bbox.gpkg already exists")
-        bbox_list = gpd.read_file(feature_path)
-    else:
-        logger.info(f"- File bbox.gpkg does not exist")
-        logger.info(f"  Create it")
 
-        for row in join_tiles_roofs.itertuples():
-            egid = row.EGID
-            egid_list.append(egid)
-            bounds = row.geometry.bounds
-            coords = misc.bbox(bounds)
-            coords_list.append(coords)
+    for row in join_tiles_roofs.itertuples():
+        egid = row.EGID
+        egid_list.append(egid)
+        bounds = row.geometry.bounds
+        coords = misc.bbox(bounds)
+        coords_list.append(coords)
 
-        bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs='epsg:2056', geometry=coords_list).drop_duplicates(subset='EGID')
-
-        bbox_list.to_file(feature_path)
-        written_files.append(feature_path)  
+    bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs='epsg:2056', geometry=coords_list).drop_duplicates(subset='EGID')
+    bbox_list.to_file(feature_path)
+    written_files.append(feature_path)  
 
     # Get the image tile(s) number intersecting the rooftop shape 
     logger.info("Finding the number of image tile(s) intersecting the rooftop shape")
