@@ -60,7 +60,19 @@ assess_results.py:
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
 
-# 5 - Hyperparamters optimization
+# 5 - Estimate the free surface
+calculate_free_surface.py:
+  working_dir: .
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
+  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_trn_sample_GT.csv
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: output/image_segmentation/assessment/
+  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  threshold: 0.1
+  visualisation: True
+
+# 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
   image_dir: input/image_segmentation/tiles/optimization

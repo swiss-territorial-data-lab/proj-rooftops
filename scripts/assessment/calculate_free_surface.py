@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
 
 
 import argparse
@@ -25,7 +21,6 @@ import functions.fct_misc as misc
 import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
-
 
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-to-one', threshold=0.1, visualisation=False):
