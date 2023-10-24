@@ -411,8 +411,10 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     # init
     _gt = gt.copy()
     _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
+    _gt = _gt[~_gt.is_empty].copy()
     _dets = dets.copy()
     _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
+    _dets = _dets[~_dets.is_empty].copy()
 
     charges_dict = {}
 
@@ -453,20 +455,7 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
 
         # filter detections and labels based on intersection area fraction
         keep_geohashes_gt = []
-        keep_geohashes_dets = [] 
-        # for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
-        #     for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
-        #         polygon_gt_shape = geom_gt
-        #         polygon_det_shape = geom_det
-        #         if polygon_gt_shape.intersect(polygon_det_shape):
-        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
-        #         else:
-        #             continue
-        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-        #         if intersection / polygon_det_shape.area >= threshold:
-        #             keep_geohashes_gt.append(geohash_gt)
-        #             keep_geohashes_dets.append(geohash_det)
-
+        keep_geohashes_dets = []
         
         for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
             for geom_gt in all_geoms_gt:

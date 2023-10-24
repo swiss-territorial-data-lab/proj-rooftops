@@ -74,9 +74,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
     if 'occupation' in labels_gdf.columns:
-        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]\
+            .reset_index(drop=True).copy()
     else:
-        labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())].copy()
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())]\
+            .reset_index().copy()
 
     labels_gdf['ID_GT'] = labels_gdf.id
     labels_gdf['area'] = round(labels_gdf.area, 4)
@@ -152,7 +154,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"     - Compute TP, FP and FN")
 
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                     buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=method)
+                                                     buffer=-0.01, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=method)
         feature_path = os.path.join(output_dir, 'tags.gpkg')
         
         if method=='fusion':
@@ -172,6 +174,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
             written_files[feature_path] = layer_name
 
+        print('TP: ', tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0])
+        print('FP: ', tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0])
+        print('FN: ', tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0])
+
         # Get output files 
         layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
@@ -181,12 +187,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         written_files[feature_path] = layer_name
 
         logger.info("    - Global metrics")
-        if method=='charges':
-            TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
-        elif method=='fusion':
-            TP = tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0]
-            FP = tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0]
-            FN = tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0]
+        TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
         metrics_results = metrics.get_metrics(TP, FP, FN)
         metrics_df = pd.DataFrame(metrics_results, index=[0])
 
