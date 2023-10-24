@@ -47,12 +47,12 @@ assess_results.py:
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/assessment/
-  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
-  additional_metrics: False
-  visualisation: False
+  method: one-to-many # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  additional_metrics: True
+  visualisation: True
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 

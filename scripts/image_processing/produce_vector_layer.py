@@ -77,24 +77,23 @@ def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid]
         egid_shp['area_roof'] = egid_shp.area
         egid_shp['geometry_roof'] = egid_shp.geometry
-        roof_buffer = 1
-        egid_shp.geometry = egid_shp.geometry.buffer(roof_buffer)
+        buffer = 1
+        egid_shp.geometry = egid_shp.geometry.buffer(buffer)
 
         misc.test_crs(objects_shp, egid_shp)
 
         # Filter vectorised objects. Threshold values have been set
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
-        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.05) & # Remove noise
-                                            (objects_selection['area_shp'] >= 0.5 * np.min(labels_gdf['area'])) &
-                                            (objects_selection['area_noholes_shp'] <= 0.8 * objects_selection['area_roof']) &
-                                            (objects_selection['intersection_frac'] >= 0.5)]
-
+        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.05) & # Filter noise
+                                            (objects_selection['area_shp'] >= 0.75 * np.min(labels_gdf['area'])) & # Filter small shapes
+                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
+                                            (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially interescting the roof extension
 
         objects_filtered['area'] = objects_filtered.area 
 
         objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof', 'index_right'], axis=1)
-        objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-roof_buffer))
+        objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-buffer))
         
         # Merge/Combine multiple shapefiles into one gdf
         vector_layer = gpd.pd.concat([vector_layer, objects_clip], ignore_index=True)

@@ -75,7 +75,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
         # Type 12 corresponds to free surfaces, other classes are ojects
         labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
-        logger.info("  Filter objects and EGID")
+        logger.info("- Filter objects and EGID")
         labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())].copy()
@@ -131,10 +131,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
 
     # Detections count
-    logger.info(f"Method used for detections counting")
+    logger.info(f"Method used for detections counting:")
     methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
     if method in methods_list:
-        logger.info(f'  Using the {method} method')
+        logger.info(f'  {method} method')
     else:
         logger.warning('  Unknown method, default method = one-to-one.')
 
@@ -158,7 +158,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"- Compute TP, FP and FN")
         
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                    buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
+                                                    buffer=0.01, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
                                                     threshold=threshold, method=method)
 
         feature_path = os.path.join(output_dir, 'tags.gpkg')
@@ -273,15 +273,15 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         tagged_dets_gdf = pd.concat([tp_gdf, fp_gdf, fn_gdf])
 
         tagged_dets_gdf.drop(['index_right', 'occupation_left', 'occupation_right', 'label_geometry', 'detection_geometry', 'ID_DET', 'area_DET', 'EGID_GT'], 
-                             axis = 1, inplace=True, errors='ignore')
+                             axis=1, inplace=True, errors='ignore')
         tagged_dets_gdf = tagged_dets_gdf.round({'IoU': 2, 'detection_area': 4})
         tagged_dets_gdf.reset_index(drop=True, inplace=True)
-
+        
         layer_name = 'tagged_detections_' + method + '_thd_' + threshold_str
         feature_path = os.path.join(output_dir, 'tagged_detections.gpkg')
         tagged_dets_gdf.to_file(feature_path, layer=layer_name, index=False)
         written_files[feature_path] = layer_name
-
+        
         if additional_metrics:
             logger.info("- Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
@@ -402,29 +402,31 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     if os.path.exists(filename):
         os.remove(filename)
     if labels_diff != 0:
-        logger.error(f'There are {int(nbr_labels)} labels in input and {int(nbr_tagged_labels)} labels in output.')
-        logger.info(f'The list of the problematic labels is exported to {filename}.')
+        logger.warning(f'There are {int(nbr_labels)} labels in input and {int(nbr_tagged_labels)} labels in output.')
+        
+        if (method == 'one-to-one') or (method == 'one-to-many'):
+            logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-        if (labels_diff > 0) and (method != 'fusion'):
-            tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
+            if (labels_diff > 0):
+                tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
-            untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
-            untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
+                untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+                untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
 
-            layer_name = 'missing_label_tags'
-            untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
+                layer_name = 'missing_label_tags'
+                untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-        elif (labels_diff < 0 )and (method != 'fusion'):
-            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
+            elif (labels_diff < 0 ):
+                all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
 
-            duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
-            duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+                duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+                duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+                duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
-            layer_name = 'duplicated_label_tags'
-            duplicated_labels.to_file(filename, layer=layer_name, index=False)
-            
-        written_files[filename] = layer_name
+                layer_name = 'duplicated_label_tags'
+                duplicated_labels.to_file(filename, layer=layer_name, index=False)
+                
+            written_files[filename] = layer_name
 
 
     if visualisation and additional_metrics:

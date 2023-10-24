@@ -14,7 +14,7 @@ from shapely.geometry import GeometryCollection
     
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
-    """Determine the intersection area over union area (IOU) of two polygons
+    """Determine the intersection area over union area (IoU) of two polygons
 
     Args:
         polygon1_shape (geometry): first polygon
@@ -24,7 +24,7 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
         int: Unrounded ratio between the intersection and union area
     """
 
-    # Calculate intersection and union, and the IOU
+    # Calculate intersection and union, and the IoU
     polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
     polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
     return polygon_intersection / polygon_union
@@ -44,15 +44,15 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
 
     # Filter detection based on IoU value
     # Keep only max IoU value for each detection
-    tp_grouped_gdf = tp_gdf_ini.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IOU==g.IOU.max()])
+    tp_grouped_gdf = tp_gdf_ini.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IoU==g.IoU.max()])
     
     # Detection with IoU lower than threshold value are considered as FP and removed from TP list   
-    fp_gdf_temp = tp_grouped_gdf[tp_grouped_gdf['IOU'] < threshold]
+    fp_gdf_temp = tp_grouped_gdf[tp_grouped_gdf['IoU'] < threshold]
     detection_id_fp = fp_gdf_temp['detection_id'].unique().tolist()
     tp_gdf_temp = tp_grouped_gdf[~tp_grouped_gdf['detection_id'].isin(detection_id_fp)]
 
     # For each label, only keep the pred with the best IoU.
-    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
+    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IoU')
     tp_gdf = sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
 
     # Save the dropped preds due to multiple detections of the same label.
@@ -75,8 +75,8 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     """
     
     # Compare the global IoU of the detection based on all the matching labels    
-    sum_detections_gdf = tp_gdf_ini.groupby(['detection_id'])['IOU'].sum().reset_index()
-    true_detections_gdf = sum_detections_gdf[sum_detections_gdf['IOU'] > threshold]
+    sum_detections_gdf = tp_gdf_ini.groupby(['detection_id'])['IoU'].sum().reset_index()
+    true_detections_gdf = sum_detections_gdf[sum_detections_gdf['IoU'] > threshold]
     true_detections_index = true_detections_gdf['detection_id'].unique().tolist()
 
     # Check that the label is at least 25% under the prediction.
@@ -84,12 +84,12 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
     tp_gdf_temp = tp_gdf_ini[(tp_gdf_ini['detection_id'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
 
     # For each label, only keep the pred with the best IoU.
-    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
+    sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IoU')
     tp_gdf = sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
     detection_id_tp = tp_gdf['detection_id'].unique().tolist()
 
     fp_gdf_temp = tp_gdf_ini[~tp_gdf_ini['detection_id'].isin(detection_id_tp)]
-    fp_gdf_temp = fp_gdf_temp.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IOU == g.IOU.max()])
+    fp_gdf_temp = fp_gdf_temp.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IoU == g.IoU.max()])
 
     return tp_gdf, fp_gdf_temp
 
@@ -168,7 +168,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
     iou = []
     for (i, ii) in zip(geom1, geom2):
         iou.append(intersection_over_union(i, ii))
-    tp_gdf_temp['IOU'] = iou
+    tp_gdf_temp['IoU'] = iou
 
     if method == 'one-to-many':
         tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, threshold)
@@ -408,11 +408,13 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     assert 'geohash' in gt.columns.tolist()
     assert 'geohash' in dets.columns.tolist()
 
-    # init
+    # prepare data: apply negative buffer and remove empty geometries
     _gt = gt.copy()
-    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style='bevel')
+    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style='mitre')
+    _gt = _gt[~_gt.is_empty].copy()
     _dets = dets.copy()
-    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style='bevel')
+    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style='mitre')
+    _dets = _dets[~_dets.is_empty].copy()
 
     charges_dict = {}
 
@@ -454,6 +456,19 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         # filter detections and labels based on intersection area fraction
         keep_geohashes_gt = []
         keep_geohashes_dets = [] 
+       
+        for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+            for geom_gt in all_geoms_gt:
+                polygon_gt_shape = geom_gt
+                polygon_det_shape = geom_det
+                if polygon_gt_shape.intersects(polygon_det_shape):
+                    intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+                else:
+                    continue
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+                if intersection / polygon_det_shape.area >= threshold:
+                    keep_geohashes_dets.append(geohash_det)
+
         for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
             for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
                 polygon_gt_shape = geom_gt
@@ -462,35 +477,9 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                     intersection = polygon_gt_shape.intersection(polygon_det_shape).area
                 else:
                     continue
-                # # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-                if intersection / polygon_det_shape.area >= threshold:
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+                if intersection / polygon_det_shape.area >= threshold or ((geohash_det in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.9)):
                     keep_geohashes_gt.append(geohash_gt)
-                    keep_geohashes_dets.append(geohash_det)
-
-        
-        # for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
-        #     for geom_gt in all_geoms_gt:
-        #         polygon_gt_shape = geom_gt
-        #         polygon_det_shape = geom_det
-        #         if polygon_gt_shape.intersects(polygon_det_shape):
-        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
-        #         else:
-        #             continue
-        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-        #         if intersection / polygon_det_shape.area >= threshold:
-        #             keep_geohashes_dets.append(geohash_det)
-
-        # for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
-        #     for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
-        #         polygon_gt_shape = geom_gt
-        #         polygon_det_shape = geom_det
-        #         if polygon_gt_shape.intersects(polygon_det_shape):
-        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
-        #         else:
-        #             continue
-        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-        #         if intersection / polygon_det_shape.area >= threshold or ((geohash_det in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.9)):
-        #             keep_geohashes_gt.append(geohash_gt)
 
         # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
         remove_geohashes_gt = [x for x in all_geohashes_gt if x not in np.unique(keep_geohashes_gt).astype(str)]
@@ -547,8 +536,8 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
-    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style='mitre')
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style='mitre')
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
