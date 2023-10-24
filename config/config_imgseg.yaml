@@ -75,17 +75,17 @@ calculate_free_surface.py:
 optimize_hyperparameters.py:
   working_dir: .
   image_dir: input/image_segmentation/tiles/optimization
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/optimization/
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
-  srs: "EPSG:2056" # Projection of the input file 
+  crs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
-  filters:
-    threshold: 0.1 # Threshold value to consider that a detection overlaps a label
-    area_threshold_factor: 0.5 # Factor applied to the minimum labels area to define the area threshold for filtering out detections that are too small
+  additional_metrics: False
+  visualisation: False
+  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
@@ -104,7 +104,7 @@ optimize_hyperparameters.py:
     custom_SAM: False
     show_masks: False 
   optimization:
-    n_trials: 100 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    n_trials: 5 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]

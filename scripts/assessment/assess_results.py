@@ -84,7 +84,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf = labels_gdf.explode(index_part=False)
+    labels_gdf = labels_gdf.explode(ignore_index=True)
 
     nbr_labels = labels_gdf.shape[0]
     logger.info(f"- {nbr_labels} label's shapes")
@@ -105,8 +105,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     else:
         detections_gdf['detection_id'] = detections_gdf.index
 
-
-    detections_gdf = detections_gdf.explode(index_part=False)
+    detections_gdf = detections_gdf.explode(ignore_index=True)
     logger.info(f"- {len(detections_gdf)} detection's shapes")
 
     if (len(object_parameters) > 0) and additional_metrics and roofs:
@@ -161,7 +160,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
                                                     buffer=-0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
                                                     threshold=threshold, method=method)
-      
+
         feature_path = os.path.join(output_dir, 'tags.gpkg')
 
         if method == 'fusion':
@@ -174,6 +173,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             tagged_final_gdf.loc[tagged_final_gdf['TP_charge'] >= 1, 'tag'] = 'TP' 
             tagged_final_gdf.loc[(tagged_final_gdf['FP_charge'] >= 1) & (tagged_final_gdf['TP_charge'] == 0), 'tag'] = 'FP' 
             tagged_final_gdf.loc[(tagged_final_gdf['FN_charge'] >= 1) & (tagged_final_gdf['TP_charge'] == 0), 'tag'] = 'FN' 
+
             tagged_final_gdf = tagged_final_gdf.reindex(columns=['id', 'EGID', 'geohash', 'label_id', 'detection_id', 'obj_class', 
                                                         'descr', 'area', 'nearest_distance_centroid', 'nearest_distance_border', 
                                                         'group_id', 'TP_charge', 'FN_charge', 'FP_charge', 'tag', 'geometry'])
@@ -181,7 +181,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             layer_name = 'tagged_final_' + method + '_thd_' + threshold_str
             tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
             written_files[feature_path] = layer_name
-
+            
         # Get output files 
         layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')

@@ -85,7 +85,7 @@ def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         # Filter vectorised objects. Threshold values have been set
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
-        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.01) & # Remove noise
+        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.05) & # Remove noise
                                             (objects_selection['area_shp'] >= 0.5 * np.min(labels_gdf['area'])) &
                                             (objects_selection['area_noholes_shp'] <= 0.8 * objects_selection['area_roof']) &
                                             (objects_selection['intersection_frac'] >= 0.5)]
