@@ -29,7 +29,7 @@ logger = misc.format_logger(logger)
 
 # Define functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one', threshold=0.1, roofs=None, object_parameters=[], ranges=[], 
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-to-one', threshold=0.1, object_parameters=[], ranges=[], 
          additional_metrics=False, visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
@@ -39,9 +39,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         LABELS (path): file of the ground truth
         DETECTIONS (path): file of the detections
         EGIDS (list): EGIDs of interest
+        ROOFS (string): file of the roofs. Defaults to None.
         method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many. Defaults ot one-to-one.
         threshold (float): surface intersection threshold between label shape and detection shape to be considered as the same group. Defaults to 0.1.
-        roofs (string): file of the roofs. Defaults to None.
         object_parameters (list): list of object parameter to be processed ('area', 'nearest_distance_border', 'nearest_distance_centroid')
         ranges (list): list of list of the bins to process by object_parameters.
         additional_metrics (bool): wheter or not to do the by-EGID, by-object, by-class metrics. Defaults to False.
@@ -66,7 +66,23 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
+    array_egids = egids.EGID.to_numpy()
     logger.info(f'Working on {egids.shape[0]} EGIDs.')
+
+    if ('EGID' in ROOFS) | ('egid' in ROOFS):
+        roofs = gpd.read_file(ROOFS)
+    else:
+        # Get the rooftops shapes
+        _, ROOFS_NAME = os.path.split(ROOFS)
+        attribute = 'EGID'
+        original_file_path = ROOFS
+        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+
+        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+
+    roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
 
     # Open shapefiles
     labels_gdf = gpd.read_file(LABELS)
@@ -74,11 +90,18 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
     if 'occupation' in labels_gdf.columns:
-        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]\
+        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(array_egids))]\
             .reset_index(drop=True).copy()
     else:
-        labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())]\
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)]\
             .reset_index().copy()
+        
+    for egid in array_egids:
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'], keep_geom_type=True)
+
+        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
 
     labels_gdf['ID_GT'] = labels_gdf.id
     labels_gdf['area'] = round(labels_gdf.area, 4)
@@ -105,17 +128,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         detections_gdf['ID_DET'] = detections_gdf.index
     detections_gdf=detections_gdf.explode(index_part=False)
     logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
+    
 
-    if (len(object_parameters) > 0) and additional_metrics and roofs:
-        # Get the rooftops shapes
-        _, ROOFS_NAME = os.path.split(roofs)
-        attribute = 'EGID'
-        original_file_path = roofs
-        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
-
-        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
-        roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
-        roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    if (len(object_parameters) > 0) and additional_metrics:
 
         ranges_dict = {object_parameters[i]: ranges[i] for i in range(len(object_parameters))}
 
@@ -174,10 +189,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
             written_files[feature_path] = layer_name
 
-        print('TP: ', tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0])
-        print('FP: ', tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0])
-        print('FN: ', tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0])
-
         # Get output files 
         layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
@@ -194,16 +205,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         if additional_metrics:
             logger.info("    - Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
-                if method=='charges':
-                    TP, FP, FN = metrics.get_count(
-                        tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
-                        tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
-                    )
-                elif method=='fusion':
-                    subset_gdf=tagged_final_gdf[tagged_final_gdf.EGID == egid]
-                    TP = subset_gdf[subset_gdf.tag == 'TP'].shape[0]
-                    FP = subset_gdf[subset_gdf.tag == 'FP'].shape[0]
-                    FN = subset_gdf[subset_gdf.tag == 'FN'].shape[0]
+                TP, FP, FN = metrics.get_count(
+                    tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
+                    tagged_dets = tagged_dets_gdf[tagged_dets_gdf.EGID == egid],
+                )
                 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
@@ -227,9 +232,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 logger.info("- Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
-                    for val in param_ranges:
-                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])]
-                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
+                    for lim_inf, lim_sup in param_ranges:
+                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= lim_inf) & (tagged_gt_gdf[parameter] <= lim_sup)]
+                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= lim_inf) & (tagged_dets_gdf[parameter] <= lim_sup)]
                         
                         TP = float(filter_gt_gdf['TP_charge'].sum())
                         FP = float(filter_dets_gdf['FP_charge'].sum()) 
@@ -480,9 +485,8 @@ if __name__ == "__main__":
 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES]
 
-    f1, diff_in_labels, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
+    f1, diff_in_labels, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                              method=METHOD, threshold=THRESHOLD,
-                                             roofs=ROOFS,
                                              object_parameters=OBJECT_PARAMETERS, ranges=RANGES,
                                              additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
 

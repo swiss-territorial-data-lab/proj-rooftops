@@ -100,13 +100,18 @@ rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:
 rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    
 completed_egids=pd.merge(egids, rooftops, on='EGID')
 
-feature_path=os.path.join(output_dir, 'completed_egids.csv')
-completed_egids.to_csv(feature_path)
+subset_rooftops = rooftops[rooftops.EGID.isin(completed_egids.EGID.tolist())]
+feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID_subset.shp")
+subset_rooftops.to_file(feature_path)
+written_files.append(feature_path)
+
+feature_path = os.path.join(output_dir, 'completed_egids.csv')
+completed_egids.to_csv(feature_path, index=False)
 written_files.append(feature_path)  
 logger.info(f"...done. A file was written: {feature_path}")
 
 tile_delimitation=gpd.read_file(PCD_TILES)
-rooftops_on_tiles=tile_delimitation.sjoin(rooftops, how='right', lsuffix='tile', rsuffix='roof')
+rooftops_on_tiles=tile_delimitation.sjoin(subset_rooftops, how='right', lsuffix='tile', rsuffix='roof')
 
 # Get the per-EGID point cloud
 for egid in tqdm(egids.EGID.to_numpy()):
@@ -117,7 +122,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
     if (not OVERWRITE) & os.path.exists(final_path):
         continue
     
-    shape = rooftops.loc[rooftops['EGID'] == int(egid)].copy()
+    shape = subset_rooftops.loc[subset_rooftops['EGID'] == int(egid)].copy()
 
     # Write it to use it with WBT
     shape_path = os.path.join(output_dir, file_name + ".shp")

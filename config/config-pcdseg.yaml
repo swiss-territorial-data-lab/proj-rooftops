@@ -37,10 +37,11 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
-  output_dir: processed/PCD_segmentation
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  input_dir: processed/PCD_segmentation/test
+  output_dir: processed/PCD_segmentation/test
   egids: EGIDs_GT_training.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
     min: 18        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
@@ -50,12 +51,12 @@ vectorization.py:
 
 # 4 - Evaluate the results
 assess_results.py: 
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  output_dir: processed/PCD_segmentation
-  detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/objects_on_roofs_training.shp
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs_GT_training.csv
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  output_dir: processed/PCD_segmentation/test
+  detections: processed/PCD_segmentation/test/all_EGID_occupation.gpkg
+  ground_truth: ground_truth/partition/objects_on_roofs_training.shp
+  egids: processed/PCD_segmentation/test/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: True
@@ -67,13 +68,13 @@ assess_results.py:
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
-    working_dir: /home/gsalamin/Documents/project_data/rooftops
-    output_dir: processed/PCD_segmentation
-    detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-    ground_truth: ground_truth/objects_on_roofs_training.shp
-    roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_GT_training.csv
-    method: many-to-many
+    working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+    output_dir: processed/PCD_segmentation/test
+    detections: processed/PCD_segmentation/test/all_EGID_occupation.gpkg
+    ground_truth: ground_truth/partition/objects_on_roofs_training.shp
+    roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: processed/PCD_segmentation/test/completed_egids.csv
+    method: fusion
     threshold: 0.1
     visualisation: True
 
@@ -84,6 +85,7 @@ optimize_hyperparam_LiDAR.py:
   egids: completed_egids.csv
   ground_truth: ../../ground_truth/objects_on_roofs_training.shp
   detections: EGIDs_GT_training.gpkg
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   parameters:
     segmentation:

@@ -33,53 +33,6 @@ warnings.filterwarnings("ignore", message="root:Singular matrix")
 
 logger = format_logger(logger)
 
-# Define functions ----------------------
-
-def handle_overlapping_cluster(clusters_gdf):
-    """Delete clusters inside another cluster.
-
-    Args:
-        clusters_gdf (GeoDataFrame): clusters of objects as determined by the vecotrization procedure
-
-    Returns:
-        GeoDataFrame, int: Cleaned clusters and the number of fusion between two clusters that occured.
-    """
-        
-    reviewed_cluster = clusters_gdf.copy()
-    dropped_index = []
-
-    for cluster in clusters_gdf.itertuples():
-
-        # Stop if you are at the last line of the table
-        if cluster.Index+1 == clusters_gdf.shape[0]:
-            nbr_dropped_objects = len(dropped_index)
-            if nbr_dropped_objects > 0:
-                logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
-            break
-
-        for second_cluster in clusters_gdf.loc[clusters_gdf.index > cluster.Index].itertuples():
-            first_geometry = cluster.geometry
-            second_geometry = second_cluster.geometry
-            
-            if cluster.Index in dropped_index:
-                nbr_dropped_objects = len(dropped_index)
-                if cluster.Index+1 == clusters_gdf.shape[0] & nbr_dropped_objects > 0:
-                     logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
-                break
-
-            if first_geometry.intersects(second_geometry) & (second_cluster.Index not in dropped_index):
-                    
-                    if second_geometry.within(first_geometry):
-                        reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
-                        dropped_index.append(second_cluster.Index)
-
-                    elif first_geometry.within(second_geometry):
-                        reviewed_cluster.drop(index=(cluster.Index), inplace=True)
-                        dropped_index.append(cluster.Index)
-
-    reviewed_cluster.reset_index(drop=True, inplace=True)
-
-    return reviewed_cluster
 
 def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     """Transform multipolygons into polygons
@@ -110,7 +63,7 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     return exploded_gdf
 
 
-def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
+def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
     Args:
@@ -118,7 +71,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output directory
         EGIDS (list): EGIDs of interest
-        EPSG (int, optional): reference number of the CRS. Defaults to 2056.
+        epsg (int, optional): reference number of the CRS. Defaults to 2056.
         min_plane_area (float, optional): minimum area for a plane. Defaults to 5.
         max_cluster_area (float, optional): maximum area for an object. Defaults to 25.
         alpha_shape (float, optional): alpha value for the shape algorithm, None means that alpha is optimized. Defaults to None.
@@ -144,7 +97,10 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
     # Get the EGIDS of interest
     egids=pd.read_csv(EGIDS)
 
-    all_occupation_gdf=gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(EPSG))
+    # Get the rooftops shapes
+    rooftops = gpd.read_file(SHP_EGID_ROOFS)
+
+    all_occupation_gdf=gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(epsg))
     for egid in tqdm(egids.EGID.to_numpy()):
         file_name = 'EGID_' + str(egid)
 
@@ -161,7 +117,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Plane vectorization
         if plane_df.empty:
             logger.error('No planes to vectorize')
-        plane_multipoly_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
+        plane_multipoly_gdf = fct_seg.vectorize_concave(plane_df, plane, epsg, alpha_shape, visu)
         # plane_multipoly_gdf = fct_seg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
@@ -172,7 +128,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Cluster vectorisation
         if cluster_df.empty:
             logger.error('No clusters to vectorize')
-        cluster_multipoly_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
+        cluster_multipoly_gdf = fct_seg.vectorize_concave(cluster_df, cluster, epsg, alpha_shape, visu)
         # cluster_multipoly_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
 
 
@@ -211,14 +167,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
             del large_objects_gdf
 
         # Create occupation layer
-        if False:
-            # Control: plot plane polygon
-            boundary = gpd.GeoSeries(plane_vec_gdf.unary_union)
-            boundary.plot(color = 'red')
-            plt.savefig('processed/test_outputs/segmented_planes.jpg', bbox_inches='tight')
-
-        # cluster_vec_gdf = handle_overlapping_cluster(cluster_vec_gdf)
-
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
             cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
@@ -231,13 +179,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
                 plane_vec_gdf.set_geometry('geometry', inplace=True)
                 for geom in plane_vec_gdf.geometry.to_numpy():
                     diff_geom.append(geom.difference(cluster_vec_gdf.geometry.unary_union))
-
-                if False:
-                    # Control: plot object polygon       
-                    boundary = gpd.GeoSeries(diff_geom)
-                    boundary.plot(color = 'blue')
-                    plt.savefig(f'processed/test_outputs/segmented_free_space_{i}.jpg', bbox_inches='tight')
-                    i+=1
 
             # Build free area dataframe
             free_gdf = gpd.GeoDataFrame({'occupation': 0, 'geometry': diff_geom}, index=range(len(plane_vec_gdf)))
@@ -258,12 +199,13 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Build occupation geodataframe
         occupation_df = pd.concat([free_gdf, objects_gdf], ignore_index=True)
         if not occupation_df.empty:
-            occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(EPSG), geometry='geometry')
-            # occupation_gdf.to_file(feature_path, layer=file_name, index=False)
-            # written_layers[feature_path].append(file_name)  
+            occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
-            occupation_gdf['EGID']=egid
-            all_occupation_gdf=pd.concat([all_occupation_gdf, occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
+            clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'], keep_geom_type=True)
+
+            clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
+            clipped_occupation_gdf['EGID']=egid
+            all_occupation_gdf=pd.concat([all_occupation_gdf, clipped_occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
 
     all_occupation_gdf['det_id']=all_occupation_gdf.index
@@ -297,13 +239,14 @@ if __name__ == "__main__":
     OUTPUT_DIR = cfg['output_dir']
 
     EGIDS = cfg['egids']
+    SHP_EGID_ROOFS = cfg['roofs']
     EPSG = cfg['epsg']
     AREA_MIN_PLANE = cfg['area_threshold']['min']
     AREA_MAX_OBJECT = cfg['area_threshold']['max']
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
-    all_occupation_gdf, written_files =main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+    all_occupation_gdf, written_files =main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
 
     print()
     dict_only_key=list(written_files.keys())[0]

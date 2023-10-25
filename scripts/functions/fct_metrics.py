@@ -118,8 +118,8 @@ def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[
 
     try:
         assert _TP == TP, f"{_TP} != {TP}"
-    except AssertionError:
-        logger.error(f"{_TP} != {TP}")
+    except AssertionError as e:
+        logger.critical(f"Difference in the count of TP between the labels and the detections: {str(e)}")
         sys.exit()
 
     return TP, FP, FN
@@ -487,7 +487,7 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         remove_geohashes_gt = [x for x in all_geohashes_gt if x not in np.unique(keep_geohashes_gt).astype(str)]
         remove_geohashes_dets = [x for x in all_geohashes_dets if x not in np.unique(keep_geohashes_dets).astype(str)]
         
-        # remove elements from the labels and detections list and attribute TP, FP and FN charges 
+        # remove elements without enough overlap and attribute TP, FP and FN charges 
         for i in remove_geohashes_gt:
             group.remove(i)
             charges_dict = {
@@ -518,6 +518,7 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
                         'TP_charge': Fraction(min(group_assessment['cnt_gt'], group_assessment['cnt_dets']), group_assessment['cnt_dets']),
                         'FP_charge': Fraction(group_assessment['FP_charge'], group_assessment['cnt_dets'])
                         }
+                        
                 else:
                     this_group_charges_dict[el] = {
                         'TP_charge': group_assessment['cnt_gt'],
