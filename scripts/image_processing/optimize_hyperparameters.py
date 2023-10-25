@@ -3,16 +3,16 @@
 
 #  proj-rooftops
 
-
+import argparse
 import os
 import sys
 import time
-import argparse
 import yaml
 from loguru import logger
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import joblib
 import optuna
 import torch
 
@@ -21,7 +21,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
-import functions.fct_optimization as opti
+import functions.fct_optimization as optimization
 
 import segment_images
 import produce_vector_layer
@@ -56,7 +56,7 @@ def objective(trial):
     MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 200, step=50)
 
     # Create a dictionnary of the tested parameters value for a given trial
-    dict_params = {
+    dict_parameters_sam = {
             "points_per_side": PPS,
             "points_per_batch": PPB,
             "pred_iou_thresh": IOU_THD, 
@@ -69,17 +69,31 @@ def objective(trial):
             "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR, 
             "min_mask_region_area": MIN_MASK_REGION_AREA
             }
-    print(dict_params)
+    print('')
+    print(dict_parameters_sam)
+    pd.DataFrame(dict_parameters_sam, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
-    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
-    produce_vector_layer.main(WORKING_DIR, ROOFS, OUTPUT_DIR, SHP_EXT, SRS)
-    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, THD, AREA_THD_FACTOR, OBJECT_PARAMETERS, RANGES)
+    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, dic=dict_parameters_sam)
+    produce_vector_layer.main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
+    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
+                                             method=METHOD, threshold=THRESHOLD,
+                                             roofs=ROOFS,
+                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES,
+                                             additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
 
+    print('')
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
-    iou = metrics_df['IoU'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    iou = metrics_df['averaged_IoU'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
     return f1, iou
+
+
+def callback(study, trial):
+   # cf. https://stackoverflow.com/questions/62144904/python-how-to-retrive-the-best-model-from-optuna-lightgbm-study/62164601#62164601https://stackoverflow.com/questions/62144904/python-how-to-retrive-the-best-model-from-optuna-lightgbm-study/62164601#62164601 
+    if (trial.number%5) == 0:
+        study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
+        joblib.dump(study, study_path)
 
 
 ## Main
@@ -110,14 +124,15 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']   
     DETECTIONS = cfg['detections']
     SHP_EXT = cfg['vector_extension']
-    SRS = cfg['srs']
+    CRS = cfg['crs']
     METHOD = cfg['method']
-    THD = cfg['filters']['threshold']
-    AREA_THD_FACTOR = cfg['filters']['area_threshold_factor']
+    THRESHOLD = cfg['threshold']
+    ADDITIONAL_METRICS = cfg['additional_metrics'] if 'additional_metrics' in cfg.keys() else False
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges'] 
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
+    VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
     CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
@@ -155,6 +170,7 @@ if __name__ == "__main__":
     output_plots = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'plots'))
 
     written_files = []
+    study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
 
     logger.info(f"Optimization of SAM hyperparemeters")
 
@@ -178,19 +194,19 @@ if __name__ == "__main__":
         study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameters optimization')   
     elif SAMPLER == 'TPESampler':
         study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameters optimization') 
+    # study.optimize(objective, n_trials=N_TRIALS, callbacks=[callback])
     study.optimize(objective, n_trials=N_TRIALS)
 
-    study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
     joblib.dump(study, study_path)
     written_files.append(study_path)
 
     targets = {0: 'f1 score', 1: 'average IoU'}
 
-    logger.info('Plot results')
-    written_files.extend(opti.plot_optimization_results(study, targets, output_plots))
-
     logger.info('Save the best hyperparameters')
-    written_files.append(opti.save_best_hyperparameters(study, targets, output_plots))
+    written_files.append(optimization.save_best_hyperparameters(study, targets, output_plots))
+
+    logger.info('Plot results')
+    written_files.extend(optimization.plot_optimization_results(study, targets, output_plots))
 
     print()
     logger.info("The following files were written. Let's check them out!")

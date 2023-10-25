@@ -168,6 +168,8 @@ jsonschema==4.17.3
     #   pystac
 jupyterlab-widgets==3.0.8
     # via ipywidgets
+kaleido==0.2.1
+    # via -r requirements.in
 kiwisolver==1.4.5
     # via matplotlib
 large-image[rasterio]==1.23.6

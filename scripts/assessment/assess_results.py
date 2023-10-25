@@ -338,10 +338,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
     ]
-    
-    # feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
-    # metrics_egid_df.round(3).to_csv(feature_path, index=False)
-    # written_files[feature_path] = ''
+
+    feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
+    metrics_egid_df.round(3).to_csv(feature_path, index=False)
+    written_files[feature_path] = ''
 
     # Compute Jaccard index and free surface for all buildings 
     iou_average = round(metrics_egid_df['averaged_IoU'].mean(), 3)
