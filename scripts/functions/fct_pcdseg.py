@@ -8,10 +8,11 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 
 from descartes import PolygonPatch
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, QhullError
 from shapely.errors import GEOSException
 from shapely.geometry import Polygon, MultiPolygon
 from shapely.ops import unary_union
+
 import alphashape
 
 sys.path.insert(1, 'scripts')
@@ -46,9 +47,9 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
     # Iterrate over all the provided group of points
     for group in plan_groups:
 
-        points = df[df['group'] == group]
-        points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
-        points = points.to_numpy()
+        points_df = df[df['group'] == group]
+        points_df = points_df.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
+        points = points_df.to_numpy()
 
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         if not alpha_ini:
@@ -68,6 +69,9 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
                     alpha = optimizealpha(points, upper=10, max_iterations=1000)
                     alpha_shape = alphashape.alphashape(points, alpha = alpha)
                     optimized_alpha=True
+            except QhullError:
+                if (points_df.X.max()-points_df.X.min()<1) and (points_df.Y.max()-points_df.Y.min()<1):
+                    continue
         
             if alpha_shape.is_empty and not optimized_alpha:
                 alpha = optimizealpha(points, upper=10, max_iterations=1000)
