@@ -57,11 +57,11 @@ assess_results.py:
   roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: EGIDs_GT_training.csv
   method: fusion
-  threshold: 0.5
-  additional_metrics: False
-  visualisation: False
+  threshold: 0.1
+  additional_metrics: True
+  visualisation: True
   object_attributes:
-    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
 

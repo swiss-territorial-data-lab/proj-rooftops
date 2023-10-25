@@ -427,15 +427,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     if visualisation and additional_metrics:
         # Plots
-        xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
+        xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '', 'building_type': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)'} 
+                    'nearest_distance_centroid': r'Object distance (m)'} 
 
-        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dic)
+        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for i in metrics_objects_df.attribute.unique():
-            _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dic[i])
-            _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dic[i])
-            _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dic[i])
+            if attribute not in xlabel_dict:
+                continue
+            _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+            _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+            _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
 
             
     return f1, iou_average, written_files
