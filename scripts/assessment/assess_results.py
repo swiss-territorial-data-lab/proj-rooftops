@@ -130,6 +130,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
 
+
     # Detections count
     logger.info(f"Method used for detections counting:")
     methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
@@ -158,7 +159,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"- Compute TP, FP and FN")
         
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                    buffer=0.01, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
+                                                    buffer=0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
                                                     threshold=threshold, method=method)
 
         feature_path = os.path.join(output_dir, 'tags.gpkg')
@@ -337,9 +338,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
     ]
-    feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
-    metrics_egid_df.round(3).to_csv(feature_path, index=False)
-    written_files[feature_path] = ''
+    
+    # feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
+    # metrics_egid_df.round(3).to_csv(feature_path, index=False)
+    # written_files[feature_path] = ''
 
     # Compute Jaccard index and free surface for all buildings 
     iou_average = round(metrics_egid_df['averaged_IoU'].mean(), 3)

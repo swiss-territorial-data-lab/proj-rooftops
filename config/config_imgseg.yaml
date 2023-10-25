@@ -50,7 +50,7 @@ assess_results.py:
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   output_dir: output/image_segmentation/assessment/
-  method: one-to-many # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
@@ -77,14 +77,14 @@ optimize_hyperparameters.py:
   image_dir: input/image_segmentation/tiles/optimization
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_assess_2023-10-03.shp
-  output_dir: output/image_segmentation/optimization/
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
   detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
+  output_dir: output/image_segmentation/optimization/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
-  visualisation: False
+  visualisation: True
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
@@ -101,10 +101,10 @@ optimize_hyperparameters.py:
     foreground: true
     unique: true
     mask_multiplier: 255
-    custom_SAM: False
+    custom_SAM: True
     show_masks: False 
   optimization:
-    n_trials: 5 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
+    n_trials: 50 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination hve been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]
@@ -117,7 +117,7 @@ optimize_hyperparameters.py:
       crop_nms_thresh: [5.0,5.0]
       crop_overlap_ratio: [0, 1]
       crop_n_points_downscale_factor: [0,0]
-      min_mask_region_area: [50,50]
+      min_mask_region_area: [50, 50]
 
 
 ## Additional scripts/processes - sandbox
