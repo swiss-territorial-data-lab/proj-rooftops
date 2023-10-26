@@ -63,7 +63,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     egids = pd.read_csv(EGIDS)
     logger.info(f"- {egids.shape[0]} selected EGIDs")
 
-    # Read labels shapefile
+    # Open shapefiles
     labels_gdf = gpd.read_file(LABELS)
 
     if labels_gdf.EGID.dtype != 'int64':
