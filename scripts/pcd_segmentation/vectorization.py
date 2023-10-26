@@ -201,7 +201,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         if not occupation_df.empty:
             occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
-            clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'], keep_geom_type=True)
+            clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
 
             clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
             clipped_occupation_gdf['EGID']=egid

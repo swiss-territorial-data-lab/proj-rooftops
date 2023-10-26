@@ -98,7 +98,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'], keep_geom_type=True)
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -241,7 +241,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                         FN = float(filter_gt_gdf['FN_charge'].sum())
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
-                        tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
+                        tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': f"{lim_inf}-{lim_sup}", **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     else:
