@@ -439,11 +439,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
         _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for i in metrics_objects_df.attribute.unique():
-            if attribute not in xlabel_dict:
-                continue
-            _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
-            _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
-            _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+            if attribute in xlabel_dict:
+                _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+                _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+                _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
 
             
     return f1, iou_average, written_files

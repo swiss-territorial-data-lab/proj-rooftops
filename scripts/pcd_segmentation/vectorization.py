@@ -246,7 +246,7 @@ if __name__ == "__main__":
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
-    all_occupation_gdf, written_files =main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+    all_occupation_gdf, written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
 
     print()
     dict_only_key=list(written_files.keys())[0]
