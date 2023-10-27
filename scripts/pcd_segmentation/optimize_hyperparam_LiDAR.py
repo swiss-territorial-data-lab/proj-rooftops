@@ -39,16 +39,16 @@ def objective(trial):
     """
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    # NUMBER_PLANES = trial.suggest_int('number_planes', 1, 7, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.01, 0.20, step=0.01)
+    NUMBER_PLANES = trial.suggest_int('number_planes', 1, 10, step=1)
+    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.02, 0.2, step=0.0075)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
-    ITERATIONS = trial.suggest_int('iterations', 7000, 15000, step=1000)
+    ITERATIONS = trial.suggest_int('iterations', 5000, 15000, step=1000)
     EPS_PLANES = trial.suggest_float('eps_planes', 1, 15, step=0.5)
-    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 750, 1500, step=50)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.4, 0.9, step=0.05)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 5, 25, step=1)
-    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 5, 50, step=1)
-    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 200, 600, step=1)
+    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 25, 1700, step=25)
+    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.5, 1.1, step=0.01)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 2, 50, step=1)
+    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 4, 75, step=2)
+    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 100, 750, step=50)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
     dict_parameters_pcd_seg={
@@ -118,7 +118,6 @@ OUTPUT_DIR='.'
 
 EGIDS=cfg['egids']
 LABELS=cfg['ground_truth']
-DETECTIONS=cfg['detections']
 EPSG=cfg['epsg']
 
 SEGMENTATION=cfg['parameters']['segmentation']
@@ -149,7 +148,7 @@ logger.info('Optimization of the hyperparameters for Open3d')
 
 study=optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
 # study = joblib.load(open(study_path, 'rb'))
-study.optimize(objective, n_trials=75, callbacks=[callback])
+study.optimize(objective, n_trials=100, callbacks=[callback])
 
 joblib.dump(study, study_path)
 written_files.append(study_path)

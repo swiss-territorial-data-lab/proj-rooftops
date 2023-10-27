@@ -24,7 +24,7 @@ import pandas as pd
 from shapely.ops import unary_union
 
 sys.path.insert(1, 'scripts')
-import functions.fct_pcdseg as fct_seg
+import functions.fct_pcdseg as pcdseg
 from functions.fct_metrics import intersection_over_union
 from functions.fct_misc import ensure_dir_exists, format_logger
 
@@ -161,8 +161,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Plane vectorization
         if plane_df.empty:
             logger.error('No planes to vectorize')
-        plane_multipoly_gdf = fct_seg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
-        # plane_multipoly_gdf = fct_seg.vectorize_convex(plane_df, plane) 
+        plane_multipoly_gdf = pcdseg.vectorize_concave(plane_df, plane, EPSG, alpha_shape, visu)
+        # plane_multipoly_gdf = pcdseg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
         cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -172,8 +172,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, EPSG = 2056, min_plane_area 
         # Cluster vectorisation
         if cluster_df.empty:
             logger.error('No clusters to vectorize')
-        cluster_multipoly_gdf = fct_seg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
-        # cluster_multipoly_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
+        cluster_multipoly_gdf = pcdseg.vectorize_concave(cluster_df, cluster, EPSG, alpha_shape, visu)
+        # cluster_multipoly_gdf = pcdseg.vectorize_convex(cluster_df, cluster, EPSG)
 
 
         # Deal with multipolygon

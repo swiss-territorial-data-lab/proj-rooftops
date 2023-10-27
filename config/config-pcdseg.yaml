@@ -8,7 +8,7 @@ prepare_data.py:
     egids: EGIDs_GT_training.csv
   output_dir: processed/PCD_segmentation
   filters:
-    building_type: 'all'
+    building_type: residential
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
@@ -24,15 +24,15 @@ pcd_segmentation.py:
   egids: processed/PCD_segmentation/completed_egids.csv
   segmentation:
     planes:
-      # number_planes: 2
-      distance_threshold: 0.07
+      number_planes: 10
+      distance_threshold: 0.095
       ransac: 3
-      iterations: 7500
-      eps: 11
+      iterations: 9000
+      eps: 5.5
       min_points: 450
     clusters:
-      eps: 0.59
-      min_points: 20
+      eps: 0.79
+      min_points: 18
   visualisation: False
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
@@ -40,11 +40,11 @@ vectorization.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   input_dir: processed/PCD_segmentation
   output_dir: processed/PCD_segmentation
-  egids: EGIDs_GT_training.csv
+  egids: processed/PCD_segmentation/completed_egids.csv
   epsg: 2056
   area_threshold: 
-    min: 18        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
-    max: 42       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    min: 36        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 450       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
@@ -55,9 +55,9 @@ assess_results.py:
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   ground_truth: ground_truth/objects_on_roofs_training.shp
   roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs_GT_training.csv
+  egids: processed/PCD_segmentation/completed_egids.csv
   method: fusion
-  threshold: 0.5
+  threshold: 0.1
   additional_metrics: False
   visualisation: False
   object_attributes:
@@ -72,7 +72,7 @@ calculate_free_surface.py:
     detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
     ground_truth: ground_truth/objects_on_roofs_training.shp
     roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_GT_training.csv
+    egids: completed_egids.csv
     method: many-to-many
     threshold: 0.1
     visualisation: True
@@ -83,7 +83,6 @@ optimize_hyperparam_LiDAR.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
   egids: completed_egids.csv
   ground_truth: ../../ground_truth/objects_on_roofs_training.shp
-  detections: EGIDs_GT_training.gpkg
   epsg: 2056
   parameters:
     segmentation:

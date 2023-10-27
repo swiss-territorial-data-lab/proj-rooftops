@@ -174,10 +174,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             tagged_final_gdf.astype({'TP_charge': 'str', 'FP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
             written_files[feature_path] = layer_name
 
-        print('TP: ', tagged_final_gdf[tagged_final_gdf.tag == 'TP'].shape[0])
-        print('FP: ', tagged_final_gdf[tagged_final_gdf.tag == 'FP'].shape[0])
-        print('FN: ', tagged_final_gdf[tagged_final_gdf.tag == 'FN'].shape[0])
-
         # Get output files 
         layer_name = 'tagged_labels_' + method + '_thd_' + threshold_str
         tagged_gt_gdf.astype({'TP_charge': 'str', 'FN_charge': 'str'}).to_file(feature_path, layer=layer_name, driver='GPKG')
@@ -326,7 +322,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
 
     # Compute Jaccard index by EGID
-    logger.info(f"- Compute mean Jaccard index")
+    logger.info(f"    - Compute mean Jaccard index")
 
     labels_by_attr_gdf = metrics.get_jaccard_index(labels_gdf, detections_gdf)
 
