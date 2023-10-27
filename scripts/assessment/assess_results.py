@@ -66,13 +66,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     if ('EGID' in ROOFS) | ('egid' in ROOFS):
         roofs = gpd.read_file(ROOFS)
-    else:
+    else:  
         # Get the rooftops shapes
         ROOFS_DIR, ROOFS_NAME = os.path.split(roofs)
         attribute = 'EGID'
         original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
         desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp") 
-
         roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs['EGID'] = roofs['EGID'].astype(int)
@@ -98,7 +97,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
+        # labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID != egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)

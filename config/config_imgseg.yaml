@@ -14,7 +14,7 @@ generate_tiles.py:
 segment_images.py:
   working_dir: .
   image_dir:  input/image_segmentation/tiles
-  output_dir: output/image_segmentation
+  output_dir: output/image_segmentation/test
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: False
@@ -28,6 +28,14 @@ segment_images.py:
     unique: True
     mask_multiplier: 255
     custom_SAM: False
+    SAM_parameters: {
+      "points_per_side": 64,
+      "pred_iou_thresh": 0.86,
+      "stability_score_thresh": 0.92,
+      "crop_n_layers": 1,
+      "crop_n_points_downscale_factor": 1,
+      "min_mask_region_area": 100,
+      }
     show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings

@@ -8,6 +8,7 @@ import pandas as pd
 import pygeohash as pgh
 
 from shapely.geometry import Polygon
+from shapely.validation import make_valid
 from rasterio.windows import Window
 from functools import reduce
 
@@ -94,6 +95,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf: geodataframes dissolved according to the provided gdf attribute
     """
 
+    # if 'blob': # os.path.exists(desired_file):
     if os.path.exists(desired_file):
         logger.info(f"File {name}_{attribute}.shp already exists")
         gdf = gpd.read_file(desired_file)
@@ -103,8 +105,9 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         logger.info(f"File {name}_{attribute}.shp does not exist")
         logger.info(f"Create it")
         gdf = gpd.read_file(original_file)
-
+        
         logger.info(f"Dissolved shapes by {attribute}")
+        gdf.geometry = gdf.apply(lambda row: make_valid(row.geometry) if not row.geometry.is_valid else row.geometry, axis=1)
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
         dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.001, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps        
 

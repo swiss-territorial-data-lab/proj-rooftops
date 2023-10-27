@@ -24,7 +24,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 
-def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, dic={}):
+def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, sam_dic={}):
 
     os.chdir(WORKING_DIR)
 
@@ -54,20 +54,14 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP
 
     if CUSTOM_SAM == True:
         logger.info("Use of customed SAM parameters")
-        # sam_kwargs = {
-        #     "points_per_side": 64,
-        #     "pred_iou_thresh": 0.86,
-        #     "stability_score_thresh": 0.92,
-        #     "crop_n_layers": 1,
-        #     "crop_n_points_downscale_factor": 1,
-        #     "min_mask_region_area": 100,
-        # }
-        sam_kwargs = dic
+        sam_kwargs = sam_dic
     else:
+        logger.info("Use of default SAM parameters")
         sam_kwargs = None
+    print('kwarg', sam_kwargs)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print('kwarg', sam_kwargs)
+
     sam = SamGeo(
         checkpoint=checkpoint,
         model_type='vit_h',
@@ -157,9 +151,10 @@ if __name__ == "__main__":
     # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']
+    SAM_DIC = cfg['SAM']['SAM_parameters']
     SHOW = cfg['SAM']['show_masks']
 
-    main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW)
+    main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, SAM_DIC)
 
     # Stop chronometer  
     toc = time.time()
