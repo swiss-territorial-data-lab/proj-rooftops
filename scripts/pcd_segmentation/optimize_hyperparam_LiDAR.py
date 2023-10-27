@@ -78,13 +78,13 @@ def objective(trial):
                                 #   DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS, number_planes=NUMBER_PLANES)
                                   **dict_parameters_pcd_seg)
     all_occupation_gdf, _ = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
-                                                    EGIDS, EPSG,
+                                                    EGIDS, ROOFS, EPSG,
                                                     alpha_shape=ALPHA_SHAPE,
                                                     **dict_parameters_vect
     )
     f1, averaged_iou, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                     LABELS, all_occupation_gdf,
-                                                    EGIDS, method=METHOD)
+                                                    EGIDS, ROOFS, method=METHOD)
 
     return f1, averaged_iou
 
@@ -118,6 +118,7 @@ OUTPUT_DIR='.'
 
 EGIDS=cfg['egids']
 LABELS=cfg['ground_truth']
+ROOFS = cfg['roofs']
 EPSG=cfg['epsg']
 
 SEGMENTATION=cfg['parameters']['segmentation']

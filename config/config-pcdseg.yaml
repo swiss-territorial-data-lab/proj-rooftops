@@ -18,10 +18,10 @@ prepare_data.py:
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
-  output_dir: processed/PCD_segmentation
-  egids: processed/PCD_segmentation/completed_egids.csv
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
+  input_dir: .
+  output_dir: .
+  egids: completed_egids.csv
   segmentation:
     planes:
       number_planes: 10
@@ -37,14 +37,15 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
-  output_dir: processed/PCD_segmentation
-  egids: processed/PCD_segmentation/completed_egids.csv
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
+  input_dir: .
+  output_dir: .
+  egids: completed_egids.csv
+  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 36        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
-    max: 450       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    min: 28        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 975       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
@@ -53,27 +54,28 @@ assess_results.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   output_dir: processed/PCD_segmentation
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/objects_on_roofs_training.shp
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: ground_truth/roofs_STDL_proofed_2023-10-25_v3_training.shp
   egids: processed/PCD_segmentation/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: False
   visualisation: False
   object_attributes:
-    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
+
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
     working_dir: /home/gsalamin/Documents/project_data/rooftops
     output_dir: processed/PCD_segmentation
     detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-    ground_truth: ground_truth/objects_on_roofs_training.shp
-    roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: completed_egids.csv
-    method: many-to-many
+    ground_truth: ground_truth/roofs_STDL_proofed_2023-10-25_v3_training.shp
+    roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+    egids: processed/PCD_segmentation/completed_egids.csv
+    method: fusion
     threshold: 0.1
     visualisation: True
 
@@ -82,7 +84,8 @@ calculate_free_surface.py:
 optimize_hyperparam_LiDAR.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
   egids: completed_egids.csv
-  ground_truth: ../../ground_truth/objects_on_roofs_training.shp
+  ground_truth: ../../ground_truth/roofs_STDL_proofed_2023-10-25_v3_training.shp
+  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   parameters:
     segmentation:

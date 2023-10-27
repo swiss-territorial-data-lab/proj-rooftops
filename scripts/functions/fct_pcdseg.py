@@ -7,11 +7,9 @@ import geopandas as gpd
 
 import matplotlib.pyplot as plt
 
-from descartes import PolygonPatch
 from scipy.spatial import ConvexHull, QhullError
 from shapely.errors import GEOSException
 from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import unary_union
 
 import alphashape
 
