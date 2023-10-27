@@ -77,7 +77,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
     roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
-    logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
+    logger.info(f"    - {len(roofs_gdf)} roofs")
 
     # Read the shapefile for labels
     labels_gdf = gpd.read_file(LABELS)
@@ -89,7 +89,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
         # Type 12 corresponds to free surfaces, other classes are objects
         labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
-        logger.info("- Filter objects and EGID")
         labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
@@ -126,7 +125,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     else:
         detections_gdf['ID_DET'] = detections_gdf.index
     detections_gdf=detections_gdf.explode(index_part=False)
-    logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
+    logger.info(f"    - {len(detections_gdf)} detections")
     
 
     if (len(object_parameters) > 0) and additional_metrics:
@@ -358,6 +357,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
     roof_attributes = egids.keys().tolist()
     roof_attributes.remove('EGID')
+    if 'nbr_elemen' in roof_attributes:
+        roof_attributes.remove('nbr_elemen')
 
     # Compute metrics by roof attributes 
     if additional_metrics:

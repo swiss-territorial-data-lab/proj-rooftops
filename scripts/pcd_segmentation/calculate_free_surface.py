@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
 
 
 import argparse
@@ -28,7 +24,7 @@ logger = misc.format_logger(logger)
 
 
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-to-one', threshold=0.1, visualisation=False):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-to-one', visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -36,10 +32,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         OUTPUT_DIR (path): output directory
         LABELS (path): file of the ground truth
         DETECTIONS (path): file of the detections
-        ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
+        ROOFS (path): file of the roof border and main elements
         method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many. Defaults ot one-to-one.
-        threshold (float): surface intersection threshold between label shape and detection shape to be considered as the same group. Defaults to 0.1.
         visualisation (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:
@@ -52,7 +47,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
 
     # Create an output directory in case it doesn't exist
     output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, METHOD))
-    threshold_str = str(THRESHOLD).replace('.', 'dot')
 
     written_files = {}
 
@@ -66,17 +60,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     # Open shapefiles
 
     if ('EGID' in ROOFS) | ('egid' in ROOFS):
-        roofs = gpd.read_file(ROOFS)
+        roofs_gdf = gpd.read_file(ROOFS)
     else:
         _, ROOFS_NAME = os.path.split(ROOFS)
         attribute = 'EGID'
         original_file_path = ROOFS
         desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
 
-        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+        roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
-    roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()
+    roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
     logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
 
     # Read the shapefile for labels
@@ -96,7 +90,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10), keep_geom_type=True)
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -111,18 +105,17 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     logger.info(f"    - {nbr_labels} labels")
 
     # Read the shapefile for detections
-    if isinstance(DETECTIONS, str):
-        detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
-    elif isinstance(DETECTIONS, gpd.GeoDataFrame):
-        detections_gdf = DETECTIONS.copy()
-    else:
-        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}.')
-        sys.exit(1)
-    detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1]
+    detections_gdf = gpd.read_file(DETECTIONS) # , layer='occupation_for_all_EGIDS')
+
+    if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
-    detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
-    detections_gdf = detections_gdf.rename(columns={"area": "area_DET"})
-    logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
+    if 'det_id' in detections_gdf.columns:
+        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+    else:
+        detections_gdf['ID_DET'] = detections_gdf.index
+    detections_gdf=detections_gdf.explode(index_part=False)
+    logger.info(f"    - {len(detections_gdf)} detections")
 
     logger.info('Get the free and occupied surface by EGID...')
     egid_surfaces_df = pd.DataFrame()
@@ -167,6 +160,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     surfaces_df['free_rel_diff'] = abs(surfaces_df['free_surface_det'] - surfaces_df['free_surface_label']) / surfaces_df['free_surface_label']
 
     feature_path = os.path.join(output_dir, 'global_surfaces.csv')
+    surfaces_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
     written_files[feature_path] = ''
  
 
@@ -174,6 +168,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     egid_surfaces_df = pd.merge(egid_surfaces_df, egids, on='EGID')
     roof_attributes = egids.keys().tolist()
     roof_attributes.remove('EGID')
+    if 'nbr_elemen' in roof_attributes:
+        roof_attributes.remove('nbr_elemen')
 
     # Compute free vs occupied surface by roof attributes 
     logger.info("- Free vs occupied surface per roof attribute")
@@ -245,11 +241,10 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
 
     METHOD = cfg['method']
-    THRESHOLD = cfg['threshold']
     VISUALISATION = cfg['visualisation']
 
-    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, 
-                         method=METHOD, threshold=THRESHOLD, visualisation=VISUALISATION)
+    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, 
+                         method=METHOD, visualisation=VISUALISATION)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
