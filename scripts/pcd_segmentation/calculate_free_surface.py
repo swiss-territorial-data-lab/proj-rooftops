@@ -54,27 +54,63 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, METHOD))
     threshold_str = str(THRESHOLD).replace('.', 'dot')
 
-    written_files={}
+    written_files = {}
 
     logger.info('Get input data...')
 
     # Get the EGIDS of interest
-    egids=pd.read_csv(EGIDS)
-    logger.info(f'Working on {egids.shape[0]} EGIDs.')
+    egids = pd.read_csv(EGIDS)
+    array_egids = egids.EGID.to_numpy()
+    logger.info(f'    - {egids.shape[0]} selected EGIDs.')
 
     # Open shapefiles
-    
+
+    if ('EGID' in ROOFS) | ('egid' in ROOFS):
+        roofs = gpd.read_file(ROOFS)
+    else:
+        _, ROOFS_NAME = os.path.split(ROOFS)
+        attribute = 'EGID'
+        original_file_path = ROOFS
+        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+
+        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()
+    logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
+
+    # Read the shapefile for labels
     labels_gdf = gpd.read_file(LABELS)
 
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
+    if 'type' in labels_gdf.columns:
+        labels_gdf['type'] = labels_gdf['type'].astype(int)
+        labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
+        # Type 12 corresponds to free surfaces, other classes are objects
+        labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
+        logger.info("- Filter objects and EGID")
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+    else:
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
+        
+    for egid in array_egids:
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10), keep_geom_type=True)
 
-    labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
+
+    labels_gdf['label_id'] = labels_gdf.id
+    labels_gdf['area'] = round(labels_gdf.area, 4)
+
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+    labels_gdf=labels_gdf.explode(ignore_index=True)
 
     nbr_labels=labels_gdf.shape[0]
-    logger.info(f"Read the file for labels: {nbr_labels} shapes")
+    logger.info(f"    - {nbr_labels} labels")
 
+    # Read the shapefile for detections
     if isinstance(DETECTIONS, str):
         detections_gdf = gpd.read_file(DETECTIONS, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
@@ -87,17 +123,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
     detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
     detections_gdf = detections_gdf.rename(columns={"area": "area_DET"})
     logger.info(f"Read the file for detections: {len(detections_gdf)} shapes")
-
-    # Get the rooftops shapes
-    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    attribute = 'EGID'
-    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
-    
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
-    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
-    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
-    roofs_gdf['area'] = round(roofs_gdf['geometry'].area, 4)
 
     logger.info('Get the free and occupied surface by EGID...')
     egid_surfaces_df = pd.DataFrame()
@@ -188,8 +213,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''} 
 
         for i in attribute_surface_df.attribute.unique():
-            filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=i, xlabel=xlabel_dict[i])
-            written_files[filepath] = ''
+            if attribute in xlabel_dict:
+                filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=i, xlabel=xlabel_dict[i])
+                written_files[filepath] = ''
 
     return written_files
     

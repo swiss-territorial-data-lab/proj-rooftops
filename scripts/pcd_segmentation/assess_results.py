@@ -2,11 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-
 
 import argparse
 import os
@@ -27,7 +22,7 @@ import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
-# Define functions --------------------------
+# Functions --------------------------
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-to-one', threshold=0.1, object_parameters=[], ranges=[], 
          additional_metrics=False, visualisation=False):
@@ -60,41 +55,44 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, method))
     threshold_str = str(threshold).replace('.', 'dot')
 
-    written_files={}
+    written_files = {}
 
     logger.info('Get input data...')
 
     # Get the EGIDS of interest
-    egids=pd.read_csv(EGIDS)
+    egids = pd.read_csv(EGIDS)
     array_egids = egids.EGID.to_numpy()
-    logger.info(f'Working on {egids.shape[0]} EGIDs.')
+    logger.info(f'    - {egids.shape[0]} selected EGIDs.')
 
     if ('EGID' in ROOFS) | ('egid' in ROOFS):
-        roofs = gpd.read_file(ROOFS)
+        roofs_gdf = gpd.read_file(ROOFS)
     else:
         # Get the rooftops shapes
         _, ROOFS_NAME = os.path.split(ROOFS)
         attribute = 'EGID'
         original_file_path = ROOFS
-        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
 
-        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+        roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
-    roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
     logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
 
-    # Open shapefiles
+    # Read the shapefile for labels
     labels_gdf = gpd.read_file(LABELS)
 
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
-    if 'occupation' in labels_gdf.columns:
-        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(array_egids))]\
-            .reset_index(drop=True).copy()
+    if 'type' in labels_gdf.columns:
+        labels_gdf['type'] = labels_gdf['type'].astype(int)
+        labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
+        # Type 12 corresponds to free surfaces, other classes are objects
+        labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
+        logger.info("- Filter objects and EGID")
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
     else:
-        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)]\
-            .reset_index().copy()
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
         
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
@@ -103,15 +101,16 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
 
-    labels_gdf['ID_GT'] = labels_gdf.id
+    labels_gdf['label_id'] = labels_gdf.id
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf=labels_gdf.explode(index_part=False)
+    labels_gdf=labels_gdf.explode(ignore_index=True)
 
     nbr_labels=labels_gdf.shape[0]
-    logger.info(f"Read the file for labels: {nbr_labels} shapes")
+    logger.info(f"    - {nbr_labels} labels")
 
+    # Read the shapefile for detections
     if isinstance(DETECTIONS, str):
         detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
@@ -138,7 +137,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_label', rsuffix='_roof')
         labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_label', rsuffix='_roof')
 
-        ## Nearest distance between polygons
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
 
@@ -146,9 +144,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     logger.info(f"Method used for detections counting:")
     methods_list =  ['one-to-one', 'one-to-many', 'charges', 'fusion']
     if method in methods_list:
-        logger.info(f'Using the {method} method')
+        logger.info(f'    {method} method')
     else:
-        logger.warning('    unknown method, default method = one-to-one.')
+        logger.warning('    Unknown method, default method = one-to-one.')
 
 
     metrics_egid_df = pd.DataFrame()
@@ -228,7 +226,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
-            if (len(object_class)>0) and isinstance(roofs, gpd.GeoDataFrame):
+            if (len(object_class)>0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
                 logger.info("- Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
@@ -314,7 +312,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
-            if (len(object_class)>0) and isinstance(roofs, gpd.GeoDataFrame):
+            if (len(object_class)>0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
                 logger.info("- Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 

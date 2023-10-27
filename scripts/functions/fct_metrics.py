@@ -53,7 +53,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
 
     # For each label, only keep the pred with the best IOU.
     sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
-    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
+    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
 
     # Save the dropped preds due to multiple detections of the same label.
     id_det_not_dropped = tp_gdf.ID_DET.unique()
@@ -85,7 +85,7 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
 
     # For each label, only keep the pred with the best IOU.
     sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IOU')
-    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['ID_GT'], keep='last', ignore_index=True)
+    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
     id_det_tp=tp_gdf['ID_DET'].unique().tolist()
 
     fp_gdf_temp=tp_gdf_ini[~tp_gdf_ini['ID_DET'].isin(id_det_tp)]
@@ -131,7 +131,7 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
 
     Args:
         dets_gdf (geodataframe): geodataframe of the detections with the id "ID_DET"
-        labels_gdf (geodataframe): geodataframe of the labels with the id "ID_GT"
+        labels_gdf (geodataframe): geodataframe of the labels with the id "label_id"
         method (str, optional): string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels. 
                 Defaults to 'one-to-one'.
         iou_thrshold (flaot, optional): threshold to apply on the IoU to determine the tags. Defaults to 0.1.
@@ -160,7 +160,7 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
 
     # TRUE POSITIVES
     left_join = gpd.sjoin(dets_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='_det', rsuffix='_label')
-    tp_gdf_temp = left_join[left_join.ID_GT.notnull()].copy()
+    tp_gdf_temp = left_join[left_join.label_id.notnull()].copy()
 
     # IOU computation between GT geometry and Detection geometry
     geom1 = tp_gdf_temp['detection_geometry'].to_numpy().tolist()
@@ -177,7 +177,7 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
 
 
     # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes
-    fp_gdf = left_join[left_join.ID_GT.isna()].copy()
+    fp_gdf = left_join[left_join.label_id.isna()].copy()
     fp_gdf = pd.concat([fp_gdf, fp_gdf_temp])
     assert(len(fp_gdf[fp_gdf.duplicated()]) == 0)
 
@@ -185,15 +185,15 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
     # FALSE NEGATIVES -> objects that have been missed by the detection algorithm
     right_join = gpd.sjoin(labels_gdf, dets_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     
-    id_gt_tp=tp_gdf['ID_GT'].unique().tolist()
-    suppressed_tp=tp_gdf_temp[~tp_gdf_temp['ID_GT'].isin(id_gt_tp)]
-    id_gt_filter = suppressed_tp['ID_GT'].unique().tolist()
+    id_gt_tp=tp_gdf['label_id'].unique().tolist()
+    suppressed_tp=tp_gdf_temp[~tp_gdf_temp['label_id'].isin(id_gt_tp)]
+    id_gt_filter = suppressed_tp['label_id'].unique().tolist()
     
-    fn_too_low_hit_gdf = right_join[right_join['ID_GT'].isin(id_gt_filter)]
+    fn_too_low_hit_gdf = right_join[right_join['label_id'].isin(id_gt_filter)]
     fn_no_hit_gdf = right_join[right_join.ID_DET.isna()].copy()
     fn_gdf = pd.concat([fn_no_hit_gdf, fn_too_low_hit_gdf])
    
-    fn_gdf.drop_duplicates(subset=['ID_GT'], inplace=True)
+    fn_gdf.drop_duplicates(subset=['label_id'], inplace=True)
 
     # Tag predictions   
     tp_gdf['tag'] = 'TP'
