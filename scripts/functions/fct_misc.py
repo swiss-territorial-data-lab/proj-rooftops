@@ -106,7 +106,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
 
         logger.info(f"Dissolved shapes by {attribute}")
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
-        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.001) # apply a small buffer to prevent thin spaces due to polygons gaps        
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.001, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps        
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
         attribute_count = gdf_considered_sections.EGID.value_counts()

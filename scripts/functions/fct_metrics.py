@@ -9,7 +9,6 @@ import pandas as pd
 
 import networkx as nx
 from fractions import Fraction
-from shapely import LineString, Point, Polygon, BufferCapStyle, BufferJoinStyle
 from shapely.geometry import GeometryCollection
     
 
