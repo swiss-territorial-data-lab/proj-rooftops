@@ -239,11 +239,10 @@ def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
     else:
         labels_by_attribute_gdf['occupied_surface'] = labels_by_attribute_gdf.area
 
-
-    detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    detections_with_area_gdf = pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
     detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
 
-    labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    labels_with_area_gdf = pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
     labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
 
     return labels_with_area_gdf, detections_with_area_gdf

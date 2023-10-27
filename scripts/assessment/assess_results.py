@@ -92,7 +92,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         # Type 12 corresponds to free surfaces, other classes are ojects
         labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
         logger.info("- Filter objects and EGID")
-        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))]
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())].copy()
 
@@ -100,7 +100,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
         labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
 
-        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+        tmp_gdf = labels_gdf[labels_gdf.EGID != egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
 
     labels_gdf['label_id'] = labels_gdf.id
@@ -120,6 +120,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     else:
         logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}.')
         sys.exit(1)
+
     if 'occupation' in detections_gdf.columns:
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
