@@ -6,7 +6,7 @@ prepare_data.py:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
     egids: EGIDs_GT_test.csv
-  output_dir: processed/PCD_segmentation
+  output_dir: processed/PCD_segmentation/test_zone
   filters:
     building_type: 'all'
     filter_class: False
@@ -18,10 +18,10 @@ prepare_data.py:
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
-  output_dir: processed/PCD_segmentation
-  egids: processed/PCD_segmentation/completed_egids.csv
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation/test_zone
+  input_dir: .
+  output_dir: .
+  egids: completed_egids.csv
   segmentation:
     planes:
       # number_planes: 2
@@ -37,43 +37,44 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  input_dir: processed/PCD_segmentation
-  output_dir: processed/PCD_segmentation
-  egids: EGIDs_GT_test.csv
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation/test_zone
+  input_dir: .
+  output_dir: .
+  egids: completed_egids.csv
+  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 18        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
-    max: 42       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    min: 28        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 975       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
 # 4 - Evaluate the results
 assess_results.py: 
   working_dir: /home/gsalamin/Documents/project_data/rooftops
-  output_dir: processed/PCD_segmentation
-  detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/objects_on_roofs_test.shp
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs_GT_test.csv
+  output_dir: processed/PCD_segmentation/test_zone
+  detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
+  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-10-25_v2_training.shp
+  egids: processed/PCD_segmentation/test_zone/completed_egids.csv
+  roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
-  threshold: 0.5
-  additional_metrics: False
-  visualisation: False
+  threshold: 0.1
+  additional_metrics: True
+  visualisation: True
   object_attributes:
-    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
     distance_ranges: [[0,1], [1,10], [10, 100]]
+
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
     working_dir: /home/gsalamin/Documents/project_data/rooftops
-    output_dir: processed/PCD_segmentation
-    detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-    ground_truth: ground_truth/objects_on_roofs_test.shp
-    roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_GT_test.csv
-    method: many-to-many
+    output_dir: processed/PCD_segmentation/test_zone
+    detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
+    ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-10-25_v2_training.shp
+    roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+    egids: processed/PCD_segmentation/test_zone/completed_egids.csv
+    method: fusion
     threshold: 0.1
     visualisation: True
-    
