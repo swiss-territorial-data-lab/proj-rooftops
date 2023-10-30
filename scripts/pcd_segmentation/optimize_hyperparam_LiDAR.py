@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
 
 import argparse
 import os
@@ -149,7 +145,7 @@ logger.info('Optimization of the hyperparameters for Open3d')
 
 # study=optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
 study = joblib.load(open(study_path, 'rb'))
-study.optimize(objective, n_trials=150, callbacks=[callback])
+study.optimize(objective, n_trials=50, callbacks=[callback])
 
 joblib.dump(study, study_path)
 written_files.append(study_path)

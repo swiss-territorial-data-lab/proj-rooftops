@@ -1,11 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
+#  proj-rooftops
 
 
 import argparse
