@@ -21,11 +21,11 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from shapely.ops import unary_union
+from shapely.errors import GEOSException
+from shapely.validation import make_valid
 
 sys.path.insert(1, 'scripts')
 import functions.fct_pcdseg as pcdseg
-from functions.fct_metrics import intersection_over_union
 from functions.fct_misc import ensure_dir_exists, format_logger
 
 warnings.filterwarnings("ignore", message="CRS not set for some of the concatenation inputs")
@@ -201,7 +201,11 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         if not occupation_df.empty:
             occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
-            clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
+            try:
+                clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
+            except GEOSException:
+                occupation_gdf.loc[:, 'geometry'] = [make_valid(geom) for geom in occupation_gdf.geometry]
+                clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
 
             clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
             clipped_occupation_gdf['EGID']=egid
