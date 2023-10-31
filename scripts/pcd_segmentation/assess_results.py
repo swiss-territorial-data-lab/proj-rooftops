@@ -95,7 +95,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10), keep_geom_type=True)
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
