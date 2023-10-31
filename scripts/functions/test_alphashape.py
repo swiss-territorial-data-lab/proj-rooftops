@@ -7,6 +7,8 @@ import sys
 import logging
 import shapely
 from shapely.geometry import MultiPoint
+from shapely.errors import GEOSException
+from shapely.validation import make_valid
 import trimesh
 from typing import Union, Tuple, List
 import rtree  # Needed by trimesh
@@ -43,7 +45,12 @@ def _testalpha(points: Union[List[Tuple[float]], np.ndarray], alpha: float):
     if isinstance(polygon, shapely.geometry.polygon.Polygon):
         if not isinstance(points, MultiPoint):
             points = MultiPoint(list(points))
-        return all([polygon.intersects(point) for point in points.geoms])
+        try:
+            return all([polygon.intersects(point) for point in points.geoms])
+        except GEOSException:
+            logging.error('Alphashape producing an invalid polygon. Correction with the shapely function "make_valid".')
+            polygon = make_valid(polygon)
+            return all([polygon.intersects(point) for point in points.geoms])
     elif isinstance(polygon, trimesh.base.Trimesh):
         return len(polygon.faces) > 0 and all(
             trimesh.proximity.signed_distance(polygon, list(points)) >= 0)

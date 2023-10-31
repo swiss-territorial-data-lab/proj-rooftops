@@ -52,7 +52,8 @@ FILTERS=cfg['filters']
 PCD_TILES=INPUTS['pcd_tiles']
 SHP_ROOFS = INPUTS['shp_roofs']
 EGIDS = INPUTS['egids']
-BUILDING_TYPE = FILTERS['building_type']
+BUILDING_TYPE = FILTERS['building_type'] if 'building_type' in FILTERS.keys() else 'all'
+ROOF_INCLINATION = FILTERS['roof_inclination'] if 'roof_inclination' in FILTERS.keys() else 'all'
 FILTER_CLASS = FILTERS['filter_class']
 CLASS_NUMBER = FILTERS['class_number']
 FILTER_ROOF = FILTERS['filter_roof']
@@ -78,12 +79,18 @@ written_files = []
 
 # Get the EGIDS of interest
 egids=pd.read_csv(EGIDS)
-if BUILDING_TYPE in ['administrative', 'contemporary', 'industrial', 'residential', 'villa']:
+if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
     egids = egids[egids.roof_type==BUILDING_TYPE].copy()
 elif BUILDING_TYPE!='all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
+if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
+    logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
+    egids = egids[egids.roof_inclination==ROOF_INCLINATION].copy()
+elif BUILDING_TYPE!='all':
+    logger.critical('Unknown roof type passed.')
+    sys.exit(1) 
 
 logger.info(f'The algorithm will be working on {egids.shape[0]} egids.')
 

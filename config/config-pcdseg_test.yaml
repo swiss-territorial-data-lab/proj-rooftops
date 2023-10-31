@@ -9,6 +9,7 @@ prepare_data.py:
   output_dir: processed/PCD_segmentation/test_zone
   filters:
     building_type: residential
+    roof_inclination: pitched
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
@@ -24,15 +25,15 @@ pcd_segmentation.py:
   egids: completed_egids.csv
   segmentation:
     planes:
-      number_planes: 17
-      distance_threshold: 0.2
-      ransac: 3
-      iterations: 7000
-      eps: 3
-      min_points: 728
+      number_planes: 16
+      distance_threshold: 0.23
+      ransac: 4
+      iterations: 8000
+      eps: 7
+      min_points: 650
     clusters:
-      eps: 0.92
-      min_points: 43
+      eps: 1.13
+      min_points: 93
   visualisation: False
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
@@ -44,8 +45,8 @@ vectorization.py:
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 20        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
-    max: 1200       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    min: 36        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 350       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
@@ -54,7 +55,7 @@ assess_results.py:
   working_dir: /home/gsalamin/Documents/project_data/rooftops
   output_dir: processed/PCD_segmentation/test_zone
   detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/roofs_STDL_proofed_2023-10-25_v3_test.shp
+  ground_truth: ground_truth/roofs_STDL_proofed_2023-10-30_test.shp
   egids: processed/PCD_segmentation/test_zone/completed_egids.csv
   roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
@@ -72,7 +73,7 @@ calculate_free_surface.py:
     working_dir: /home/gsalamin/Documents/project_data/rooftops
     output_dir: processed/PCD_segmentation/test_zone
     detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
-    ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-10-25_v2_training.shp
+    ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-10-30_test.shp
     roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
     egids: processed/PCD_segmentation/test_zone/completed_egids.csv
     method: fusion
