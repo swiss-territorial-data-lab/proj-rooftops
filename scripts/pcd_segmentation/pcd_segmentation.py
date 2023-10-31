@@ -2,17 +2,12 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
 
 import argparse
 import os
 import sys
 from loguru import logger
 from time import time
-from tqdm import tqdm
 from yaml import load, FullLoader
 
 import matplotlib.pyplot as plt
@@ -67,7 +62,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         logger.info('The number of planes for each EGID is deduced from the original layer.')
     number_planes_ini=number_planes
 
-    for egid_info in tqdm(egids.itertuples()):
+    for egid_info in egids.itertuples():
 
         file_name = 'EGID_' + str(egid_info.EGID)
         # Read pcd file and get points array
@@ -196,7 +191,7 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
 
     SEGMENTATION=cfg['segmentation']
-    # NB_PLANES = SEGMENTATION['planes']['number_planes']
+    NB_PLANES = SEGMENTATION['planes']['number_planes'] if 'number_planes' in  SEGMENTATION['planes'].keys() else None
     DISTANCE_THRESHOLD = SEGMENTATION['planes']['distance_threshold']
     RANSAC = SEGMENTATION['planes']['ransac']
     ITER = SEGMENTATION['planes']['iterations']
@@ -209,9 +204,9 @@ if __name__ == "__main__":
 
     written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, 
         DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
-        #  NB_PLANES, 
+        number_planes=NB_PLANES, 
         visu=VISU
-         )
+        )
     
     print()
     logger.success("The following files were written. Let's check them out!")

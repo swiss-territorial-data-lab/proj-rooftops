@@ -1,11 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 
-#  Proj rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
+#  proj-rooftops
 
 
 import argparse
@@ -21,11 +17,11 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from shapely.ops import unary_union
+from shapely.errors import GEOSException
+from shapely.validation import make_valid
 
 sys.path.insert(1, 'scripts')
-import functions.fct_pcdseg as fct_seg
-from functions.fct_metrics import intersection_over_union
+import functions.fct_pcdseg as pcdseg
 from functions.fct_misc import ensure_dir_exists, format_logger
 
 warnings.filterwarnings("ignore", message="CRS not set for some of the concatenation inputs")
@@ -117,8 +113,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         # Plane vectorization
         if plane_df.empty:
             logger.error('No planes to vectorize')
-        plane_multipoly_gdf = fct_seg.vectorize_concave(plane_df, plane, epsg, alpha_shape, visu)
-        # plane_multipoly_gdf = fct_seg.vectorize_convex(plane_df, plane) 
+        plane_multipoly_gdf = pcdseg.vectorize_concave(plane_df, plane, epsg, alpha_shape, visu)
+        # plane_multipoly_gdf = pcdseg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
         cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -128,8 +124,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         # Cluster vectorisation
         if cluster_df.empty:
             logger.error('No clusters to vectorize')
-        cluster_multipoly_gdf = fct_seg.vectorize_concave(cluster_df, cluster, epsg, alpha_shape, visu)
-        # cluster_multipoly_gdf = fct_seg.vectorize_convex(cluster_df, cluster, EPSG)
+        cluster_multipoly_gdf = pcdseg.vectorize_concave(cluster_df, cluster, epsg, alpha_shape, visu)
+        # cluster_multipoly_gdf = pcdseg.vectorize_convex(cluster_df, cluster, EPSG)
 
 
         # Deal with multipolygon
@@ -201,7 +197,11 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         if not occupation_df.empty:
             occupation_gdf = gpd.GeoDataFrame(occupation_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
 
-            clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
+            try:
+                clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
+            except GEOSException:
+                occupation_gdf.loc[:, 'geometry'] = [make_valid(geom) for geom in occupation_gdf.geometry]
+                clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
 
             clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
             clipped_occupation_gdf['EGID']=egid

@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
 
 
 import argparse
@@ -84,7 +80,7 @@ written_files = []
 egids=pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'contemporary', 'industrial', 'residential', 'villa']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
-    egids = egids[egids.type==BUILDING_TYPE].copy()
+    egids = egids[egids.roof_type==BUILDING_TYPE].copy()
 elif BUILDING_TYPE!='all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
@@ -98,7 +94,7 @@ feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
 
 rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    
-completed_egids=pd.merge(egids, rooftops, on='EGID')
+completed_egids = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
 
 subset_rooftops = rooftops[rooftops.EGID.isin(completed_egids.EGID.tolist())]
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID_subset.shp")

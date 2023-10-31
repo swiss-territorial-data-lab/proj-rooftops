@@ -150,7 +150,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
-    if method == 'charges' or method == 'fusion':
+
+    if detections_gdf.shape[0]==0:
+        logger.error('No detection is available, returning 0 as f1 score and IoU average.')
+        return 0, 0, []
+    
+    elif method == 'charges' or method == 'fusion':
 
         logger.info("Geohash the labels and detections to use them in graphs...")
         GT_PREFIX= 'gt_'
@@ -328,7 +333,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
 
     # Compute Jaccard index by EGID
-    logger.info(f"- Compute mean Jaccard index")
+    logger.info(f"    - Compute mean Jaccard index")
 
     labels_by_attr_gdf = metrics.get_jaccard_index(labels_gdf, detections_gdf)
 

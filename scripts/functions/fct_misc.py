@@ -109,9 +109,9 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
         attribute_count_gdf = gdf_considered_sections.EGID.value_counts() \
-            .reset_index().rename(columns={'index': attribute, attribute: 'nbr_elements'})
+            .reset_index().rename(columns={'count': 'nbr_elem'})
         dissolved_gdf = dissolved_gdf.merge(attribute_count_gdf, on=attribute)
-        dissolved_gdf = dissolved_gdf[~dissolved_gdf.nbr_elements.isna()].reset_index()
+        dissolved_gdf = dissolved_gdf[~dissolved_gdf.nbr_elem.isna()].reset_index()
 
         dissolved_gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
