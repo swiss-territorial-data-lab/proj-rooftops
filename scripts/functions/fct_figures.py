@@ -13,7 +13,7 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
     df2 = df2.fillna(0)
 
     for i in attribute:
-        bins=np.histogram(np.hstack((df1[i],df2[i])), bins=10)[1]
+        bins = np.histogram(np.hstack((df1[i],df2[i])), bins=10)[1]
         df1[i].plot.hist(bins=bins, alpha=0.5, label='GT')
         df2[i].plot.hist(bins=bins, alpha=0.5, label='Detections')
 
@@ -139,13 +139,13 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(8,6))
 
-    metrics_list = ['precision', 'recall', 'f1', 'averaged_IoU']    
+    metrics_list = ['precision', 'recall', 'f1', 'IoU_mean', 'IoU_median']    
 
     df = df[df['attribute'] == attribute] 
     
     for metric in metrics_list:
         if not df[metric].isnull().values.any():
-            plt.scatter(df['value'], df[metric], label=metric, s=150)
+            plt.scatter(df['value'], df[metric], label=metric.replace("_", " "), s=150)
 
     plt.ylim(-0.05, 1.05)
     if attribute == 'object_class':

@@ -43,20 +43,20 @@ def objective(trial):
     logger.info(f"Call objective function for hyperparameters optimization")
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    PPS = trial.suggest_int('points_per_side', 32, 160, step=32)
-    PPB = trial.suggest_int('points_per_batch', 32, 160, step=32)
+    PPS = trial.suggest_int('points_per_side', 32, 128, step=32)
+    PPB = trial.suggest_int('points_per_batch', 32, 128, step=32)
     IOU_THD = trial.suggest_float('pred_iou_thresh', 0.6, 0.95, step=0.05)
     SST = trial.suggest_float('stability_score_thresh', 0.6, 0.95, step=0.05)
     SSO = trial.suggest_float('stability_score_offset', 0.0, 6.0, step=1.0)
-    BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0.6, 0.95, step=0.05)
+    BOX_MNS_THD = trial.suggest_float('box_nms_thresh', 0.0, 0.9, step=0.1)
     CROP_N_LAYERS = trial.suggest_int('crop_n_layers', 0, 1, step=1)
-    CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0.6, 0.95, step=0.05)
-    CROP_OVERLAP_RATIO = trial.suggest_float('crop_overlap_ratio', 0.3, 0.8, step=0.1)
-    CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 0, 10, step=1)
-    MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 200, step=50)
+    CROP_MNS_THD = trial.suggest_float('crop_nms_thresh', 0.0, 0.9, step=0.1)
+    CROP_OVERLAP_RATIO = trial.suggest_float('crop_overlap_ratio', 0.0, 0.7, step=0.1)
+    CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 1, 10, step=1)
+    MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 300, step=50)
 
     # Create a dictionnary of the tested parameters value for a given trial
-    dict_parameters_sam = {
+    SAM_parameters = {
             "points_per_side": PPS,
             "points_per_batch": PPB,
             "pred_iou_thresh": IOU_THD, 
@@ -70,10 +70,10 @@ def objective(trial):
             "min_mask_region_area": MIN_MASK_REGION_AREA
             }
     print('')
-    print(dict_parameters_sam)
-    pd.DataFrame(dict_parameters_sam, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
+    print(SAM_parameters)
+    pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
-    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, dic=dict_parameters_sam)
+    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, SAM_parameters)
     produce_vector_layer.main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
     metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
                                              method=METHOD, threshold=THRESHOLD,
@@ -84,7 +84,8 @@ def objective(trial):
     print('')
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
-    iou = metrics_df['averaged_IoU'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    # iou = metrics_df['IoU_mean'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
     return f1, iou
 

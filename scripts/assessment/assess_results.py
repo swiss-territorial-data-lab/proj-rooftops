@@ -64,8 +64,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     array_egids = egids.EGID.to_numpy()
     logger.info(f"- {egids.shape[0]} selected EGIDs")
 
-    if ('EGID' in ROOFS) | ('egid' in ROOFS):
-        roofs = gpd.read_file(ROOFS)
+    if ('EGID' in roofs) | ('egid' in roofs):
+        roofs = gpd.read_file(roofs)
     else:  
         # Get the rooftops shapes
         ROOFS_DIR, ROOFS_NAME = os.path.split(roofs)
@@ -343,7 +343,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     if 'EGID' not in metrics_egid_df.columns:
         metrics_egid_df['EGID'] = labels_by_attr_gdf.EGID
 
-    metrics_egid_df['averaged_IoU'] = [
+    metrics_egid_df['IoU_EGID'] = [
         labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID == egid, 'IoU_EGID'].iloc[0]
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
@@ -354,8 +354,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     written_files[feature_path] = ''
 
     # Compute Jaccard index and free surface for all buildings 
-    iou_average = round(metrics_egid_df['averaged_IoU'].mean(), 3)
-    metrics_df['averaged_IoU'] = iou_average
+    iou_mean = round(metrics_egid_df['IoU_EGID'].mean(), 3)
+    iou_median = round(metrics_egid_df['IoU_EGID'].median(), 3)
+    metrics_df['IoU_mean'] = iou_mean
+    metrics_df['IoU_median'] = iou_median
 
     feature_path = os.path.join(output_dir, 'metrics.csv')
     metrics_df.to_csv(feature_path, index=False)
@@ -371,17 +373,19 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info("- Metrics per roof attributes")
         for attribute in roof_attributes:
             metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
-            metrics_iou_df = metrics_egid_df[[attribute, 'averaged_IoU']].groupby([attribute], as_index=False).mean()
+            metrics_iou_mean_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            metrics_iou_median_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).median()
 
             for val in metrics_egid_df[attribute].unique():
                 TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
                 FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
                 FN = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FN'].iloc[0]
-                iou = metrics_iou_df.loc[metrics_iou_df[attribute] == val, 'averaged_IoU'].iloc[0]    
+                iou_mean = metrics_iou_mean_df.loc[metrics_iou_mean_df[attribute] == val, 'IoU_EGID'].iloc[0]
+                iou_median = metrics_iou_median_df.loc[metrics_iou_median_df[attribute] == val, 'IoU_EGID'].iloc[0]      
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
-                                                    **metrics_results, 'averaged_IoU': iou}])
+                                                    **metrics_results, 'IoU_mean': iou_mean, 'IoU_median': iou_median}])
                 metrics_df = pd.concat([metrics_df, tmp_df])   
 
         metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
@@ -393,7 +397,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     precision = metrics_df.loc[0, 'precision']
     recall = metrics_df.loc[0, 'recall']
     f1 = metrics_df.loc[0, 'f1']
-    iou = metrics_df.loc[0, 'averaged_IoU']
+    iou_mean = metrics_df.loc[0, 'IoU_mean']
+    iou_median = metrics_df.loc[0, 'IoU_median']
 
     written_files[feature_path] = ''
     feature_path = os.path.join(output_dir, 'metrics.csv')
@@ -403,7 +408,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     logger.info(f"TP = {TP}, FP = {FP}, FN = {FN}")
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
-    logger.info(f"IoU for all EGIDs = {iou:.2f}")
+    logger.info(f"Mean IoU for all EGIDs = {iou_mean:.2f}")
+    logger.info(f"Median IoU for all EGIDs = {iou_median:.2f}")
     print('')
 
 
@@ -448,7 +454,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                     'nearest_distance_border': r'Object distance (m)'} 
 
         _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dic)
-        for i in metrics_objects_df.attribute.unique():
+        for i in metrics_df.attribute.unique():
             _ = figures.plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
             _ = figures.plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
             _ = figures.plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
