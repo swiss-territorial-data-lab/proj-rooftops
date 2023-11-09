@@ -86,7 +86,7 @@ calculate_free_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/optimization
+  image_dir: input/image_segmentation/tiles/tiles_large/
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
@@ -112,7 +112,7 @@ optimize_hyperparameters.py:
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch:
       thd_size: 2800 # pixel  
-      tile_size: 256 # pixel (square)
+      tile_size: 512 # pixel (square)
     foreground: true
     unique: true
     mask_multiplier: 255

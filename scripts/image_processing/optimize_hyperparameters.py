@@ -73,7 +73,10 @@ def objective(trial):
     print(SAM_parameters)
     pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
-    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, SAM_parameters)
+    segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
+         DL_CKP, CKP_DIR, CKP, THD_SIZE, TILE_SIZE, FOREGROUND, UNIQUE, MASK_MULTI, 
+         SHOW, CUSTOM_SAM, SAM_parameters
+         )
     produce_vector_layer.main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
     metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
                                              method=METHOD, threshold=THRESHOLD,
@@ -143,7 +146,8 @@ if __name__ == "__main__":
     DL_CKP = cfg['SAM']['dl_checkpoints']
     CKP_DIR = cfg['SAM']['checkpoints_dir']
     CKP = cfg['SAM']['checkpoints']
-    BATCH = cfg['SAM']['batch']
+    THD_SIZE = cfg['SAM']['batch']['thd_size']
+    TILE_SIZE = cfg['SAM']['batch']['tile_size']
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
     # EK = cfg['SAM']['erosion_kernel']
