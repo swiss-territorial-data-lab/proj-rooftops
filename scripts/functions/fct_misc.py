@@ -81,7 +81,34 @@ def bbox(bounds):
                     [minx, maxy]])
 
 
+def crop(source, size, output):
 
+    with rasterio.open(source) as src:
+
+        # The size in pixels of your desired window
+        x1, x2, y1, y2 = size[0], size[1], size[2], size[3]
+
+        # Create a Window and calculate the transform from the source dataset    
+        window = Window(x1, y1, x2, y2)
+        transform = src.window_transform(window)
+
+        # Create a new cropped raster to write to
+        profile = src.profile
+        profile.update({
+            'height': x2 - x1,
+            'width': y2 - y1,
+            'transform': transform})
+
+        file_path = os.path.join(ensure_dir_exists(os.path.join(output, 'crop')),
+                                 source.split('/')[-1].split('.')[0] + '_crop.tif')   
+
+        with rasterio.open(file_path, 'w', **profile) as dst:
+            # Read the data from the window and write it to the output raster
+            dst.write(src.read(window=window))  
+
+        return file_path
+    
+    
 def dissolve_by_attribute(desired_file, original_file, name, attribute):
     """Dissolve shape according to a given attribute in the gdf
 
