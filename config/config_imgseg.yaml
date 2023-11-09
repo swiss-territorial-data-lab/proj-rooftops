@@ -13,39 +13,42 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles
-  output_dir: output/image_segmentation
+  image_dir:  input/image_segmentation/tiles/tiles_large
+  output_dir: output/image_segmentation/tiles_large
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
-  image_crop: # Activate the option to crop the input image according to pixel coordinates
+  image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
-    size: [0, 1052, 0, 1052] # Crop image to perform test 
+    size: [0, 3000, 0, 3000] # Crop image to perform test 
   SAM:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
-    batch: False
+    batch:
+      thd_size: 2800 # pixel  
+      tile_size: 256 # pixel (square)
     foreground: True
     unique: True
     mask_multiplier: 255
-    custom_SAM: False
-    SAM_parameters: {
-      "points_per_side": 64,
-      "pred_iou_thresh": 0.86,
-      "stability_score_thresh": 0.92,
-      "crop_n_layers": 1,
-      "crop_n_points_downscale_factor": 1,
-      "min_mask_region_area": 100,
-      }
+    custom_SAM: 
+      enable: False
+      custom_parameters: {
+        "points_per_side": 64,
+        "pred_iou_thresh": 0.86,
+        "stability_score_thresh": 0.92,
+        "crop_n_layers": 1,
+        "crop_n_points_downscale_factor": 1,
+        "min_mask_region_area": 100,
+        }
     show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_large.csv
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
-  output_dir: output/image_segmentation/
+  output_dir: output/image_segmentation/tiles_large/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -53,12 +56,12 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
-  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  detections: output/image_segmentation/tiles_large/vectors/roof_segmentation.gpkg
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_large.csv
   # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
-  output_dir: output/image_segmentation/assessment/
+  output_dir: output/image_segmentation/tiles_large/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
@@ -107,7 +110,9 @@ optimize_hyperparameters.py:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
-    batch: false
+    batch:
+      thd_size: 2800 # pixel  
+      tile_size: 256 # pixel (square)
     foreground: true
     unique: true
     mask_multiplier: 255
