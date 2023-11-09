@@ -25,7 +25,7 @@ segment_images.py:
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch:
       thd_size: 2800 # pixel  
-      tile_size: 256 # pixel (square)
+      tile_size: 1052 # pixel (square)
     foreground: True
     unique: True
     mask_multiplier: 255
