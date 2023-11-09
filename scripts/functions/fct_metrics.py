@@ -302,18 +302,20 @@ def get_metrics(TP, FP, FN):
     return metrics_dict
 
 
-def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
+def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix='dt_', group_attribute=None):
     """Tag labels and detections with "charges". 
     This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
     A fractionnal "charge" will be assigned to labels/detections belonging to an identified group
     cf https://tech.stdl.ch/PROJ-TREEDET/#24-post-processing-assessment-algorithm-and-metrics-computation for more information
 
     Args:
-        gt (geodataframe): geodataframe of the detection with the id "detection_idection"
-        dets (geodataframe): threshold to apply on the IoU to determine TP and FP
-        buffer (float): buffer (in meter) applied to shapes to avoid them sharing border and being assigned to the same group without proper overlap
-        gt_prefix (str): prefix used to identified labels groups 
-        det_prefix (str): prefix used to identified detections groups 
+        gt (geodataframe): geodataframe of the ground truth
+        dets (geodataframe): geodataframe of the detections
+        threshold (float):  threshold to apply on the percentage of overlap to determine TP and FP
+        method (string): method to use for the charge attribution, possiblities are "charges" and "fusion"
+        buffer (float, optional): buffer (in meter) applied to shapes to avoid them sharing border and being assigned to the same group without proper overlap. Defaults to 0.001.
+        gt_prefix (str, optional): prefix used to identified labels groups. Defaults to "gt_".
+        det_prefix (str, optional): prefix used to identified detections groups. Defaults to "dt_".
 
     Returns:
         gt (gdf): geodataframes of the tagged labels with the associated group id, TP charge and FN charge
@@ -330,8 +332,8 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
         """
 
         g = nx.Graph()
-        for row in l_join[l_join.geohash_y.notnull()].itertuples():
-            g.add_edge(row.geohash_x, row.geohash_y)
+        for row in l_join[l_join.geohash_gt.notnull()].itertuples():
+            g.add_edge(row.geohash_dt, row.geohash_gt)
 
         groups = list(nx.connected_components(g))
 
@@ -419,26 +421,29 @@ def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
     charges_dict = {}
 
     # spatial joins
-    l_join = gpd.sjoin(_dets, _gt, how='left', predicate='intersects', lsuffix='x', rsuffix='y')
-    r_join = gpd.sjoin(_dets, _gt, how='right', predicate='intersects', lsuffix='x', rsuffix='y')
+    l_join = gpd.sjoin(_dets, _gt, how='left', predicate='intersects', lsuffix='dt', rsuffix='gt')
+    r_join = gpd.sjoin(_dets, _gt, how='right', predicate='intersects', lsuffix='dt', rsuffix='gt')
+    if group_attribute:
+        l_join.loc[l_join[group_attribute + '_dt'] != l_join[group_attribute + '_gt'], 'geohash_gt'] = np.nan
+        r_join.loc[r_join[group_attribute + '_dt'] != r_join[group_attribute + '_gt'], 'geohash_dt'] = np.nan
 
     # trivial False Positives
-    trivial_FPs = l_join[l_join.geohash_y.isna()]
+    trivial_FPs = l_join[l_join.geohash_gt.isna()].copy()
     for tup in trivial_FPs.itertuples():
         charges_dict = {
             **charges_dict,
-            tup.geohash_x: {
+            tup.geohash_dt: {
                 'FP_charge': Fraction(1, 1),
                 'TP_charge': Fraction(0, 1)
             }
         }
 
     # trivial False Negatives
-    trivial_FNs = r_join[r_join.geohash_x.isna()]
+    trivial_FNs = r_join[r_join.geohash_dt.isna()].copy()
     for tup in trivial_FNs.itertuples():
         charges_dict = {
             **charges_dict,
-            tup.geohash_y: {
+            tup.geohash_gt: {
                 'FN_charge': Fraction(1, 1),
                 'TP_charge': Fraction(0, 1)
             }

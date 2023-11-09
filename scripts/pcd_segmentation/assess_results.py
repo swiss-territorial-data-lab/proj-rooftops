@@ -95,7 +95,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -170,8 +170,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         logger.info(f"Metrics computation:")
         logger.info(f"     - Compute TP, FP and FN")
 
-        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                     buffer=-0.01, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, threshold=threshold, method=method)
+        tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf,
+                                                    threshold=threshold, method=method, buffer=-0.01, 
+                                                    gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, group_attribute='EGID')
         feature_path = os.path.join(output_dir, 'tags.gpkg')
         
         if method=='fusion':

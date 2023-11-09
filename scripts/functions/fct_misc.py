@@ -156,6 +156,7 @@ def drop_duplicates(gdf, subset=None):
 
     Args:
         gdf : geodataframe
+        subset: columns to check for duplicates
 
     Returns:
         out_gdf (gdf): clean geodataframe
