@@ -6,7 +6,7 @@ generate_tiles.py:
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles/optimization
+  output_dir: input/image_segmentation/tiles/tiles_large
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
@@ -23,9 +23,11 @@ segment_images.py:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
-    batch:
-      thd_size: 2800 # pixel  
-      tile_size: 1052 # pixel (square)
+    large_tile:
+      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      thd_size: 5500000 # pixel  
+      tile_size: 1052 # pixel (square). Will be ignore if method=resample
+      resample: 0.2 # m, pixel size. Will be ignore if method=batch
     foreground: True
     unique: True
     mask_multiplier: 255
