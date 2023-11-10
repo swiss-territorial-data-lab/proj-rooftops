@@ -25,7 +25,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 
-def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
+def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     os.chdir(WORKING_DIR)
 
@@ -51,10 +51,6 @@ def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
 
     logger.info(f"  Number of building to process: {len(roofs_gdf)}")
-
-    # Read labels shapefile and compute shape area
-    labels_gdf = gpd.read_file(LABELS)
-    labels_gdf['area'] = round(labels_gdf.area, 4)
 
     # Read all the shapefiles produced, filter them and merge them in a single layer  
     logger.info(f"Read shapefiles' name")
@@ -85,8 +81,7 @@ def main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         # Filter vectorised objects. Threshold values have been set
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
-        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.05) & # Filter noise
-                                            (objects_selection['area_shp'] >= 0.75 * np.min(labels_gdf['area'])) & # Filter small shapes
+        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
                                             (objects_selection['area_noholes_shp'] <= 1.0 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
                                             (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially interescting the roof extension
 
@@ -137,14 +132,13 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    LABELS = cfg['ground_truth']
     EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
     OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     CRS = cfg['crs']
 
-    main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
+    main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
 
     # Stop chronometer  
     toc = time.time()

@@ -4,7 +4,7 @@ generate_tiles.py:
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: input/image_segmentation/tiles/optimization
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
@@ -41,10 +41,9 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   output_dir: output/image_segmentation/
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
@@ -57,7 +56,7 @@ assess_results.py:
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -71,10 +70,10 @@ assess_results.py:
 # 5 - Estimate the free surface
 calculate_free_surface.py:
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   output_dir: output/image_segmentation/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -84,9 +83,9 @@ calculate_free_surface.py:
 optimize_hyperparameters.py:
   working_dir: .
   image_dir: input/image_segmentation/tiles/optimization
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   # roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-10-25_v3.shp
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
   output_dir: output/image_segmentation/optimization/
