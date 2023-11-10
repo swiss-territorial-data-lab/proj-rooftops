@@ -201,7 +201,7 @@ if __name__ == "__main__":
     joblib.dump(study, study_path)
     written_files.append(study_path)
 
-    targets = {0: 'f1 score', 1: 'average IoU'}
+    targets = {0: 'f1 score', 1: 'median IoU'}
 
     logger.info('Save the best hyperparameters')
     written_files.append(optimization.save_best_hyperparameters(study, targets, output_plots))
