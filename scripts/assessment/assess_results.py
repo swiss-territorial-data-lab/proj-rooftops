@@ -169,8 +169,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         logger.info(f"- Compute TP, FP and FN")
         
         tagged_gt_gdf, tagged_dets_gdf = metrics.tag(gt=labels_gdf, dets=detections_gdf, 
-                                                    buffer=0.05, gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, 
-                                                    threshold=threshold, method=method)
+                                                    threshold=threshold, method=method, buffer=0.01,
+                                                    gt_prefix=GT_PREFIX, dets_prefix=DETS_PREFIX, group_attribute='EGID'
+                                                    )
 
         feature_path = os.path.join(output_dir, 'tags.gpkg')
 
