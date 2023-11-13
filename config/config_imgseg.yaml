@@ -6,15 +6,15 @@ generate_tiles.py:
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles
+  output_dir: input/image_segmentation/tiles/tiles_training_v3
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles
-  output_dir: output/image_segmentation
+  image_dir:  input/image_segmentation/tiles/tiles_training_v3
+  output_dir: output/image_segmentation/training_buildings_v3
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates
     enable: False
@@ -30,18 +30,18 @@ segment_images.py:
     custom_SAM: False
     SAM_parameters: {
       "points_per_side": 128,
-      "points_per_batch": 32,
-      "pred_iou_thresh": 0.9,
-      "stability_score_thresh": 0.7,
-      "stability_score_offset": 4.0,
-      "box_nms_thresh":  0.6,
+      "points_per_batch": 128,
+      "pred_iou_thresh": 0.8,
+      "stability_score_thresh": 0.8,
+      "stability_score_offset": 2.0,
+      "box_nms_thresh":  0.3,
       "crop_n_layers": 0,
       "crop_nms_thresh": 0.1,
-      "crop_overlap_ratio": 512 / 1024,
-      "crop_n_points_downscale_factor": 3,
-      "point_grids": None,
-      "min_mask_region_area": 100,
-      "output_mode": str = "binary_mask",
+      "crop_overlap_ratio": 0.6,
+      "crop_n_points_downscale_factor": 6,
+      # "point_grids": None,
+      "min_mask_region_area": 250,
+      # "output_mode": str = "binary_mask",
       }
     show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
 
@@ -51,7 +51,7 @@ produce_vector_layer.py:
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  output_dir: output/image_segmentation
+  output_dir: output/image_segmentation/training_buildings_v3
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -59,12 +59,12 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/training_buildings_v3/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  output_dir: output/image_segmentation/assessment/
+  output_dir: output/image_segmentation/training_buildings_v3/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
@@ -78,10 +78,10 @@ assess_results.py:
 calculate_free_surface.py:
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/training_buildings_v3/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  output_dir: output/image_segmentation/assessment/
+  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  output_dir: output/image_segmentation/training_buildings_v3/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
   visualisation: True
