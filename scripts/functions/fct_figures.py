@@ -139,7 +139,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(8,6))
 
-    metrics_list = ['precision', 'recall', 'f1', 'IoU_EGID']    
+    metrics_list = ['precision', 'recall', 'f1', 'IoU_mean', 'IoU_median']    
 
     df = df[df['attribute'] == attribute] 
     

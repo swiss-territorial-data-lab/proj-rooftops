@@ -351,9 +351,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     written_files[feature_path] = ''
         
     # Compute Jaccard index for all buildings
-
-    iou_average = round(metrics_egid_df['IoU_EGID'].mean(), 3)
-    metrics_df['average_IoU_EGID'] = iou_average
+    metrics_df['IoU_mean'] = round(metrics_egid_df['IoU_EGID'].mean(), 3)
+    metrics_df['IoU_median'] = round(metrics_egid_df['IoU_EGID'].median(), 3)
 
     feature_path = os.path.join(output_dir, 'metrics.csv')
     metrics_df.to_csv(feature_path, index=False)
@@ -371,21 +370,23 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         logger.info("    - Metrics per roof attributes")
         for attribute in roof_attributes:
             metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
-            metrics_iou_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            metrics_iou_mean_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            metrics_iou_median_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).median()
             
             for val in metrics_egid_df[attribute].unique():
                 TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
                 FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
                 FN = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FN'].iloc[0]
-                iou = metrics_iou_df.loc[metrics_iou_df[attribute] == val, 'IoU_EGID'].iloc[0]    
+                iou_mean = metrics_iou_mean_df.loc[metrics_iou_mean_df[attribute] == val, 'IoU_EGID'].iloc[0]
+                iou_median = metrics_iou_median_df.loc[metrics_iou_median_df[attribute] == val, 'IoU_EGID'].iloc[0]    
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
-                                                    **metrics_results, 'IoU_EGID': iou,}])
+                                                    **metrics_results, 'IoU_mean': iou_mean, 'IoU_median': iou_median}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])   
         
         feature_path = os.path.join(output_dir, 'per_attribute_metrics.csv')
-        metrics_objects_df.to_csv(feature_path)
+        metrics_objects_df.to_csv(feature_path, index=False)
         written_files[feature_path] = ''
 
     # Sump-up results and save files
@@ -395,13 +396,15 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     precision = metrics_df.loc[0, 'precision']
     recall = metrics_df.loc[0, 'recall']
     f1 = metrics_df.loc[0, 'f1']
-    iou = metrics_df.loc[0, 'average_IoU_EGID']
+    iou_mean = metrics_df.loc[0, 'IoU_mean']
+    iou_median = metrics_df.loc[0, 'IoU_median']
 
     print()
     logger.info(f"TP = {TP}, FP = {FP}, FN = {FN}")
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
-    logger.info(f"average IoU for all EGIDs = {iou:.2f}")
+    logger.info(f"Mean IoU for all EGIDs = {iou_mean:.2f}")
+    logger.info(f"Median IoU for all EGIDs = {iou_median:.2f}")
     print()
 
     # Check if detection or labels have been lost in the process
@@ -450,7 +453,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
 
             
-    return f1, iou_average, written_files
+    return f1, iou_median, written_files
 
 # ------------------------------------------
 
