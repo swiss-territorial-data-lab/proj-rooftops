@@ -49,7 +49,7 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
 
     number_parts_df = exploded_gdf['multipoly_id'].value_counts()
     for multipoly_id, number_parts in number_parts_df.items():
-        if number_parts > 100:
+        if number_parts > 25:
             exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=0.5))].copy()
         elif number_parts > limit_number:
             exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=limit_area))].copy()

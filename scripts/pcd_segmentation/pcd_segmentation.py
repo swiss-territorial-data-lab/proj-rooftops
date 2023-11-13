@@ -15,6 +15,8 @@ import numpy as np
 import open3d as o3d
 import pandas as pd
 
+o3d.utility.random.seed(0)
+
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as fct_misc
 
@@ -89,15 +91,13 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
 
         if not number_planes_ini:
             number_planes = int(egid_info.nbr_elemen)
-            if number_planes > 100:
-                number_planes = 100
             
             logger.info(f'Working on EGID {egid_info.EGID} with {number_planes} planes...')
 
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
             segment_models[i], inliers = remaining_pts.segment_plane(
-                distance_threshold = distance_threshold, ransac_n = ransac, num_iterations = iterations
+                distance_threshold = distance_threshold, ransac_n = ransac, num_iterations = iterations, probability = 1,
             )
             segments[i] = remaining_pts.select_by_index(inliers)
             labels = np.array(segments[i].cluster_dbscan(eps = eps_planes, min_points = min_points_planes, print_progress = True))
