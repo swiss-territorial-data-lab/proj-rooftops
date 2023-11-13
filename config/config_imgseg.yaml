@@ -59,7 +59,7 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp

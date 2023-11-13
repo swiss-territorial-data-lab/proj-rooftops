@@ -69,13 +69,17 @@ def plot_surface(dir_plots, df, attribute, xlabel):
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
-
-    color_list = ['limegreen', 'orange', 'tomato']  
-    counts_list = ['TP', 'FP', 'FN']    
-
+ 
     df = df[df['attribute'] == attribute]  
+    if df['FP'].isnull().values.any():
+        color_list = ['limegreen', 'tomato']  
+        counts_list = ['TP', 'FN']  
+    else:
+        color_list = ['limegreen', 'orange', 'tomato']  
+        counts_list = ['TP', 'FP', 'FN']  
+
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-    
+
     df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
 
     for c in ax.containers:
@@ -101,10 +105,14 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
-    color_list = ['limegreen', 'orange', 'tomato']  
-    counts_list = ['TP', 'FP', 'FN']    
-
     df = df[df['attribute'] == attribute]  
+    if df['FP'].isnull().values.any():
+        color_list = ['limegreen', 'tomato']  
+        counts_list = ['TP', 'FN']  
+    else:
+        color_list = ['limegreen', 'orange', 'tomato']  
+        counts_list = ['TP', 'FP', 'FN'] 
+
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
     df['sum'] = df.sum(axis=1)
 

@@ -243,10 +243,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                         filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
                         
                         TP = float(filter_gt_gdf['TP_charge'].sum())
-                        FP = float(filter_dets_gdf['FP_charge'].sum()) 
                         FN = float(filter_gt_gdf['FN_charge'].sum())
+                        FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
+                        rem_list = ['FP', 'precision', 'f1']
+                        [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -312,7 +314,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 
                 TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
                 FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
-                FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
+                FP = 0
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 rem_list = ['FP', 'precision', 'f1']
@@ -328,10 +330,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                         filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
                             
                         TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='TP'].shape[0])
+                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='FN'].shape[0])
                         FP = 0
-                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='TP'].shape[0])
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
+                        rem_list = ['FP', 'precision', 'f1']
+                        [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
