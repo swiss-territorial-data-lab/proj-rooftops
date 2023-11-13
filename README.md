@@ -32,6 +32,17 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         $ pip-compile requirements.in
 
+- The library `segment-geospatial` is used in "editable" mode. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environement execute the following commands:
+
+        $ cd segment-geospatial
+        $ git checkout ch/dev
+        $ pip install .
+
+        or in editable mode
+
+        $ pip install -e .
+
+If the installation is sucessfull the message "You are using a modified version of segment-geospatial library (v 0.10.0 fork)" must be print in the prompt while executing the script `segment_image.py`.  
 
 ### Files structure
 
@@ -51,9 +62,9 @@ Shapefiles are also used as input data and listed below:
 
 - Data linked to the building selection of the Ground Truth:
 
-    - Roof shape (roofs): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/EGIDs_full_GT.csv (list can be adapted)
+    - Roof shape (roofs): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/EGIDs_selected_GT.csv (list can be adapted)
     - Tiles shape (tiles): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TUILES_TRUEORTHO/Tuiles.shp
-    - Ground truth shape (labels): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_assess_2023-10-03.shp
+    - Ground truth shape (labels): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-10-25_v3.shp
 
 ### Workflow
 

@@ -16,33 +16,38 @@ segment_images.py:
   image_dir:  input/image_segmentation/tiles/tiles_training_v3
   output_dir: output/image_segmentation/training_buildings_v3
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
-  image_crop: # Activate the option to crop the input image according to pixel coordinates
+  image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
-    size: [0, 1052, 0, 1052] # Crop image to perform test 
+    size: [0, 3000, 0, 3000] # Crop image to perform test 
   SAM:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
-    batch: False
+    large_tile:
+      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      thd_size: 5500000 # pixel  
+      tile_size: 1052 # pixel (square). Will be ignore if method=resample
+      resample: 0.2 # m, pixel size. Will be ignore if method=batch
     foreground: True
     unique: True
     mask_multiplier: 255
-    custom_SAM: False
-    SAM_parameters: {
-      "points_per_side": 128,
-      "points_per_batch": 128,
-      "pred_iou_thresh": 0.8,
-      "stability_score_thresh": 0.8,
-      "stability_score_offset": 2.0,
-      "box_nms_thresh":  0.3,
-      "crop_n_layers": 0,
-      "crop_nms_thresh": 0.1,
-      "crop_overlap_ratio": 0.6,
-      "crop_n_points_downscale_factor": 6,
-      # "point_grids": None,
-      "min_mask_region_area": 250,
-      # "output_mode": str = "binary_mask",
-      }
+    custom_SAM:
+      enable: False
+      custom_parameters: {
+        "points_per_side": 128,
+        "points_per_batch": 128,
+        "pred_iou_thresh": 0.8,
+        "stability_score_thresh": 0.8,
+        "stability_score_offset": 2.0,
+        "box_nms_thresh":  0.3,
+        "crop_n_layers": 0,
+        "crop_nms_thresh": 0.1,
+        "crop_overlap_ratio": 0.6,
+        "crop_n_points_downscale_factor": 6,
+        # "point_grids": None,
+        "min_mask_region_area": 250,
+        # "output_mode": str = "binary_mask",
+        }
     show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
@@ -113,7 +118,9 @@ optimize_hyperparameters.py:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
-    batch: false
+    batch:
+      thd_size: 2800 # pixel  
+      tile_size: 512 # pixel (square)
     foreground: true
     unique: true
     mask_multiplier: 255

@@ -3,19 +3,22 @@
 
 #  proj-rooftops
 
-
+import argparse
 import os
 import sys
 import time
-import argparse
+import torch
+
 from glob import glob
 from loguru import logger
+from osgeo import gdal
 from tqdm import tqdm
 from yaml import load, FullLoader
-
-import torch
+from PIL import Image
 from rasterio.mask import mask
 from samgeo import SamGeo
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "caching_allocator"
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -24,7 +27,10 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 
-def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, sam_dic={}):
+def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
+         DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,
+         FOREGROUND, UNIQUE, MASK_MULTI, 
+         SHOW, CUSTOM_SAM, sam_dic={}):
 
     os.chdir(WORKING_DIR)
 
@@ -58,7 +64,6 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP
     else:
         logger.info("Use of default SAM parameters")
         sam_kwargs = None
-    print('kwarg', sam_kwargs)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -75,8 +80,23 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
 
-        # Read image 
+        # Subdivide the input images in smaller tiles if its longest side exceed the threshold size 
+        directory, file = os.path.split(tile)
+        img = Image.open(tile)
+        width, height = img.size
+        BATCH = False
+        size = width * height
+        # print(width, height, size)
         tilepath = tile
+        if size >= THD_SIZE:
+            if METHOD=="batch":
+                BATCH = True
+            elif METHOD=="resample":
+                misc.ensure_dir_exists(os.path.join(directory, 'resample'))
+                tile_resample = os.path.join(directory, 'resample', file)
+                tilepath = tile_resample
+                img_resample = gdal.Warp(tile_resample, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')          
+                
         
         # Crop the input image by pixel value
         if CROP:
@@ -87,9 +107,10 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP
         # Produce and save mask
         file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                                 tile.split('/')[-1].split('.')[0] + '_segment.tif')       
-        
+
         mask = file_path
-        sam.generate(tilepath, mask, batch=BATCH, foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
+        sam.generate(tilepath, mask, batch=BATCH, sample_size=(TILE_SIZE, TILE_SIZE), foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
+
         written_files.append(file_path)  
 
         if SHOW:
@@ -145,16 +166,23 @@ if __name__ == "__main__":
     DL_CKP = cfg['SAM']['dl_checkpoints']
     CKP_DIR = cfg['SAM']['checkpoints_dir']
     CKP = cfg['SAM']['checkpoints']
-    BATCH = cfg['SAM']['batch']
+    METHOD = cfg['SAM']['large_tile']['method']
+    THD_SIZE = cfg['SAM']['large_tile']['thd_size']
+    TILE_SIZE = cfg['SAM']['large_tile']['tile_size']
+    RESAMPLE = cfg['SAM']['large_tile']['resample']
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
     # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
-    CUSTOM_SAM = cfg['SAM']['custom_SAM']
-    SAM_DIC = cfg['SAM']['SAM_parameters']
+    CUSTOM_SAM = cfg['SAM']['custom_SAM']['enable']
+    CUSTOM_PARAMETERS = cfg['SAM']['custom_SAM']['custom_parameters']
     SHOW = cfg['SAM']['show_masks']
 
-    main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, DL_CKP, CKP_DIR, CKP, BATCH, FOREGROUND, UNIQUE, MASK_MULTI, CUSTOM_SAM, SHOW, SAM_DIC)
+    main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
+         DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,
+         FOREGROUND, UNIQUE, MASK_MULTI, 
+         SHOW, CUSTOM_SAM, CUSTOM_PARAMETERS
+         )
 
     # Stop chronometer  
     toc = time.time()
