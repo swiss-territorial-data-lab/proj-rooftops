@@ -88,7 +88,7 @@ elif BUILDING_TYPE!='all':
 if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
     logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
     egids = egids[egids.roof_inclination==ROOF_INCLINATION].copy()
-elif BUILDING_TYPE!='all':
+elif ROOF_INCLINATION!='all':
     logger.critical('Unknown roof type passed.')
     sys.exit(1) 
 
