@@ -26,8 +26,8 @@ segment_images.py:
     large_tile:
       method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
       thd_size: 5500000 # pixel  
-      tile_size: 1052 # pixel (square). Will be ignore if method=resample
-      resample: 0.5 # m, pixel size. Will be ignore if method=batch
+      tile_size: 512 # pixel (square). Will be ignore if method=resample
+      resample: 0.2 # m, pixel size. Will be ignore if method=batch
     foreground: True
     unique: True
     mask_multiplier: 255
@@ -53,10 +53,10 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_large_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  output_dir: output/image_segmentation/training_buildings_v3
+  output_dir: output/image_segmentation/large_tiles_resample
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -64,12 +64,12 @@ produce_vector_layer.py:
 assess_results.py:  
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  detections: output/image_segmentation/training_buildings_v3/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  detections: output/image_segmentation/large_tiles_resample_v2/vectors/roof_segmentation.gpkg
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_large_GT.csv
   # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  output_dir: output/image_segmentation/training_buildings_v3/assessment/
+  output_dir: output/image_segmentation/large_tiles_resample_v2/assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True

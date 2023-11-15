@@ -460,18 +460,36 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         # filter detections and labels based on intersection area fraction
         keep_geohashes_gt = []
         keep_geohashes_dets = [] 
-       
+
+        # Potential new version of metrics computation: computation of the intersection between all overlaped detection and overlaped gt shape area  
+        gt_gdf = gpd.GeoDataFrame({'geometry': all_geoms_gt}) 
+        dissolved_gt_gdf = gt_gdf.dissolve()
+        geom_gt = dissolved_gt_gdf.geometry.values
+
         for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
-            for geom_gt in all_geoms_gt:
-                polygon_gt_shape = geom_gt
-                polygon_det_shape = geom_det
-                if polygon_gt_shape.intersects(polygon_det_shape):
-                    intersection = polygon_gt_shape.intersection(polygon_det_shape).area
-                else:
-                    continue
-                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-                if intersection / polygon_det_shape.area >= threshold:
-                    keep_geohashes_dets.append(geohash_dt)
+            # for geom_gt in dissolved_geoms_gt:
+            polygon_gt_shape = geom_gt
+            polygon_det_shape = geom_det
+            if polygon_gt_shape.intersects(polygon_det_shape):
+                intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+            else:
+                continue
+            # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+            if intersection / polygon_det_shape.area >= threshold:
+                keep_geohashes_dets.append(geohash_dt)
+
+        # Previous version of the metrics computation 
+        # for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
+        #     for geom_gt in all_geoms_gt:
+        #         polygon_gt_shape = geom_gt
+        #         polygon_det_shape = geom_det
+        #         if polygon_gt_shape.intersects(polygon_det_shape):
+        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
+        #         else:
+        #             continue
+        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+        #         if intersection / polygon_det_shape.area >= threshold:
+        #             keep_geohashes_dets.append(geohash_dt)
 
         for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
             for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
@@ -482,7 +500,7 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
                 else:
                     continue
                 # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-                if intersection / polygon_det_shape.area >= threshold or ((geohash_dt in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.9)):
+                if intersection / polygon_det_shape.area >= threshold or ((geohash_dt in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.5)):
                     keep_geohashes_gt.append(geohash_gt)
 
         # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
