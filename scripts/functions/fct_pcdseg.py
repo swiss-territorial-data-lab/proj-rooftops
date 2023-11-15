@@ -51,12 +51,12 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
 
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         if not alpha_ini:
-            alpha = optimizealpha(points, upper=10, max_iterations=1000)
+            alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
             alpha_shape = alphashape.alphashape(points, alpha = alpha)
             # logger.info(f"   - alpha shape value = {alpha}")
         else:
             alpha=alpha_ini
-            optimized_alpha=False
+            optimized_alpha = False
             try:
                 alpha_shape = alphashape.alphashape(points, alpha = alpha)
             except GEOSException:
@@ -64,16 +64,20 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
                     # Try a second time before doing the optimization to save time.
                     alpha_shape = alphashape.alphashape(points, alpha = 1)
                 except GEOSException:
-                    alpha = optimizealpha(points, upper=10, max_iterations=1000)
+                    alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
                     alpha_shape = alphashape.alphashape(points, alpha = alpha)
-                    optimized_alpha=True
+                    optimized_alpha = True
             except QhullError:
                 if (points_df.X.max()-points_df.X.min()<1) and (points_df.Y.max()-points_df.Y.min()<1):
                     continue
         
             if alpha_shape.is_empty and not optimized_alpha:
-                alpha = optimizealpha(points, upper=10, max_iterations=1000)
+                alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
                 alpha_shape = alphashape.alphashape(points, alpha = alpha)
+                optimized_alpha = True
+
+        if optimized_alpha:
+            logger.info(f'The alpha value had to be optimized. The final value is {round(alpha, 3)}.')
 
         # The bounding points produced can be vizualize for control
         if visu:

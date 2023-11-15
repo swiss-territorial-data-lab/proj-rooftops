@@ -42,6 +42,8 @@ def _testalpha(points: Union[List[Tuple[float]], np.ndarray], alpha: float):
     except shapely.errors.GEOSException as e:
         if 'side location conflict' in str(e):
             return False
+        else:
+            raise Exception(e)
     if isinstance(polygon, shapely.geometry.polygon.Polygon):
         if not isinstance(points, MultiPoint):
             points = MultiPoint(list(points))
