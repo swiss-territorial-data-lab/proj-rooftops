@@ -232,7 +232,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
             if (len(object_class)>0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
-                logger.info("- Metrics per object attributes")
+                logger.info("    - Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for lim_inf, lim_sup in param_ranges:
@@ -250,7 +250,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     else:
 
         logger.info(f"Metrics computation:")
-        logger.info(f"    - Compute TP, FP and FN")
+        logger.info(f"   - Compute TP, FP and FN")
 
         tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[['ID_DET', 'geometry']], labels_gdf, method=method, threhold=threshold)
         TP = len(tp_gdf)
@@ -318,7 +318,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
             if (len(object_class)>0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
-                logger.info("- Metrics per object attributes")
+                logger.info("    - Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for val in param_ranges:
@@ -351,9 +351,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     written_files[feature_path] = ''
         
     # Compute Jaccard index for all buildings
-
-    iou_average = round(metrics_egid_df['IoU_EGID'].mean(), 3)
-    metrics_df['average_IoU_EGID'] = iou_average
+    metrics_df['IoU_mean'] = round(metrics_egid_df['IoU_EGID'].mean(), 3)
+    metrics_df['IoU_median'] = round(metrics_egid_df['IoU_EGID'].median(), 3)
 
     feature_path = os.path.join(output_dir, 'metrics.csv')
     metrics_df.to_csv(feature_path, index=False)
@@ -368,24 +367,26 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     # Compute metrics by roof attributes 
     if additional_metrics:
-        logger.info("- Metrics per roof attributes")
+        logger.info("    - Metrics per roof attributes")
         for attribute in roof_attributes:
             metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
-            metrics_iou_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            metrics_iou_mean_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
+            metrics_iou_median_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).median()
             
             for val in metrics_egid_df[attribute].unique():
                 TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
                 FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
                 FN = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FN'].iloc[0]
-                iou = metrics_iou_df.loc[metrics_iou_df[attribute] == val, 'IoU_EGID'].iloc[0]    
+                iou_mean = metrics_iou_mean_df.loc[metrics_iou_mean_df[attribute] == val, 'IoU_EGID'].iloc[0]
+                iou_median = metrics_iou_median_df.loc[metrics_iou_median_df[attribute] == val, 'IoU_EGID'].iloc[0]    
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
-                                                    **metrics_results, 'IoU_EGID': iou,}])
+                                                    **metrics_results, 'IoU_mean': iou_mean, 'IoU_median': iou_median}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])   
         
         feature_path = os.path.join(output_dir, 'per_attribute_metrics.csv')
-        metrics_objects_df.to_csv(feature_path)
+        metrics_objects_df.to_csv(feature_path, index=False)
         written_files[feature_path] = ''
 
     # Sump-up results and save files
@@ -395,13 +396,15 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     precision = metrics_df.loc[0, 'precision']
     recall = metrics_df.loc[0, 'recall']
     f1 = metrics_df.loc[0, 'f1']
-    iou = metrics_df.loc[0, 'average_IoU_EGID']
+    iou_mean = metrics_df.loc[0, 'IoU_mean']
+    iou_median = metrics_df.loc[0, 'IoU_median']
 
     print()
     logger.info(f"TP = {TP}, FP = {FP}, FN = {FN}")
     logger.info(f"TP+FN = {TP+FN}, TP+FP = {TP+FP}")
     logger.info(f"precision = {precision:.2f}, recall = {recall:.2f}, f1 = {f1:.2f}")
-    logger.info(f"average IoU for all EGIDs = {iou:.2f}")
+    logger.info(f"Mean IoU for all EGIDs = {iou_mean:.2f}")
+    logger.info(f"Median IoU for all EGIDs = {iou_median:.2f}")
     print()
 
     # Check if detection or labels have been lost in the process
@@ -410,11 +413,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     filename = os.path.join(output_dir, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
-    if labels_diff != 0:
+    if (labels_diff != 0) and (method != 'fusion'):
         logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
         logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-        if (labels_diff > 0) and (method != 'fusion'):
+        if labels_diff > 0:
             tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
             untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
@@ -423,7 +426,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             layer_name = 'missing_label_tags'
             untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-        elif (labels_diff < 0 )and (method != 'fusion'):
+        elif labels_diff < 0:
             all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
@@ -443,14 +446,14 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                     'nearest_distance_centroid': r'Object distance (m)'} 
 
         _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
-        for i in metrics_objects_df.attribute.unique():
-            if attribute in xlabel_dict:
-                _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
-                _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
-                _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=i, xlabel=xlabel_dict[i])
+        for attr in metrics_objects_df.attribute.unique():
+            if attr in xlabel_dict.keys():
+                _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
 
             
-    return f1, iou_average, written_files
+    return f1, iou_median, written_files
 
 # ------------------------------------------
 
