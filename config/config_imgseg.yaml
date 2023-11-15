@@ -13,8 +13,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/tiles_training_v3
-  output_dir: output/image_segmentation/training_buildings_v3
+  image_dir:  input/image_segmentation/tiles/large_tiles
+  output_dir: output/image_segmentation/large_tiles_resample
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -27,7 +27,7 @@ segment_images.py:
       method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
       thd_size: 5500000 # pixel  
       tile_size: 1052 # pixel (square). Will be ignore if method=resample
-      resample: 0.2 # m, pixel size. Will be ignore if method=batch
+      resample: 0.5 # m, pixel size. Will be ignore if method=batch
     foreground: True
     unique: True
     mask_multiplier: 255

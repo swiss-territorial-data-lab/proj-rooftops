@@ -90,14 +90,15 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         tilepath = tile
         if size >= THD_SIZE:
             if METHOD=="batch":
+                logger.info(f"Image size too large to be processed -> subdivide in tiles of {TILE_SIZE} px size")
                 BATCH = True
             elif METHOD=="resample":
+                logger.info(f"Image size too large to be processed -> pixel resampling to {RESAMPLE} m px-1")
                 misc.ensure_dir_exists(os.path.join(directory, 'resample'))
                 tile_resample = os.path.join(directory, 'resample', file)
-                tilepath = tile_resample
-                img_resample = gdal.Warp(tile_resample, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')          
-                
-        
+                tilepath = tile_resample   
+                gdal.Warp(tile_resample, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')     
+
         # Crop the input image by pixel value
         if CROP:
             cropped_tilepath = misc.crop(tilepath, SIZE, IMAGE_DIR)
