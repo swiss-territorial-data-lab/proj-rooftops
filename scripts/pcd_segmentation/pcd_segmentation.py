@@ -88,7 +88,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         planes_df = pd.DataFrame(columns=['X', 'Y', 'Z', 'group', 'type'])
 
         if not number_planes_ini:
-            number_planes = int(egid_info.nbr_elemen)
+            number_planes = int(egid_info.nbr_elem)
             if number_planes > 100:
                 number_planes = 100
             

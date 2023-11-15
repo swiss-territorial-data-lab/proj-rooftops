@@ -165,12 +165,12 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         # Create occupation layer
         if not cluster_vec_gdf.empty:
             # Drop cluster smaller than 1.5 pixels
-            cluster_vec_gdf=cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
+            cluster_vec_gdf = cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
             cluster_vec_gdf.set_geometry('geometry', inplace=True)
 
             # Free polygon = Plane polygon(s) - Object polygon(s)
-            diff_geom=[]
-            i=0
+            diff_geom = []
+            i = 0
             if not plane_vec_gdf.empty:
                 plane_vec_gdf.set_geometry('geometry', inplace=True)
                 for geom in plane_vec_gdf.geometry.to_numpy():
@@ -184,10 +184,10 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
             objects_gdf['occupation'] = 1
         
         else:
-            free_gdf=plane_vec_gdf.copy()
+            free_gdf = plane_vec_gdf.copy()
             free_gdf['occupation'] = 0
 
-            objects_gdf=cluster_vec_gdf.copy()
+            objects_gdf = cluster_vec_gdf.copy()
 
         if not plane_vec_gdf.empty:
             free_gdf['area']=free_gdf.area
@@ -204,11 +204,11 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
                 clipped_occupation_gdf = occupation_gdf.clip(rooftops.loc[rooftops.EGID==egid, 'geometry'].buffer(-0.01), keep_geom_type=True)
 
             clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
-            clipped_occupation_gdf['EGID']=egid
-            all_occupation_gdf=pd.concat([all_occupation_gdf, clipped_occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
+            clipped_occupation_gdf['EGID'] = egid
+            all_occupation_gdf = pd.concat([all_occupation_gdf, clipped_occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
 
 
-    all_occupation_gdf['det_id']=all_occupation_gdf.index
+    all_occupation_gdf['det_id'] = all_occupation_gdf.index
     all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)
     written_layers[feature_path].append('occupation_for_all_EGIDs')
 
