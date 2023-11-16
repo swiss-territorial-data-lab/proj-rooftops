@@ -80,15 +80,16 @@ assess_results.py:
     distance_ranges: [[0,1], [1,10], [10, 100]]
 
 # 5 - Estimate the free surface
-calculate_free_surface.py:
+assess_surface.py:
   working_dir: .
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  detections: output/image_segmentation/training_buildings_v3/vectors/roof_segmentation.gpkg
+  detections: output/image_segmentation/optimization_v4//vectors/roof_segmentation.gpkg
   egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/training_buildings_v3/assessment/
+  output_dir: output/image_segmentation/optimization_v4//assessment/
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
+  bins: [0, 25, 50, 75, 100] 
   visualisation: True
 
 # 6 - Hyperparamters optimization

@@ -24,7 +24,7 @@ logger = misc.format_logger(logger)
 
 # Functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-to-one', threshold=0.1, visualisation=False):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method='one-to-one', threshold=0.1, visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -120,7 +120,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         roofs_gdf,
     )
 
+    # Compute free and occupied surfaces of detection and GT by EGID 
     egid_surfaces_df['EGID'] = labels_gdf.EGID.unique()
+    egid_surfaces_df['total_surface'] = [
+        roofs_gdf.loc[roofs_gdf.EGID == egid, 'area'].iloc[0]
+        if egid in roofs_gdf.EGID.unique() else 0
+        for egid in egid_surfaces_df.EGID.unique() 
+    ]
     egid_surfaces_df['occupied_surface_label'] = [
         labels_free_gdf.loc[labels_free_gdf.EGID == egid, 'occupied_surface'].iloc[0]
         if egid in labels_free_gdf.EGID.unique() else 0
@@ -142,20 +148,65 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         for egid in egid_surfaces_df.EGID.unique()
     ]
 
+    # Compute relative error of detected surfaces 
+    egid_surfaces_df['re_occupied_surface'] = misc.relative_error_df(egid_surfaces_df, target='occupied_surface_label', measure='occupied_surface_det')
+    egid_surfaces_df['re_free_surface'] = misc.relative_error_df(egid_surfaces_df, target='free_surface_label', measure='free_surface_det') 
+
+    # Compute surface ratio between detections and labels
+    egid_surfaces_df['ratio_occupied_surface_label'] = egid_surfaces_df['occupied_surface_label'] / egid_surfaces_df['total_surface']
+    egid_surfaces_df['ratio_occupied_surface_det'] = egid_surfaces_df['occupied_surface_det'] / egid_surfaces_df['total_surface']
+    egid_surfaces_df['ratio_free_surface_label'] = egid_surfaces_df['free_surface_label'] / egid_surfaces_df['total_surface']
+    egid_surfaces_df['ratio_free_surface_det'] = egid_surfaces_df['free_surface_det'] / egid_surfaces_df['total_surface']
+
+    # Attribute bin to surface area
+    bin_labels = []
+    for i in range(len(BINS)-1):
+        bin = f"{BINS[i]}-{BINS[i+1]}"
+        bin_labels.append(bin)
+    egid_surfaces_df['bin_occupied_surface_label (%)'] = pd.cut(egid_surfaces_df['ratio_occupied_surface_label'] * 100, BINS, right=True, labels=bin_labels)
+    egid_surfaces_df['bin_occupied_surface_det (%)'] = pd.cut(egid_surfaces_df['ratio_occupied_surface_det'] * 100, BINS, right=True, labels=bin_labels)
+    egid_surfaces_df['bin_free_surface_label (%)'] = pd.cut(egid_surfaces_df['ratio_free_surface_label'] * 100, BINS, right=True, labels=bin_labels)
+    egid_surfaces_df['bin_free_surface_det (%)'] = pd.cut(egid_surfaces_df['ratio_free_surface_det'] * 100, BINS, right=True, labels=bin_labels)
+
+    # Assess surface bins, 0: different bin, 1: same bin
+    egid_surfaces_df['assess_occupied_surface_bins'] = np.where(egid_surfaces_df['bin_occupied_surface_det (%)']==egid_surfaces_df['bin_occupied_surface_label (%)'], 1, 0)
+    egid_surfaces_df['assess_free_surface_bins'] = np.where(egid_surfaces_df['bin_free_surface_det (%)']==egid_surfaces_df['bin_free_surface_label (%)'], 1, 0)
+
+    # Save EGID df 
+    feature_path = os.path.join(output_dir, 'EGID_surfaces.csv')
+    egid_surfaces_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
+    written_files[feature_path] = ''
+
     logger.info('Get the global free and occupied surface...')
     surfaces_df = pd.DataFrame()
+
+    # Compute global surfaces
     surfaces_df.loc[0,'occupied_surface_label'] = egid_surfaces_df['occupied_surface_label'].sum()
     surfaces_df['free_surface_label'] = egid_surfaces_df['free_surface_label'].sum()
     surfaces_df['occupied_surface_det'] = egid_surfaces_df['occupied_surface_det'].sum()
     surfaces_df['free_surface_det'] = egid_surfaces_df['free_surface_det'].sum()
 
-    # Determine relative results
+    # Compute the global surfaces ratio between detections and labels
+    surfaces_df.loc[0,'ratio_occupied_surface_label'] = egid_surfaces_df['ratio_occupied_surface_label'].mean()
+    surfaces_df['ratio_occupied_surface_det'] = egid_surfaces_df['ratio_occupied_surface_det'].mean()
+    surfaces_df['ratio_free_surface_label'] = egid_surfaces_df['ratio_free_surface_label'].mean()
+    surfaces_df['ratio_free_surface_det'] = egid_surfaces_df['ratio_free_surface_det'].mean()
+
+    # Determine the global relative error of detected surfaces
     surfaces_df['occupied_rel_diff'] = abs(surfaces_df['occupied_surface_det'] - surfaces_df['occupied_surface_label']) / surfaces_df['occupied_surface_label']
     surfaces_df['free_rel_diff'] = abs(surfaces_df['free_surface_det'] - surfaces_df['free_surface_label']) / surfaces_df['free_surface_label']
 
-    feature_path = os.path.join(output_dir, 'global_surfaces.csv')
-    written_files[feature_path] = ''
- 
+    # Determine the global number of EGID surfaces correctly detected
+    surfaces_df['TP_surface'] = len(egid_surfaces_df[egid_surfaces_df['assess_occupied_surface_bins']==1])
+    surfaces_df['FP_surface'] = len(egid_surfaces_df[egid_surfaces_df['assess_occupied_surface_bins']==0])
+
+    # Determine the global accuracy of detected surfaces
+    surfaces_df['surface_accuracy'] = surfaces_df['TP_surface'] / len(egid_surfaces_df['EGID'])
+
+    # Determine the accuracy of detected surfaces by surface bins
+    for i in np.unique(egid_surfaces_df['bin_free_surface_label (%)']):
+        surfaces_df[i] = len(egid_surfaces_df.loc[(egid_surfaces_df['bin_free_surface_label (%)']==i) & (egid_surfaces_df['assess_occupied_surface_bins']==1)]) \
+         / len(egid_surfaces_df[egid_surfaces_df['bin_free_surface_label (%)']==i])
 
     # Concatenate roof attributes by EGID and get attributes keys
     egid_surfaces_df = pd.merge(egid_surfaces_df, egids, on='EGID')
@@ -164,7 +215,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
 
     # Compute free vs occupied surface by roof attributes 
     logger.info("- Free vs occupied surface per roof attribute")
-    surface_types = ['occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det']
+    surface_types = ['occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det',
+    'ratio_occupied_surface_label', 'ratio_occupied_surface_det', 'ratio_free_surface_label', 'ratio_free_surface_det']
     attribute_surface_dict = {'attribute': [], 'value': []}
     for var in surface_types: attribute_surface_dict[var] = []
 
@@ -180,13 +232,14 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
             for var in surface_types:
                 surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, var].iloc[0]
                 attribute_surface_dict[var] = surface
-
+            
             attribute_surface_df = pd.concat([attribute_surface_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
 
     # Compute relative error on occupied and free surfaces 
     attribute_surface_df['occupied_rel_diff'] = abs(attribute_surface_df['occupied_surface_det'] - attribute_surface_df['occupied_surface_label']) \
         / attribute_surface_df['occupied_surface_label']
-    attribute_surface_df['free_rel_diff'] = abs(attribute_surface_df['free_surface_det'] - attribute_surface_df['free_surface_label']) / attribute_surface_df['free_surface_label']
+    attribute_surface_df['free_rel_diff'] = abs(attribute_surface_df['free_surface_det'] - attribute_surface_df['free_surface_label']) \
+        / attribute_surface_df['free_surface_label']
 
     feature_path = os.path.join(output_dir, 'surfaces_by_attributes.csv')
     attribute_surface_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
@@ -202,9 +255,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, method='one-
         # Plots
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''} 
 
+        _ = figures.plot_surface_bin(output_dir, attribute_surface_df, bins=bin_labels, attribute='EGID')
         for i in attribute_surface_df.attribute.unique():
-            filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=i, xlabel=xlabel_dict[i])
-            written_files[filepath] = ''
+            _ = figures.plot_surface(output_dir, attribute_surface_df, attribute=i, xlabel=xlabel_dict[i])
 
     return written_files
     
@@ -235,9 +288,10 @@ if __name__ == "__main__":
 
     METHOD = cfg['method']
     THRESHOLD = cfg['threshold']
+    BINS = cfg['bins']
     VISUALISATION = cfg['visualisation']
 
-    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, 
+    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS,
                          method=METHOD, threshold=THRESHOLD, visualisation=VISUALISATION)
 
     logger.success("The following files were written. Let's check them out!")

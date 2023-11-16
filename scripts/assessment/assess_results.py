@@ -464,7 +464,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             _ = figures.plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
             _ = figures.plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
 
-
     return metrics_df, written_files
 
 # ------------------------------------------

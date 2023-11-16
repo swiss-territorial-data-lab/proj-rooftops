@@ -270,6 +270,21 @@ def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     return gdf1
 
 
+def relative_error_df(df, target, measure):
+    """Compute relative error between 2 df columns
+
+    Args:
+        df: dataframe
+        target_col (string): name of the target column in the df
+        measure_col (string): name of the measured column in the df
+
+    Returns:
+        out (df): dataframe relative error computed
+    """
+
+    return abs(df[measure] - df[target]) / df[target]
+
+
 def test_crs(crs1, crs2="EPSG:2056"):
     """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
 

@@ -2,6 +2,8 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import pandas as pd
 
 
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
@@ -65,6 +67,30 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     plt.close(fig)
 
     return plot_path
+
+
+def plot_surface_bin(dir_plots, df, bins, attribute):
+
+    fig, ax = plt.subplots(1, 1, figsize=(12,8))
+
+    df = df[df['attribute'] == attribute]  
+    values = df[bins].iloc[0]
+
+    df = pd.DataFrame({'bins':bins, 'val':values * 100})
+    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
+
+    plt.xlabel('Free surface area (%)', fontweight='bold')
+    plt.ylabel('Accurate detection (%)', fontweight='bold')
+    plt.legend('', frameon=False)
+    plt.title(attribute)
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'surface_accuracy_{attribute}.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
 
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
