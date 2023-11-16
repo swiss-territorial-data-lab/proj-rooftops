@@ -3,10 +3,10 @@ generate_tiles.py:
   working_dir: .
   image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_villa_GT.csv
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles/tiles_training_v3
+  output_dir: input/image_segmentation/tiles/tiles_villa
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
@@ -94,13 +94,13 @@ calculate_free_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/optimization
+  image_dir: input/image_segmentation/tiles/tiles_villa
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-10.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  detections: output/image_segmentation/optimization/vectors/roof_segmentation.gpkg
-  output_dir: output/image_segmentation/optimization/
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_villa_GT.csv
+  detections: output/image_segmentation/optimization/tiles_villa/vectors/roof_segmentation.gpkg
+  output_dir: output/image_segmentation/optimization/tiles_villa
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
@@ -119,7 +119,8 @@ optimize_hyperparameters.py:
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch:
-      thd_size: 2800 # pixel  
+      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      thd_size: 5500000  # pixel  
       tile_size: 512 # pixel (square)
     foreground: true
     unique: true
@@ -127,7 +128,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     show_masks: False 
   optimization:
-    n_trials: 100 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
+    n_trials: 50 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]

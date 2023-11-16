@@ -74,10 +74,10 @@ def objective(trial):
     pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
-         DL_CKP, CKP_DIR, CKP, THD_SIZE, TILE_SIZE, FOREGROUND, UNIQUE, MASK_MULTI, 
+         DL_CKP, CKP_DIR, CKP, METHOD_LARGE_TILES, THD_SIZE, TILE_SIZE, FOREGROUND, UNIQUE, MASK_MULTI, 
          SHOW, CUSTOM_SAM, SAM_parameters
          )
-    produce_vector_layer.main(WORKING_DIR, LABELS, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
+    produce_vector_layer.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
     metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
                                              method=METHOD, threshold=THRESHOLD,
                                              roofs=ROOFS,
@@ -146,6 +146,7 @@ if __name__ == "__main__":
     DL_CKP = cfg['SAM']['dl_checkpoints']
     CKP_DIR = cfg['SAM']['checkpoints_dir']
     CKP = cfg['SAM']['checkpoints']
+    METHOD_LARGE_TILES = cfg['SAM']['batch']['method']
     THD_SIZE = cfg['SAM']['batch']['thd_size']
     TILE_SIZE = cfg['SAM']['batch']['tile_size']
     FOREGROUND = cfg['SAM']['foreground']
