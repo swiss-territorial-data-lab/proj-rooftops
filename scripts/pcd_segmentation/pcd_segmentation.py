@@ -15,6 +15,7 @@ import numpy as np
 import open3d as o3d
 import pandas as pd
 
+# Open3d seed for plane segmentaiton: http://www.open3d.org/docs/release/tutorial/t_geometry/pointcloud.html?highlight=seed#Plane-segmentation
 o3d.utility.random.seed(0)
 
 sys.path.insert(1, 'scripts')
@@ -70,7 +71,8 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         # Read pcd file and get points array
         csv_input_path = os.path.join(INPUT_DIR, file_name + ".csv")
         pcd_df = pd.read_csv(csv_input_path)
-        pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1) 
+        pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1)
+        pcd_df.sort_values(by=['X', 'Y', 'Z'], ignore_index=True, inplace=True)
         array_pts = pcd_df.to_numpy()
 
         # Conversion of numpy array to Open3D format + visualisation
@@ -91,13 +93,12 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
 
         if not number_planes_ini:
             number_planes = int(egid_info.nbr_elem)
-            
             logger.info(f'Working on EGID {egid_info.EGID} with {number_planes} planes...')
 
         for i in range(number_planes):
             # Exploration of the best plane candidate + point clustering
             segment_models[i], inliers = remaining_pts.segment_plane(
-                distance_threshold = distance_threshold, ransac_n = ransac, num_iterations = iterations, probability = 1,
+                distance_threshold = distance_threshold, ransac_n = ransac, num_iterations = iterations, probability = 1.0,
             )
             segments[i] = remaining_pts.select_by_index(inliers)
             labels = np.array(segments[i].cluster_dbscan(eps = eps_planes, min_points = min_points_planes, print_progress = True))
