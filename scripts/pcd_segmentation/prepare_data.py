@@ -62,7 +62,7 @@ DISTANCE_BUFFER = FILTERS['distance_buffer']
 VISU = cfg['visualisation']
 OVERWRITE=cfg['overwrite'] if 'overwrite' in cfg.keys() else True
 
-PCD_EXT='.las'
+PCD_EXT = '.las'
 
 if FILTER_CLASS:
     logger.info(f"The point cloud data will be filtered by class number: {CLASS_NUMBER}") 
@@ -78,23 +78,23 @@ output_dir = misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
 written_files = []
 
 # Get the EGIDS of interest
-egids=pd.read_csv(EGIDS)
+egids = pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
     egids = egids[egids.roof_type==BUILDING_TYPE].copy()
-elif BUILDING_TYPE!='all':
+elif BUILDING_TYPE != 'all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
 if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
     logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
     egids = egids[egids.roof_inclination==ROOF_INCLINATION].copy()
-elif ROOF_INCLINATION!='all':
+elif ROOF_INCLINATION != 'all':
     logger.critical('Unknown roof type passed.')
     sys.exit(1) 
 
-logger.info(f'The algorithm will be working on {egids.shape[0]} egids.')
+logger.info(f'{egids.shape[0]} egids will be processed.')
 
-# Get the rooftops shapes
+# Get the rooftops shapes for the selected EGIDs
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
@@ -113,29 +113,30 @@ completed_egids.to_csv(feature_path, index=False)
 written_files.append(feature_path)  
 logger.info(f"...done. A file was written: {feature_path}")
 
-tile_delimitation=gpd.read_file(PCD_TILES)
-rooftops_on_tiles=tile_delimitation.sjoin(subset_rooftops, how='right', lsuffix='tile', rsuffix='roof')
+# Select LiDAR tiles
+tile_delimitation = gpd.read_file(PCD_TILES)
+rooftops_on_tiles = tile_delimitation.sjoin(subset_rooftops, how='right', lsuffix='tile', rsuffix='roof')
 
 # Get the per-EGID point cloud
 for egid in tqdm(egids.EGID.to_numpy()):
 # Select the building shape  
-    file_name='EGID_' + str(egid)
-    final_path=os.path.join(output_dir, file_name + '.csv')
+    file_name = 'EGID_' + str(egid)
+    final_path = os.path.join(output_dir, file_name + '.csv')
 
     if (not OVERWRITE) & os.path.exists(final_path):
         continue
-    
+
     shape = subset_rooftops.loc[subset_rooftops['EGID'] == int(egid)].copy()
 
     # Write it to use it with WBT
     shape_path = os.path.join(output_dir, file_name + ".shp")
     shape.to_file(shape_path)
-
+   
     # Select corresponding tiles
-    useful_tiles=rooftops_on_tiles.loc[rooftops_on_tiles.EGID == int(egid), tile_delimitation.columns].copy()
-    useful_tiles['filepath']=[os.path.join(PCD_DIR, name + PCD_EXT) for name in useful_tiles.fme_basena.to_numpy()]
+    useful_tiles = rooftops_on_tiles.loc[rooftops_on_tiles.EGID == int(egid), tile_delimitation.columns].copy()
+    useful_tiles['filepath'] = [os.path.join(PCD_DIR, name + PCD_EXT) for name in useful_tiles.fme_basena.to_numpy()]
 
-    clipped_inputs=str()
+    clipped_inputs = str()
     for tile in useful_tiles.itertuples():
         pcd_path = os.path.join(WORKING_DIR, tile.filepath)
 
@@ -144,17 +145,17 @@ for egid in tqdm(egids.EGID.to_numpy()):
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
         with laspy.open(clip_path) as src:
-            nbr_points=len(src.read().points)
+            nbr_points = len(src.read().points)
 
         if nbr_points > 10:
-            clipped_inputs=clipped_inputs + ', ' + clip_path
-
+            clipped_inputs = clipped_inputs + ', ' + clip_path
+ 
     # Join the PCD if the EGID expands over serveral tiles
-    if useful_tiles.shape[0]==1:
-        whole_pcd_path=clip_path
+    if useful_tiles.shape[0] == 1:
+        whole_pcd_path = clip_path
     else:
-        clipped_inputs=clipped_inputs.lstrip(', ')
-        whole_pcd_path=os.path.join(output_dir, file_name + PCD_EXT)
+        clipped_inputs = clipped_inputs.lstrip(', ')
+        whole_pcd_path = os.path.join(output_dir, file_name + PCD_EXT)
         wbt.lidar_join(
             clipped_inputs, 
             whole_pcd_path,
@@ -196,7 +197,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
     os.remove(shape_path)
     for extension in ['.cpg', '.dbf', '.prj', '.shx']:
         os.remove(shape_path.replace('.shp', extension))
-    if clip_path==whole_pcd_path:
+    if clip_path == whole_pcd_path:
         os.remove(clip_path)
     else:
         for path in clipped_inputs.split(', '):
