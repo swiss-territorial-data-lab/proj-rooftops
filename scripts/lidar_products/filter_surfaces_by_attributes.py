@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 # 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
+#  proj-rooftops
 #
 #      Clemence Herny 
 #      Gwenaelle Salamin
