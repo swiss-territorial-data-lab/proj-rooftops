@@ -36,14 +36,14 @@ def objective(trial):
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
     # NUMBER_PLANES = trial.suggest_int('number_planes', 3, 25, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.05, 0.2, step=0.005)
+    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.005, 0.15, step=0.0075)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
     ITERATIONS = trial.suggest_int('iterations', 3000, 15000, step=500)
-    EPS_PLANES = trial.suggest_float('eps_planes', 3, 25, step=1)
-    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 500, 2500, step=100)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.6, 1.2, step=0.01)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 5, 35, step=1)
-    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 1, 60, step=2)
+    EPS_PLANES = trial.suggest_float('eps_planes', 5, 30, step=1)
+    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 500, 2000, step=100)
+    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.2, 0.75, step=0.01)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 5, 25, step=1)
+    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 1, 75, step=2)
     AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 100, 300, step=10)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
@@ -78,11 +78,11 @@ def objective(trial):
                                                     alpha_shape=ALPHA_SHAPE,
                                                     **dict_parameters_vect
     )
-    f1, averaged_iou, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
+    f1, median_iou, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                     LABELS, all_occupation_gdf,
                                                     EGIDS, ROOFS, method=METHOD)
 
-    return f1, averaged_iou
+    return f1, median_iou
 
 
 def callback(study, trial):
@@ -151,7 +151,7 @@ joblib.dump(study, study_path)
 written_files.append(study_path)
 
 
-targets = {0: 'f1 score', 1: 'average IoU'}
+targets = {0: 'f1 score', 1: 'median IoU'}
 
 logger.info('Plot results')
 written_files.extend(optimization.plot_optimization_results(study, targets, output_path=output_plots))

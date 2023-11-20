@@ -104,7 +104,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf=labels_gdf.explode(ignore_index=True)
+    labels_gdf=labels_gdf.explode(ignore_index=True).reset_index(drop=True)
 
     nbr_labels=labels_gdf.shape[0]
     logger.info(f"    - {nbr_labels} labels")
@@ -124,7 +124,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
     else:
         detections_gdf['ID_DET'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(index_part=False)
+    detections_gdf=detections_gdf.explode(index_part=False).reset_index(drop=True)
     logger.info(f"    - {len(detections_gdf)} detections")
     
 
