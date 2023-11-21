@@ -64,8 +64,8 @@ assess_results.py:
   visualisation: True
   object_attributes:
     parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
-    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10, 100]]
+    area_ranges:  [[0,0.5], [0.5, 1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 
 
 # 5 - Estimate the free surface

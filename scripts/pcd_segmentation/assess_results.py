@@ -124,7 +124,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
     else:
         detections_gdf['ID_DET'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(index_part=False).reset_index(drop=True)
+    detections_gdf=detections_gdf.explode(index_parts=False).reset_index(drop=True)
     logger.info(f"    - {len(detections_gdf)} detections")
     
 
@@ -445,7 +445,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_centroid': r'Object distance (m)'} 
 
-        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+        # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_objects_df.attribute.unique():
             if attr in xlabel_dict.keys():
                 _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
