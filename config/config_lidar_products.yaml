@@ -66,8 +66,9 @@ segment_objects.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir_images: processed/lidar/rasterized_lidar/intensity
   lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
-  method: watershed   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
   save_normalized_intensity: True
 
 

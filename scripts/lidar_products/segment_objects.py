@@ -65,7 +65,7 @@ im_list = glob(os.path.join(INPUT_DIR_IMAGES, '*.tif'))
 
 # Data processing  -----------------------
 
-free_roofs = roofs[roofs['status']=='free'].reset_index(drop=True)
+free_roofs = roofs[roofs['status']=='potentially free'].reset_index(drop=True)
 free_roofs = free_roofs[['OBJECTID', 'EGID', 'geometry']]
 
 if DEBUG:
