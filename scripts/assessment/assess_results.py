@@ -52,7 +52,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, method))
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', method))
     threshold_str = str(threshold).replace('.', 'dot')
 
     written_files = {}
@@ -112,6 +112,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     logger.info(f"- {nbr_labels} label's shapes")
 
     # Read detections shapefile 
+    DETECTIONS = os.path.join(OUTPUT_DIR, DETECTIONS)
     if isinstance(DETECTIONS, str):
         detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):

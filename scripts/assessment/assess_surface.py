@@ -82,6 +82,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     logger.info(f"Read the file for labels: {nbr_labels} shapes")
 
     # Read detections shapefile 
+    DETECTIONS = os.path.join(OUTPUT_DIR, DETECTIONS)
     if isinstance(DETECTIONS, str):
         detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):

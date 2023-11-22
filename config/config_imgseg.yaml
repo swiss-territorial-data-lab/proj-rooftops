@@ -1,12 +1,12 @@
 # 1 - Tiles generation
 generate_tiles.py:
-  working_dir: .
-  image_dir: ../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  tiles: input/image_segmentation/ground_truth/tiles/Tuiles.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  working_dir: input
+  image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
+  tiles: ground_truth/tiles/Tuiles.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: input/image_segmentation/tiles/tiles_training
+  roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: ground_truth/egid/EGIDs_GT_training_subsample.csv
+  output_dir: image_segmentation/tiles/training
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
@@ -14,8 +14,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/large_tiles/
-  output_dir: output/image_segmentation/large_tiles_resample
+  image_dir:  input/image_segmentation/tiles/training
+  output_dir: output/image_segmentation/training
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -54,23 +54,23 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_large_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  output_dir: output/image_segmentation/large_tiles_resample
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  output_dir: output/image_segmentation/training
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  detections: output/image_segmentation/large_tiles_resample/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_large_GT.csv
-  # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  output_dir: output/image_segmentation/large_tiles_resample/assessment/
+  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
+  output_dir: output/image_segmentation/training
+  detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
   visualisation: True
@@ -83,11 +83,11 @@ assess_results.py:
 # 5 - Estimate the free surface
 assess_surface.py:
   working_dir: .
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  detections: output/image_segmentation/optimization_v4/vectors/roof_segmentation.gpkg
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_villa_GT.csv
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: output/image_segmentation/villa/
+  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  output_dir: output/image_segmentation/training
+  detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
   bins: [0, 25, 50, 75, 100] 
@@ -96,13 +96,13 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/tiles_villa/
+  image_dir: input/image_segmentation/tiles/training
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_villa_GT.csv
-  detections: output/image_segmentation/villa/vectors/roof_segmentation.gpkg
-  output_dir: output/image_segmentation/villa/
+  egids: input/image_segmentation/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  output_dir: output/image_segmentation/training
+  detections: vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
