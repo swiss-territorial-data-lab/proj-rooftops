@@ -74,7 +74,8 @@ def objective(trial):
     pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
-         DL_CKP, CKP_DIR, CKP, METHOD_LARGE_TILES, THD_SIZE, TILE_SIZE, FOREGROUND, UNIQUE, MASK_MULTI, 
+         DL_CKP, CKP_DIR, CKP, METHOD_LARGE_TILES, THD_SIZE, TILE_SIZE, RESAMPLE,
+         FOREGROUND, UNIQUE, MASK_MULTI, 
          SHOW, CUSTOM_SAM, SAM_parameters
          )
     produce_vector_layer.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
@@ -149,6 +150,7 @@ if __name__ == "__main__":
     METHOD_LARGE_TILES = cfg['SAM']['batch']['method']
     THD_SIZE = cfg['SAM']['batch']['thd_size']
     TILE_SIZE = cfg['SAM']['batch']['tile_size']
+    RESAMPLE = cfg['SAM']['batch']['resample']
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
     # EK = cfg['SAM']['erosion_kernel']
