@@ -73,7 +73,9 @@ def plot_surface_bin(dir_plots, df, bins, attribute):
 
     fig, ax = plt.subplots(1, 1, figsize=(12,8))
 
-    df = df[df['attribute'] == attribute]  
+    df = df[df['attribute'] == attribute] 
+    bins = list(set(bins).intersection(df.keys()))
+
     values = df[bins].iloc[0]
 
     df = pd.DataFrame({'bins':bins, 'val':values * 100})
