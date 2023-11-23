@@ -19,6 +19,7 @@ from rasterio.mask import mask
 from samgeo import SamGeo
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "caching_allocator"
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -45,9 +46,14 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     if '\\' in tiles[0]:
         tiles = [tile.replace('\\', '/') for tile in tiles]
 
+    #  
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
 
+    # Batch is false by default unless the size of the image exceed a threshold value
+    BATCH = False
+
+    # Select and dowload the pretrained model checkpoints 
     if DL_CKP == True:
         dl_dir = os.path.join(CKP_DIR)
         if not os.path.exists(dl_dir):
@@ -58,15 +64,15 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     checkpoint = os.path.join(ckp_dir, CKP)
     logger.info(f"Select pretrained model: {CKP}")
 
+    # Provide customed sam kwargs or use the default (samgeo) ones
     if CUSTOM_SAM == True:
         logger.info("Use of customed SAM parameters")
         sam_kwargs = sam_dic
     else:
         logger.info("Use of default SAM parameters")
         sam_kwargs = None
-
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+ 
+    # Difine SAM properties
     sam = SamGeo(
         checkpoint=checkpoint,
         model_type='vit_h',
@@ -80,13 +86,11 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
 
-        # Subdivide the input images in smaller tiles if its longest side exceed the threshold size 
+        # Subdivide the input images in smaller tiles if its number of pixel exceed the threshold value
         directory, file = os.path.split(tile)
         img = Image.open(tile)
         width, height = img.size
-        BATCH = False
         size = width * height
-        # print(width, height, size)
         tilepath = tile
         if size >= THD_SIZE:
             if METHOD=="batch":
@@ -173,7 +177,6 @@ if __name__ == "__main__":
     RESAMPLE = cfg['SAM']['large_tile']['resample']
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
-    # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']['enable']
     CUSTOM_PARAMETERS = cfg['SAM']['custom_SAM']['custom_parameters']

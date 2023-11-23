@@ -83,7 +83,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
                                             (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
-                                            (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially interescting the roof extension
+                                            (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially intersecting the roof extension
 
         objects_filtered['area'] = objects_filtered.area 
 

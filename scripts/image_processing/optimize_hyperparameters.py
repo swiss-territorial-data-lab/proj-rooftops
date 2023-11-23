@@ -70,7 +70,7 @@ def objective(trial):
             "min_mask_region_area": MIN_MASK_REGION_AREA
             }
     print('')
-    print(SAM_parameters)
+    logger.info(SAM_parameters)
     pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
@@ -87,8 +87,7 @@ def objective(trial):
 
     print('')
     # To Do: Config metrics choice in config file
-    f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
-    # iou = metrics_df['IoU_mean'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]  
     iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
     return f1, iou
@@ -153,7 +152,6 @@ if __name__ == "__main__":
     RESAMPLE = cfg['SAM']['batch']['resample']
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
-    # EK = cfg['SAM']['erosion_kernel']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']
     SHOW = cfg['SAM']['show_masks']
