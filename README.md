@@ -1,11 +1,11 @@
 # proj-rooftops
 
-**Aim**: Determine the space availbale on rooftops by detecting objects. Production of a binary (free/occupied) vector layer for beneficiaries.
+**Aim**: Determine the space available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer for beneficiaries.
 
 ## Image segmentation 
 
 ### Overview
-The set of scripts are dedicated to detecting objects in images. Tiles fitting the extension of building in a given AOI are produced. The **Segment-Anything Model** (https://github.com/facebookresearch/segment-anything) is then used to perform image segmentation using a pre-trained model. The detection masks are converted to vectors and filtered. Finally, the results are evaluated by comparing them with labels defined by domain experts. To process SAM with georeferenced data, the framework `segment-geospatial` (https://github.com/opengeos/segment-geospatial) is used. 
+The set of scripts are dedicated to detecting objects in images. Tiles fitting the extension of building in a given AOI are produced. The **Segment-Anything Model** (https://github.com/facebookresearch/segment-anything) is then used to perform image segmentation using a pre-trained model. The detection masks are converted to vectors and filtered. Finally, the results are evaluated by comparing them with Ground Truth labels defined by domain experts. To process SAM with georeferenced data, the framework `segment-geospatial` (https://github.com/opengeos/segment-geospatial) is used. 
 
 ### Requirements
 
@@ -64,7 +64,8 @@ Shapefiles are also used as input data and listed below:
 
     - Roof shape (roofs): shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) filter with the selected EGID of buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/EGIDs_selected_GT.csv (list can be adapted)
     - Tiles shape (tiles): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TUILES_TRUEORTHO/Tuiles.shp
-    - Ground truth shape (labels): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-10-25_v3.shp
+    - Ground truth shape (labels): shapefile of the True Orthophotos tiles overlapping the selected buidlings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-11-13.shp
+    - EGIDs list (egids): list of egids selected for the training (EGIDs_GT_training.csv) and test (EGIDs_GT_test.csv) process of the algorithm. For the image segmentation optimization, the training list is too long and therefore a reduced list is proposed (EGIDs_GT_training_subsample_imgseg.csv). The files can be found here: /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/.
 
 ### Workflow
 
@@ -75,6 +76,7 @@ Following the end-to-end, the workflow can be run by issuing the following list 
     $ python3 scripts/image_processing/image_segmentation.py config/config_imgseg.yaml
     $ python3 scripts/image_processing/produce_vector_layer.py config/config_imgseg.yaml
     $ python3 scripts/assessment/assess_results.py config/config_imgseg.yaml
+    $ python3 scripts/assessment/assess_surface.py config/config_imgseg.yaml
 
 The model optimization (find the hyperparameters maximizing the f1 score) can be performed as follow:
 
