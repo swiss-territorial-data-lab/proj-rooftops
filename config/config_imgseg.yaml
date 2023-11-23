@@ -5,11 +5,13 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training_subsample.csv
-  output_dir: image_segmentation/tiles/training
+  egids: ground_truth/egid/EGIDs_GT_training.csv
+  output_dir: image_segmentation/tiles/selection
+  filters:
+    building_type: administrative
+    # roof_inclination: pitched
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
-
 
 # 2 - Segment Anything Method
 segment_images.py:
@@ -97,10 +99,10 @@ assess_surface.py:
 optimize_hyperparameters.py:
   working_dir: .
   image_dir: input/image_segmentation/tiles/tiles_villa/
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/image_segmentation/ground_truth/egid/EGIDs_villa_GT.csv
+  # roofs: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: input/ground_truth/egid/EGIDs_villa_GT.csv
   output_dir: output/image_segmentation/villa/
   detections: vectors/roof_segmentation.gpkg
   vector_extension: 'gpkg' # 'gpkg' or 'shp'

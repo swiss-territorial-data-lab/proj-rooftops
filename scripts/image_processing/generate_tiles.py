@@ -46,8 +46,11 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     IMAGE_DIR = cfg['image_dir']
     TILES = cfg['tiles']
-    EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
+    EGIDS = cfg['egids']
+    FILTERS=cfg['filters']
+    BUILDING_TYPE = FILTERS['building_type'] if 'building_type' in FILTERS.keys() else 'all'
+    ROOF_INCLINATION = FILTERS['roof_inclination'] if 'roof_inclination' in FILTERS.keys() else 'all'
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
     MASK = cfg['mask']
@@ -62,8 +65,23 @@ if __name__ == "__main__":
     logger.info("Get input data")
 
     # Get the EGIDS of interest
-    logger.info("- List of selected EGID")
     egids = pd.read_csv(EGIDS)
+    if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
+        logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
+        egids = egids[egids.roof_type==BUILDING_TYPE].copy()
+    elif BUILDING_TYPE != 'all':
+        logger.critical('Unknown building type passed.')
+        sys.exit(1)
+    if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
+        logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
+        egids = egids[egids.roof_inclination == ROOF_INCLINATION].copy()
+    elif ROOF_INCLINATION != 'all':
+        logger.critical('Unknown roof type passed.')
+        sys.exit(1) 
+
+    feature_path = EGIDS[:-4] + '_' + BUILDING_TYPE + '_' + ROOF_INCLINATION + '.csv'
+    egids.to_csv(feature_path)
+    written_files.append(feature_path)  
 
     # Get the rooftops shapes
     logger.info("- Roofs shapes")
