@@ -5,19 +5,19 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training.csv
-  output_dir: image_segmentation/tiles/selection
+  egids: ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: image_segmentation/tiles/training
   filters:
-    building_type: administrative
-    # roof_inclination: pitched
+    building_type: all
+    roof_inclination: all
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
   mask: False                # Choose if a building mask (by EGID) is applied to image
 
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/optimization
-  output_dir: output/image_segmentation/test
+  image_dir:  input/image_segmentation/tiles/training
+  output_dir: output/image_segmentation/training
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -27,18 +27,18 @@ segment_images.py:
     checkpoints_dir: model/
     checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
-      method: 'resample' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
       thd_size: 5500000 # pixel  
       tile_size: 512 # pixel (square). Will be ignore if method=resample
       resample: 0.2 # m, pixel size. Will be ignore if method=batch
-    foreground: True
-    unique: True
+    foreground: True # if True, save only foreground masks, no background mask 
+    unique: True # attribute unique ID to mask 
     mask_multiplier: 255
-    custom_SAM:
-      enable: False
+    custom_SAM: # customize the segment anything parameters (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
+      enable: True
       custom_parameters: {
-        "points_per_side": 128,
-        "points_per_batch": 128,
+        "points_per_side": 32,
+        "points_per_batch": 32,
         "pred_iou_thresh": 0.8,
         "stability_score_thresh": 0.8,
         "stability_score_offset": 2.0,
@@ -58,9 +58,9 @@ produce_vector_layer.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample.csv
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
   output_dir: output/image_segmentation/training
-  vector_extension: 'gpkg' # 'gpkg' or 'shp'
+  vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
 # 4 - Evaluate the results
@@ -69,8 +69,7 @@ assess_results.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample.csv
-  # egids: input/image_segmentation/ground_truth/egid/EGIDs_full_GT.csv
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
   output_dir: output/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
@@ -87,8 +86,8 @@ assess_surface.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_villa_GT.csv
-  output_dir: output/image_segmentation/villa/
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
+  output_dir: output/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -98,14 +97,14 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/tiles_villa/
+  image_dir: input/image_segmentation/tiles/training
   # roofs: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_villa_GT.csv
-  output_dir: output/image_segmentation/villa/
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
+  output_dir: output/image_segmentation/optimize_training
   detections: vectors/roof_segmentation.gpkg
-  vector_extension: 'gpkg' # 'gpkg' or 'shp'
+  vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
@@ -127,13 +126,13 @@ optimize_hyperparameters.py:
       thd_size: 5500000  # pixel  
       tile_size: 512 # pixel (square)
       resample: 0.2 # m, pixel size. Will be ignore if method=batch
-    foreground: true
+    foreground: True
     unique: true
     mask_multiplier: 255
     custom_SAM: True
     show_masks: False 
   optimization:
-    n_trials: 30 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
+    n_trials: 3 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]

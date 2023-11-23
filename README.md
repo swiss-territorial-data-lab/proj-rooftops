@@ -42,7 +42,7 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         $ pip install -e .
 
-If the installation is sucessfull the message "You are using a modified version of segment-geospatial library (v 0.10.0 fork)" must be print in the prompt while executing the script `segment_image.py`.  
+If the installation is sucessfull the message "You are using a modified version of segment-geospatial library (v 0.10.0 fork)" must be print in the prompt while executing the script `segment_images.py`.  
 
 ### Files structure
 

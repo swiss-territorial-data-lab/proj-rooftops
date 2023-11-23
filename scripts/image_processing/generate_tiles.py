@@ -49,8 +49,8 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
     FILTERS=cfg['filters']
-    BUILDING_TYPE = FILTERS['building_type'] if 'building_type' in FILTERS.keys() else 'all'
-    ROOF_INCLINATION = FILTERS['roof_inclination'] if 'roof_inclination' in FILTERS.keys() else 'all'
+    BUILDING_TYPE = FILTERS['building_type']
+    ROOF_INCLINATION = FILTERS['roof_inclination']
     OUTPUT_DIR = cfg['output_dir']
     BUFFER = cfg['buffer']
     MASK = cfg['mask']
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         sys.exit(1) 
 
     feature_path = EGIDS[:-4] + '_' + BUILDING_TYPE + '_' + ROOF_INCLINATION + '.csv'
-    egids.to_csv(feature_path)
+    egids.to_csv(feature_path, index=False)
     written_files.append(feature_path)  
 
     # Get the rooftops shapes
