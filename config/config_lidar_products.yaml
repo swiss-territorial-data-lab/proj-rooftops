@@ -61,6 +61,15 @@ filter_for_objects.py:
     rdp: True
 
 
+random_forest.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
+  layer_ocen: ocen_classification
+  layer_ocan: ocan_classification
+  predictions_file: processed/roofs/roofs.gpkg
+  predictions_layer: roof_occupation_for_RF
+
+
 segment_objects.py:
   debug_mode: True
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
