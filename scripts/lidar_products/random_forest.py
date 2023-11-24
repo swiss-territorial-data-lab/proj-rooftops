@@ -34,8 +34,10 @@ with open(args.config_file) as fp:
 
 # Define fuctions ----------------------------------
 
-def random_forest(labels_gdf, features_df):
+def random_forest(labels_gdf, features_df, desc=None):
     # https://towardsdatascience.com/random-forest-in-python-24d0893d51c0
+
+    labels_gdf['OBJECTID'] = pd.to_numeric(labels_gdf.OBJECTID)
 
     proofed_features_df = features_df[features_df.OBJECTID.isin(labels_gdf.OBJECTID)].sort_values(by=['OBJECTID'])
     proofed_features_df.loc[proofed_features_df.nodata_overlap.isna(), 'nodata_overlap'] = 0
@@ -70,15 +72,17 @@ def random_forest(labels_gdf, features_df):
         'potentially free': round(results_df.loc[results_df.real_class=='potentially free', 'agreement'].sum()
                         /results_df.loc[results_df.real_class=='potentially free', 'agreement'].shape[0], 3),
     }
+    logger.info(f'Global agreement rate: {agreement["global"]}')
 
-    # Get numerical feature importances
-    importances = list(rf.feature_importances_)
-    # List of tuples with variable and importance
-    feature_importances = [(feature, round(importance*100, 1)) for feature, importance in zip(features_list, importances)]
-    # Sort the feature importances by most important first
-    feature_importances = sorted(feature_importances, key = lambda x: x[1], reverse = True)
+    importance_dict = {
+        'variable': features_list,
+        'importance': [round(importance*100, 1) for importance in rf.feature_importances_],
+    }
+    importance_df = pd.DataFrame(importance_dict).sort_values(by=['importance'], ascending=False)
+    importance_df.to_csv(os.path.join(OUTPUT_DIR, f'importance{"_" + desc if desc else ""}.csv'), index=False)
+
     # Print out the feature and importances 
-    [print('Variable: {:20} Importance: {}'.format(*pair)) for pair in feature_importances]
+    [print('Variable: {:20} Importance: {}'.format(*pair)) for pair in zip(importance_df.variable, importance_df.importance)]
 
     return pd.DataFrame(agreement, index=[0])
 
@@ -109,13 +113,16 @@ features = all_features[
     (all_features.area>2) 
     & (all_features.status!='undefined')
 ].copy()
+features['area'] = features.area
 features.drop(columns=['tile_id', 'joined_area', 'EGID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN', 'tilepath_intensity', 'tilepath_roughness',
-                         'count_i', 'count_r', 'status', 'reason', 'geometry'], inplace=True)
+                         'count_i', 'count_r',
+                        #  'nodata_overlap', 'min_i', 'max_r', 'max_i', 'ALTI_MIN', 'mean_i', 'median_i',
+                         'status', 'reason', 'geometry'], inplace=True)
 
 logger.info('Train and test a random forest for the OCEN')
-agreement_ocen_df = random_forest(ocen_gt, features)
+agreement_ocen_df = random_forest(ocen_gt, features, desc='OCEN')
 logger.info('Train and test a random forest for the OCAN')
-agreement_ocan_df = random_forest(ocan_gt, features)
+agreement_ocan_df = random_forest(ocan_gt, features, desc='OCAN')
 
 agreement_df = pd.concat([agreement_ocen_df, agreement_ocan_df], ignore_index=True)
 agreement_df['office'] = ['OCEN', 'OCAN']
