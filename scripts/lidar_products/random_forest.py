@@ -15,7 +15,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_validate
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
@@ -44,15 +44,15 @@ def random_forest(labels_gdf, features_df, desc=None):
     filtered_labels_gdf = labels_gdf[labels_gdf.OBJECTID.isin(proofed_features_df.OBJECTID)].sort_values(by=['OBJECTID'])
 
     filtered_labels_gdf.loc[filtered_labels_gdf['class']=='not occupied', 'class'] = 'potentially free'
-    labels = filtered_labels_gdf['class'].to_numpy()
+    labels_array = filtered_labels_gdf['class'].to_numpy()
 
     proofed_features_df.drop(columns=['OBJECTID'], inplace=True)
     features_list = proofed_features_df.columns.tolist()
-    features = np.array(proofed_features_df)
+    features_array = np.array(proofed_features_df)
 
-    train_features, test_features, train_labels, test_labels = train_test_split(features, labels, test_size = 0.25, random_state = 42)
+    train_features, test_features, train_labels, test_labels = train_test_split(features_array, labels_array, test_size = 0.25, random_state = 42)
 
-    rf = RandomForestClassifier(random_state = 42)
+    rf = RandomForestClassifier(random_state = 42, n_estimators=10)
     rf.fit(train_features, train_labels)
 
     results_df = pd.DataFrame(
@@ -80,9 +80,17 @@ def random_forest(labels_gdf, features_df, desc=None):
     }
     importance_df = pd.DataFrame(importance_dict).sort_values(by=['importance'], ascending=False)
     importance_df.to_csv(os.path.join(OUTPUT_DIR, f'importance{"_" + desc if desc else ""}.csv'), index=False)
+    
+    
+    scores = cross_validate(rf, features_array, labels_array, cv=10,
+                                scoring=('balanced_accuracy'),
+                                return_train_score=True)
+    
+    logger.info('Training scores:')
+    [print(f'    - {round(score, 2)}') for score in scores["train_score"]]
 
-    # Print out the feature and importances 
-    [print('Variable: {:20} Importance: {}'.format(*pair)) for pair in zip(importance_df.variable, importance_df.importance)]
+    logger.info('Testing scores:')
+    [print(f'    - {round(score, 2)}') for score in scores["test_score"]]
 
     return pd.DataFrame(agreement, index=[0])
 
