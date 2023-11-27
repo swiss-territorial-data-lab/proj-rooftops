@@ -44,7 +44,7 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
-def clip_labels(labels_gdf, tiles_gdf, fact=0.99):
+def clip_labels(labels_gdf, tiles_gdf, fact=0.9999):
     '''
     Clip the labels to the tiles
     Copied from the misc functions of the object detector 

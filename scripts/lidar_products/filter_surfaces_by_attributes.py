@@ -234,13 +234,13 @@ for attribute in STAT_LIMITS.keys():
 seen = set()
 dupes_index = [roof_index for roof_index in index_over_lim if roof_index in seen or seen.add(roof_index)]  
 
-roofs_high_variability = zs_per_roof[zs_per_roof.index.isin(dupes_index)]
-temp_roofs = zs_per_roof[~zs_per_roof.index.isin(dupes_index)]
+roofs_high_variability = zs_per_roof[zs_per_roof.index.isin(dupes_index)].copy()
+temp_roofs = zs_per_roof[~zs_per_roof.index.isin(dupes_index)].copy()
 
 # Get roofs with one stat over the limit.
-roofs_high_moe = temp_roofs[temp_roofs['MOE_i'] > LIM_MOE]
-roofs_high_std = temp_roofs[temp_roofs['std_i'] > LIM_STD]
-rough_roofs = temp_roofs[temp_roofs['median_r'] > LIM_ROUGHNESS]
+roofs_high_moe = temp_roofs[temp_roofs['MOE_i'] > LIM_MOE].copy()
+roofs_high_std = temp_roofs[temp_roofs['std_i'] > LIM_STD].copy()
+rough_roofs = temp_roofs[temp_roofs['median_r'] > LIM_ROUGHNESS].copy()
 
 roofs_high_variability = cause_occupation(roofs_high_variability, f'Several parameters are over thresholds.')
 roofs_high_moe = cause_occupation(roofs_high_moe, f'The margin of error of the mean for the intensity is over {LIM_MOE}.')
@@ -251,7 +251,7 @@ roofs_high_variability = pd.concat([roofs_high_variability, roofs_high_moe, roof
 logger.info(f'{roofs_high_variability.shape[0]} roof planes exceed at least one statistical threshold values')
 logger.info('They have been classified as "occupied surfaces".')
 
-zs_per_filtred_roofs = temp_roofs[~((temp_roofs['MOE_i'] > LIM_MOE) | (temp_roofs['std_i'] > LIM_STD) | (temp_roofs['median_r'] > LIM_ROUGHNESS))]
+zs_per_filtred_roofs = temp_roofs[~((temp_roofs['MOE_i'] > LIM_MOE) | (temp_roofs['std_i'] > LIM_STD) | (temp_roofs['median_r'] > LIM_ROUGHNESS))].copy()
 zs_per_filtred_roofs['status'] = 'potentially free'
 logger.info(f'{zs_per_filtred_roofs.shape[0]} roof planes do not exceed statistical threshold values')
 logger.info('They have been classified as "potentially free surfaces".')
@@ -263,8 +263,12 @@ if final_nbr_roofs != nbr_existing_clipped_roofs:
 
 roofs_occupation = pd.concat([zs_per_filtred_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
 roofs_occupation['clipped_area'] = roofs_occupation.geometry.area
-roofs_occupation_cleaned = roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
 
+roofs_occupation = roofs_occupation[~((roofs_occupation.count_i==0) & (roofs_occupation.clipped_area < 0.2))].copy()
+if roofs_occupation[roofs_occupation.count_i==0].shape[0]!=0:
+    logger.warning(f'There are still {roofs_occupation[roofs_occupation.count_i==0].shape[0]} roofs with missing zonal statistics.')
+
+roofs_occupation_cleaned = roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
 logger.info(f'{roofs_occupation.shape[0]-roofs_occupation_cleaned.shape[0]} geometries were deleted'+
             f' because they were duplicated due to label clipping.')
 
