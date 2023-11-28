@@ -4,6 +4,7 @@ from loguru import logger
 
 import rasterio
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pygeohash as pgh
 
@@ -282,7 +283,10 @@ def relative_error_df(df, target, measure):
         out (df): dataframe relative error computed
     """
 
-    return abs(df[measure] - df[target]) / df[target]
+    re = abs(df[measure] - df[target]) / df[target]
+    re.replace([np.inf], 1.0, inplace=True)
+
+    return re
 
 
 def test_crs(crs1, crs2="EPSG:2056"):

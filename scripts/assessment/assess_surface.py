@@ -150,7 +150,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     ]
 
     # Avoid negative value in surface computation
-    egid_surfaces_df[egid_surfaces_df < 0] = 0
+    egid_surfaces_df[egid_surfaces_df < 0] = 0.0
+
     # Compute relative error of detected surfaces 
     egid_surfaces_df['re_occupied_surface'] = misc.relative_error_df(egid_surfaces_df, target='occupied_surface_label', measure='occupied_surface_det')
     egid_surfaces_df['re_free_surface'] = misc.relative_error_df(egid_surfaces_df, target='free_surface_label', measure='free_surface_det') 
