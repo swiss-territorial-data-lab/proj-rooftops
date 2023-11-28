@@ -5,8 +5,8 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: image_segmentation/tiles/training
+  egids: ground_truth/egid/EGIDs_GT_test.csv
+  output_dir: image_segmentation/tiles/test
   filters:
     building_type: all
     roof_inclination: all
@@ -16,8 +16,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/training
-  output_dir: output/image_segmentation/training
+  image_dir:  input/image_segmentation/tiles/test
+  output_dir: output/image_segmentation/test
   vector_extension: 'gpkg' # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -37,18 +37,18 @@ segment_images.py:
     custom_SAM: # customize the segment anything parameters (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
       enable: True
       custom_parameters: {
-        "points_per_side": 32,
-        "points_per_batch": 32,
-        "pred_iou_thresh": 0.8,
+        "points_per_side": 96,
+        "points_per_batch": 96,
+        "pred_iou_thresh": 0.85,
         "stability_score_thresh": 0.8,
-        "stability_score_offset": 2.0,
-        "box_nms_thresh":  0.3,
+        "stability_score_offset": 3.0,
+        "box_nms_thresh":  0.5,
         "crop_n_layers": 0,
-        "crop_nms_thresh": 0.1,
-        "crop_overlap_ratio": 0.6,
-        "crop_n_points_downscale_factor": 6,
+        "crop_nms_thresh": 0.3,
+        "crop_overlap_ratio": 0.7,
+        "crop_n_points_downscale_factor": 9,
         # "point_grids": None,
-        "min_mask_region_area": 250,
+        "min_mask_region_area": 200,
         # "output_mode": str = "binary_mask",
         }
     show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
@@ -58,8 +58,8 @@ produce_vector_layer.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: output/image_segmentation/training
+  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: output/image_segmentation/test
   vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -69,8 +69,8 @@ assess_results.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: output/image_segmentation/training
+  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: output/image_segmentation/test
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -86,8 +86,8 @@ assess_surface.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: output/image_segmentation/training
+  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: output/image_segmentation/test
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -97,12 +97,12 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/training
+  image_dir: input/image_segmentation/tiles/training_subsample
   # roofs: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: output/image_segmentation/optimize_training
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  output_dir: output/image_segmentation/optimize_training_subsample
   detections: vectors/roof_segmentation.gpkg
   vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file 
@@ -132,7 +132,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     show_masks: False 
   optimization:
-    n_trials: 3 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
+    n_trials: 50 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
     sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]

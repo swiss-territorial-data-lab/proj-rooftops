@@ -149,6 +149,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
         for egid in egid_surfaces_df.EGID.unique()
     ]
 
+    # Avoid negative value in surface computation
+    egid_surfaces_df[egid_surfaces_df < 0] = 0
+
     # Compute relative error of detected surfaces 
     egid_surfaces_df['re_occupied_surface'] = misc.relative_error_df(egid_surfaces_df, target='occupied_surface_label', measure='occupied_surface_det')
     egid_surfaces_df['re_free_surface'] = misc.relative_error_df(egid_surfaces_df, target='free_surface_label', measure='free_surface_det') 
@@ -205,6 +208,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     surfaces_df['surface_accuracy'] = surfaces_df['TP_surface'] / len(egid_surfaces_df['EGID'])
 
     # Determine the accuracy of detected surfaces by surface bins
+    print(egid_surfaces_df[['EGID', 'free_surface_label', 'free_surface_det', 'bin_free_surface_label (%)', 'bin_free_surface_det (%)']])
+    exit()
     for i in np.unique(egid_surfaces_df['bin_free_surface_label (%)']):
         surfaces_df[i] = len(egid_surfaces_df.loc[(egid_surfaces_df['bin_free_surface_label (%)']==i) & (egid_surfaces_df['assess_occupied_surface_bins']==1)]) \
          / len(egid_surfaces_df[egid_surfaces_df['bin_free_surface_label (%)']==i])
