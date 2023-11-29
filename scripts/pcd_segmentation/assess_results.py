@@ -95,6 +95,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
         
+    # Clip labels to the corresponding roof
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
         labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)

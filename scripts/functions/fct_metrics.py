@@ -204,7 +204,7 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
     return tp_gdf, fp_gdf, fn_gdf
 
 
-def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
+def get_free_area(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
     """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
 
     Args:
@@ -228,25 +228,25 @@ def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
         keys_list = detections_by_attribute_gdf.to_dict()
         dic = dict.fromkeys(keys_list, 0)
         detections_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        detections_by_attribute_gdf['occupied_surface'] = 0
+        detections_by_attribute_gdf['occup_area'] = 0
         detections_by_attribute_gdf['EGID'] = labels_by_attribute_gdf['EGID']
     else:
-        detections_by_attribute_gdf['occupied_surface'] = detections_by_attribute_gdf.area
+        detections_by_attribute_gdf['occup_area'] = detections_by_attribute_gdf.area
 
     if labels_by_attribute_gdf['geometry'].empty:
         keys_list = labels_by_attribute_gdf.to_dict()
         dic = dict.fromkeys(keys_list, 0)
         labels_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        labels_by_attribute_gdf['occupied_surface'] = 0
+        labels_by_attribute_gdf['occup_area'] = 0
     else:
-        labels_by_attribute_gdf['occupied_surface'] = labels_by_attribute_gdf.area
+        labels_by_attribute_gdf['occup_area'] = labels_by_attribute_gdf.area
 
 
     detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
+    detections_with_area_gdf['free_area'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occup_area
 
     labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
+    labels_with_area_gdf['free_area'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occup_area
 
     return labels_with_area_gdf, detections_with_area_gdf
 
@@ -301,6 +301,24 @@ def get_metrics(TP, FP, FN):
                         )
 
     return metrics_dict
+
+
+def relative_error_df(df, target, measure):
+    """Compute relative error between 2 df columns
+
+    Args:
+        df: dataframe
+        target_col (string): name of the target column in the df
+        measure_col (string): name of the measured column in the df
+
+    Returns:
+        out (df): dataframe relative error computed
+    """
+
+    re = abs(df[measure] - df[target]) / df[target]
+    re.replace([np.inf], 1.0, inplace=True)
+
+    return re
 
 
 def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix='dt_', group_attribute=None):

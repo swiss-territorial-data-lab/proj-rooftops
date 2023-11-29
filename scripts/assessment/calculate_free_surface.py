@@ -1,18 +1,11 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
-
-import argparse
 import os
-import time
 import sys
+from argparse import ArgumentParser
 from loguru import logger
+from time import time
 from yaml import load, FullLoader
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 sys.path.insert(1, 'scripts')
@@ -22,19 +15,19 @@ import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
+# Functions --------------------------
 
-
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-to-one', visualisation=False):
-    """Assess the results by calculating the precision, recall and f1-score.
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD, visualisation=False):
+    """Etimate the difference in free and occupied surfaces between labels and detections.
 
     Args:
         WORKING_DIR (path): working directory
         OUTPUT_DIR (path): output directory
         LABELS (path): file of the ground truth
         DETECTIONS (path): file of the detections
-        EGIDS (list): EGIDs of interest
         ROOFS (path): file of the roof border and main elements
-        method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many. Defaults ot one-to-one.
+        EGIDS (list): EGIDs of interest
+        method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many.
         visualisation (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:
@@ -70,6 +63,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    roofs_gdf['area'] = roofs_gdf.area
     roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
     logger.info(f"Read the file for roofs: {len(roofs_gdf)} shapes")
 
@@ -119,50 +113,90 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     logger.info('Get the free and occupied surface by EGID...')
     egid_surfaces_df = pd.DataFrame()
-    labels_free_gdf, detections_free_gdf = metrics.get_free_surface(
+    labels_free_gdf, detections_free_gdf = metrics.get_free_area(
         labels_gdf, 
         detections_gdf,
         roofs_gdf,
     )
     
     egid_surfaces_df['EGID'] = labels_gdf.EGID.unique()
-    egid_surfaces_df['occupied_surface_label'] = [
-        labels_free_gdf.loc[labels_free_gdf.EGID==egid, 'occupied_surface'].iloc[0]
+    egid_surfaces_df['total_area'] = [
+        roofs_gdf.loc[roofs_gdf.EGID == egid, 'area'].iloc[0]
+        if egid in roofs_gdf.EGID.unique() else 0
+        for egid in egid_surfaces_df.EGID.unique() 
+    ]
+    egid_surfaces_df['occup_area_label'] = [
+        labels_free_gdf.loc[labels_free_gdf.EGID==egid, 'occup_area'].iloc[0]
         if egid in labels_free_gdf.EGID.unique() else 0
         for egid in egid_surfaces_df.EGID.unique() 
     ]
-    egid_surfaces_df['occupied_surface_det'] = [
-        detections_free_gdf.loc[detections_free_gdf.EGID==egid, 'occupied_surface'].iloc[0]
+    egid_surfaces_df['occup_area_det'] = [
+        detections_free_gdf.loc[detections_free_gdf.EGID==egid, 'occup_area'].iloc[0]
         if egid in detections_free_gdf.EGID.unique() else 0
         for egid in egid_surfaces_df.EGID.unique()
     ]
-    egid_surfaces_df['free_surface_label'] = [
-        labels_free_gdf.loc[labels_free_gdf.EGID==egid, 'free_surface'].iloc[0]
+    egid_surfaces_df['free_area_label'] = [
+        labels_free_gdf.loc[labels_free_gdf.EGID==egid, 'free_area'].iloc[0]
         if egid in labels_free_gdf.EGID.unique() else 0
         for egid in egid_surfaces_df.EGID.unique() 
     ]
-    egid_surfaces_df['free_surface_det'] = [
-        detections_free_gdf.loc[detections_free_gdf.EGID==egid, 'free_surface'].iloc[0]
+    egid_surfaces_df['free_area_det'] = [
+        detections_free_gdf.loc[detections_free_gdf.EGID==egid, 'free_area'].iloc[0]
         if egid in detections_free_gdf.EGID.unique() else 0
         for egid in egid_surfaces_df.EGID.unique()
     ]
+
+
+    # Warn in case fo negative values in surface computation
+    nbr_tmp = egid_surfaces_df[egid_surfaces_df < 0].shape[0]
+    if nbr_tmp > 0:
+        logger.warning(f'{nbr_tmp} calculated surfaces are smaller than 0. Those are set to 0.')
+        egid_surfaces_df[egid_surfaces_df < 0] = 0.0
+
+    # Compute relative error of detected surfaces 
+    egid_surfaces_df['occupied_rel_error'] = metrics.relative_error_df(egid_surfaces_df, target='occup_area_label', measure='occup_area_det')
+    egid_surfaces_df['free_rel_error'] = metrics.relative_error_df(egid_surfaces_df, target='free_area_label', measure='free_area_det') 
+
+    # Attribute bin to surface area
+    bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+
+    column_names = {'bin_occup_area_label (%)': 'occup_area_label', 'bin_occup_area_det (%)': 'occup_area_det',
+                    'bin_free_area_label (%)': 'free_area_label', 'bin_free_area_det (%)': 'free_area_det'}
+    for rslt_col, base_col in column_names.items():
+        egid_surfaces_df['ratio'] = egid_surfaces_df[base_col]/egid_surfaces_df['total_area']
+        egid_surfaces_df[rslt_col] = pd.cut(egid_surfaces_df['ratio'] * 100, BINS, right=False, labels=bin_labels) 
+    egid_surfaces_df.drop(columns=['ratio'], inplace=True)
+
+    # Assess surface bins, 0: different bin, 1: same bin
+    egid_surfaces_df['assess_occup_area_bins'] = [
+        1 if area_det == area_label else 0
+        for area_det, area_label in zip(egid_surfaces_df['bin_occup_area_det (%)'], egid_surfaces_df['bin_occup_area_label (%)'])
+    ]
+    egid_surfaces_df['assess_free_area_bins'] = [
+        1 if area_det == area_label else 0 
+        for area_det, area_label in zip(egid_surfaces_df['bin_free_area_det (%)'], egid_surfaces_df['bin_free_area_label (%)'])
+    ]
+
+    # Save EGID df 
+    feature_path = os.path.join(output_dir, 'EGID_surfaces.csv')
+    egid_surfaces_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
+    written_files[feature_path] = ''
 
 
     logger.info('Get the global free and occupied surface...')
     surfaces_df=pd.DataFrame()
-    surfaces_df.loc[0,'occupied_surface_label'] = egid_surfaces_df['occupied_surface_label'].sum()
-    surfaces_df['free_surface_label'] = egid_surfaces_df['free_surface_label'].sum()
-    surfaces_df['occupied_surface_det'] = egid_surfaces_df['occupied_surface_det'].sum()
-    surfaces_df['free_surface_det'] = egid_surfaces_df['free_surface_det'].sum()
+    surfaces_df.loc[0,'occup_area_label'] = egid_surfaces_df['occup_area_label'].sum()
+    surfaces_df['free_area_label'] = egid_surfaces_df['free_area_label'].sum()
+    surfaces_df['occup_area_det'] = egid_surfaces_df['occup_area_det'].sum()
+    surfaces_df['free_area_det'] = egid_surfaces_df['free_area_det'].sum()
 
     # Determine relative results
-    surfaces_df['occupied_rel_diff'] = abs(surfaces_df['occupied_surface_det'] - surfaces_df['occupied_surface_label']) / surfaces_df['occupied_surface_label']
-    surfaces_df['free_rel_diff'] = abs(surfaces_df['free_surface_det'] - surfaces_df['free_surface_label']) / surfaces_df['free_surface_label']
+    surfaces_df['occupied_rel_diff'] = abs(surfaces_df['occup_area_det'] - surfaces_df['occup_area_label']) / surfaces_df['occup_area_label']
+    surfaces_df['free_rel_diff'] = abs(surfaces_df['free_area_det'] - surfaces_df['free_area_label']) / surfaces_df['free_area_label']
 
     feature_path = os.path.join(output_dir, 'global_surfaces.csv')
     surfaces_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
-    written_files[feature_path] = ''
- 
+    written_files[feature_path] = '' 
 
     # Concatenate roof attributes by EGID and get attributes keys
     egid_surfaces_df = pd.merge(egid_surfaces_df, egids, on='EGID')
@@ -173,7 +207,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     # Compute free vs occupied surface by roof attributes 
     logger.info("- Free vs occupied surface per roof attribute")
-    surface_types = ['occupied_surface_label', 'occupied_surface_det', 'free_surface_label', 'free_surface_det']
+    surface_types = ['occup_area_label', 'occup_area_det', 'free_area_label', 'free_area_det']
     attribute_surface_dict = {'attribute': [], 'value': []}
     for var in surface_types: attribute_surface_dict[var] = []
 
@@ -189,10 +223,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             attribute_surface_df = pd.concat([attribute_surface_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
 
 
-    # Compute (1 - relative error) on occupied and free surfaces 
-    attribute_surface_df['occupied_rel_diff'] = abs(attribute_surface_df['occupied_surface_det'] - attribute_surface_df['occupied_surface_label']) \
-        / attribute_surface_df['occupied_surface_label']
-    attribute_surface_df['free_rel_diff'] = abs(attribute_surface_df['free_surface_det'] - attribute_surface_df['free_surface_label']) / attribute_surface_df['free_surface_label']
+    # Compute relative error on occupied and free surfaces 
+    attribute_surface_df['occupied_rel_diff'] = abs(attribute_surface_df['occup_area_det'] - attribute_surface_df['occup_area_label']) \
+        / attribute_surface_df['occup_area_label']
+    attribute_surface_df['free_rel_diff'] = abs(attribute_surface_df['free_area_det'] - attribute_surface_df['free_area_label']) / attribute_surface_df['free_area_label']
 
     feature_path = os.path.join(output_dir, 'surfaces_by_attributes.csv')
     attribute_surface_df.round(3).to_csv(feature_path, sep=',', index=False, float_format='%.4f')
@@ -208,9 +242,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         # Plots
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''} 
 
-        for i in attribute_surface_df.attribute.unique():
-            if attribute in xlabel_dict:
-                filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=i, xlabel=xlabel_dict[i])
+        for attr in attribute_surface_df.attribute.unique():
+            if attr in xlabel_dict.keys():
+                filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
                 written_files[filepath] = ''
 
     return written_files
@@ -218,11 +252,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
 if __name__ == "__main__":
     # Start chronometer
-    tic = time.time()
+    tic = time()
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
+    parser = ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -240,18 +274,19 @@ if __name__ == "__main__":
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
 
+    BINS = cfg['bins']
     METHOD = cfg['method']
     VISUALISATION = cfg['visualisation']
 
-    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, 
-                         method=METHOD, visualisation=VISUALISATION)
+    written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS,
+                         METHOD, visualisation=VISUALISATION)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
         logger.success(f'  file: {path}{"" if written_files[path] == "" else f", layer: {written_files[path]}"}')
 
     # Stop chronometer  
-    toc = time.time()
+    toc = time()
     logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
     sys.stderr.flush()

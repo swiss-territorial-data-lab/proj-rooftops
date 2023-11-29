@@ -118,7 +118,6 @@ rooftops_on_tiles=tile_delimitation.sjoin(subset_rooftops, how='right', lsuffix=
 
 # Get the per-EGID point cloud
 for egid in tqdm(egids.EGID.to_numpy()):
-# Select the building shape  
     file_name='EGID_' + str(egid)
     final_path=os.path.join(output_dir, file_name + '.csv')
 
