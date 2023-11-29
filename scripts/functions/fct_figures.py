@@ -41,8 +41,8 @@ def plot_surface(dir_plots, df, attribute, xlabel):
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax[0], x='value', y=['free_area_label', 'occup_area_label',], kind='bar', stacked=True, rot=0, color = color_list)
-    df.plot(ax=ax[1], x='value', y=['free_area_det', 'occup_area_det',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax[0], x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax[1], x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, color = color_list)
     for b, c in zip(ax[0].containers, ax[1].containers):
         labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
         labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
@@ -186,7 +186,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
 def plot_surface_bin(dir_plots, df, bins, attribute):
 
-    fig, ax = plt.subplots(1, 1, figsize=(12,8))
+    fig, _ = plt.subplots(1, 1, figsize=(12,8))
 
     df = df[df['attribute'] == attribute] 
     bins = list(set(bins).intersection(df.keys()))

@@ -11,8 +11,96 @@ import networkx as nx
 from fractions import Fraction
 from shapely import unary_union
 from shapely.geometry import GeometryCollection
-from shapely.validation import make_valid
+
+
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
+
+    if surface_type=='occupied':
+        surface_type='occup'
+    elif surface_type!='free':
+        logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
+        sys.exit(1)
+
+    egid_surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
+     # Assess surface bins, 0: different bin, 1: same bin
+    egid_surfaces_df[f'assess_{surface_type}_area_bins'] = [
+        1 if area_det == area_label else 0
+        for area_det, area_label in zip(egid_surfaces_df[f'bin_{surface_type}_area_dets (%)'], egid_surfaces_df[f'bin_{surface_type}_area_labels (%)'])
+    ]
+
+    # Determine relative results
+    surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
+         / surfaces_df[f'{surface_type}_area_labels']
     
+    # Compute relative error by attriubte
+    attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
+        / attribute_surface_df[f'{surface_type}_area_labels']
+    
+    
+    
+    return egid_surfaces_df, surfaces_df, attribute_surface_df
+
+
+def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surface_df=None):
+
+    if surface_type=='occupied':
+        surface_type='occup'
+    elif surface_type!='free':
+        logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
+        sys.exit(1)
+
+    if object_type=='detections':
+        object_type='dets'
+    elif object_type!='labels':
+        logger.critical('The object type is not valid. Please pass "detections" or "labels".')
+        sys.exit(1)
+
+    egid_surfaces_df[f'{surface_type}_area_{object_type}'] = [
+        objects_df.loc[objects_df.EGID==egid, f'{surface_type}_area'].iloc[0]
+        if egid in objects_df.EGID.unique() else 0
+        for egid in egid_surfaces_df.EGID.unique() 
+    ]
+
+    # Warn in case fo negative values in surface computation
+    nbr_tmp = egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0].shape[0]
+    if nbr_tmp > 0:
+        logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
+        egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
+
+    # Attribute bin to surface area
+    bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+
+    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
+    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels)
+
+    # Get the global surface
+    if not isinstance(surfaces_df, pd.DataFrame):
+        surfaces_df=pd.DataFrame()
+    surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
+    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'].median()
+
+    # Compute surface by roof attributes
+    tmp_df = pd.DataFrame()
+    surface_types = [f'{surface_type}_area_{object_type}', f'ratio_{surface_type}_area_{object_type}']
+    attribute_surface_dict = {'attribute': [], 'value': []}
+
+    for attribute in roof_attributes:
+        for val in egid_surfaces_df[attribute].unique():
+            attribute_surface_dict['value'] = val
+            attribute_surface_dict['attribute'] = attribute
+            for var in surface_types:
+                surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].iloc[0]
+                attribute_surface_dict[var] = surface
+
+            tmp_df = pd.concat([tmp_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
+
+    if not isinstance(attribute_surface_df, pd.DataFrame):
+        attribute_surface_df = tmp_df.copy()
+    else:
+        attribute_surface_df = attribute_surface_df.merge(tmp_df, on=['value', 'attribute'])
+
+    return egid_surfaces_df, surfaces_df, attribute_surface_df
+
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
     """Determine the intersection area over union area (IOU) of two polygons
