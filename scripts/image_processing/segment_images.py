@@ -50,9 +50,6 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
 
-    # Batch is false by default unless the size of the image exceed a threshold value
-    BATCH = False
-
     # Select and dowload the pretrained model checkpoints 
     if DL_CKP == True:
         dl_dir = os.path.join(CKP_DIR)
@@ -94,7 +91,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         tilepath = tile
         if size >= THD_SIZE:
             if METHOD=="batch":
-                logger.info(f"Image size too large to be processed -> subdivide in tiles of {TILE_SIZE} px size")
+                logger.info(f"Image size too large to be processed -> subdivided in tiles of {TILE_SIZE} px size")
                 BATCH = True
             elif METHOD=="resample":
                 logger.info(f"Image size too large to be processed -> pixel resampling to {RESAMPLE} m px-1")
@@ -102,6 +99,8 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
                 tile_resample = os.path.join(directory, 'resample', file)
                 tilepath = tile_resample   
                 gdal.Warp(tile_resample, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')     
+        else:
+            BATCH = False
 
         # Crop the input image by pixel value
         if CROP:
