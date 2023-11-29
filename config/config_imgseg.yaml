@@ -5,8 +5,8 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_test.csv
-  output_dir: image_segmentation/tiles/test
+  egids: ground_truth/egid/EGIDs_GT_training.csv
+  output_dir: image_segmentation/tiles/training
   filters:
     building_type: all
     roof_inclination: all
@@ -16,18 +16,18 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/test
-  output_dir: output/image_segmentation/test
-  vector_extension: 'gpkg' # 'gpkg' or 'shp'
+  image_dir:  input/image_segmentation/tiles/training
+  output_dir: output/image_segmentation/training_v1
+  vector_extension: gpkg # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
     size: [0, 1026, 0, 1026] # Crop image to perform test 
   SAM:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
-    checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
-      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      method: batch # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
       thd_size: 5500000 # pixel  
       tile_size: 512 # pixel (square). Will be ignore if method=resample
       resample: 0.2 # m, pixel size. Will be ignore if method=batch
@@ -51,15 +51,15 @@ segment_images.py:
         "min_mask_region_area": 200,
         # "output_mode": str = "binary_mask",
         }
-    show_masks: True # Enable to show binary and annotated masks (save annotated mask) 
+    show_masks: False # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: output/image_segmentation/test
+  egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: output/image_segmentation/training_v1
   vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -69,8 +69,8 @@ assess_results.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: output/image_segmentation/test
+  egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: output/image_segmentation/training_v1
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -86,8 +86,8 @@ assess_surface.py:
   working_dir: .
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: output/image_segmentation/test
+  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  output_dir: output/image_segmentation/training_v1
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -105,7 +105,7 @@ optimize_hyperparameters.py:
   output_dir: output/image_segmentation/optimize_training_subsample
   detections: vectors/roof_segmentation.gpkg
   vector_extension: gpkg # 'gpkg' or 'shp'
-  crs: "EPSG:2056" # Projection of the input file 
+  crs: EPSG:2056 # Projection of the input file 
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
   visualisation: True
@@ -120,9 +120,9 @@ optimize_hyperparameters.py:
   SAM:
     dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
-    checkpoints: 'sam_vit_h_4b8939.pth' # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch:
-      method: 'batch' # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
+      method: batch # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
       thd_size: 5500000  # pixel  
       tile_size: 512 # pixel (square)
       resample: 0.2 # m, pixel size. Will be ignore if method=batch
@@ -133,7 +133,7 @@ optimize_hyperparameters.py:
     show_masks: False 
   optimization:
     n_trials: 50 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
-    sampler: 'TPESampler' # Choices: 1:TPESampler; 2:GridSampler 
+    sampler: TPESampler # Choices: 1:TPESampler; 2:GridSampler 
     param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
       points_per_side: [160, 160]
       points_per_batch: [64, 64]
