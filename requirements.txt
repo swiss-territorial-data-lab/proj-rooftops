@@ -8,23 +8,10 @@ addict==2.4.0
     # via open3d
 affine==2.4.0
     # via rasterio
-aiofiles==22.1.0
-    # via ypy-websocket
-aiosqlite==0.19.0
-    # via ypy-websocket
 alphashape==1.3.1
     # via -r requirements.in
-anyio==4.0.0
-    # via jupyter-server
-argon2-cffi==23.1.0
-    # via
-    #   jupyter-server
-    #   nbclassic
-    #   notebook
-argon2-cffi-bindings==21.2.0
-    # via argon2-cffi
-arrow==1.3.0
-    # via isoduration
+ansi2html==1.8.0
+    # via dash
 asttokens==2.4.1
     # via stack-data
 attrs==23.1.0
@@ -33,22 +20,16 @@ attrs==23.1.0
     #   jsonschema
     #   rasterio
     #   referencing
-babel==2.13.1
-    # via jupyterlab-server
 backcall==0.2.0
     # via ipython
-beautifulsoup4==4.12.2
-    # via nbconvert
-bleach==6.1.0
-    # via nbconvert
-certifi==2023.7.22
+blinker==1.7.0
+    # via flask
+certifi==2023.11.17
     # via
     #   fiona
     #   pyproj
     #   rasterio
     #   requests
-cffi==1.16.0
-    # via argon2-cffi-bindings
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
@@ -58,6 +39,7 @@ click==8.1.7
     #   click-plugins
     #   cligj
     #   fiona
+    #   flask
     #   rasterio
     #   whitebox
 click-log==0.4.0
@@ -71,142 +53,67 @@ cligj==0.7.2
     #   fiona
     #   rasterio
 comm==0.2.0
-    # via
-    #   ipykernel
-    #   ipywidgets
+    # via ipywidgets
+configargparse==1.7
+    # via open3d
 contourpy==1.1.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-debugpy==1.8.0
-    # via ipykernel
+dash==2.14.2
+    # via open3d
+dash-core-components==2.0.0
+    # via dash
+dash-html-components==2.0.0
+    # via dash
+dash-table==5.0.0
+    # via dash
 decorator==5.1.1
     # via ipython
-defusedxml==0.7.1
-    # via nbconvert
-deprecation==2.1.0
-    # via jupyter-packaging
 descartes==1.1.0
     # via -r requirements.in
-entrypoints==0.4
-    # via jupyter-client
-exceptiongroup==1.1.3
-    # via anyio
 executing==2.0.1
     # via stack-data
 fastjsonschema==2.19.0
     # via nbformat
 fiona==1.9.5
     # via geopandas
-fonttools==4.44.3
+flask==3.0.0
+    # via dash
+fonttools==4.45.1
     # via matplotlib
-fqdn==1.5.1
-    # via jsonschema
 geopandas==0.13.2
     # via -r requirements.in
-idna==3.4
-    # via
-    #   anyio
-    #   jsonschema
-    #   requests
+idna==3.6
+    # via requests
 importlib-metadata==6.8.0
     # via
+    #   dash
     #   fiona
-    #   jupyter-ydoc
-    #   jupyterlab-server
-    #   nbconvert
+    #   flask
 importlib-resources==6.1.1
     # via
     #   jsonschema
     #   jsonschema-specifications
     #   matplotlib
-ipykernel==6.26.0
-    # via
-    #   nbclassic
-    #   notebook
 ipython==8.12.3
-    # via
-    #   ipykernel
-    #   ipywidgets
-    #   jupyterlab
-ipython-genutils==0.2.0
-    # via
-    #   nbclassic
-    #   notebook
+    # via ipywidgets
 ipywidgets==8.1.1
     # via open3d
-isoduration==20.11.0
-    # via jsonschema
+itsdangerous==2.1.2
+    # via flask
 jedi==0.19.1
     # via ipython
 jinja2==3.1.2
-    # via
-    #   jupyter-server
-    #   jupyterlab
-    #   jupyterlab-server
-    #   nbclassic
-    #   nbconvert
-    #   notebook
+    # via flask
 joblib==1.3.2
     # via scikit-learn
-json5==0.9.14
-    # via jupyterlab-server
-jsonpointer==2.4
-    # via jsonschema
-jsonschema[format-nongpl]==4.20.0
-    # via
-    #   jupyter-events
-    #   jupyterlab-server
-    #   nbformat
+jsonschema==4.20.0
+    # via nbformat
 jsonschema-specifications==2023.11.1
     # via jsonschema
-jupyter-client==7.4.9
-    # via
-    #   ipykernel
-    #   jupyter-server
-    #   nbclassic
-    #   nbclient
-    #   notebook
 jupyter-core==5.5.0
-    # via
-    #   ipykernel
-    #   jupyter-client
-    #   jupyter-server
-    #   jupyterlab
-    #   nbclassic
-    #   nbclient
-    #   nbconvert
-    #   nbformat
-    #   notebook
-jupyter-events==0.9.0
-    # via
-    #   jupyter-server
-    #   jupyter-server-fileid
-jupyter-packaging==0.12.3
-    # via open3d
-jupyter-server==2.10.1
-    # via
-    #   jupyter-server-fileid
-    #   jupyterlab
-    #   jupyterlab-server
-    #   nbclassic
-    #   notebook-shim
-jupyter-server-fileid==0.9.0
-    # via jupyter-server-ydoc
-jupyter-server-terminals==0.4.4
-    # via jupyter-server
-jupyter-server-ydoc==0.8.0
-    # via jupyterlab
-jupyter-ydoc==0.2.5
-    # via
-    #   jupyter-server-ydoc
-    #   jupyterlab
-jupyterlab==3.6.6
-    # via open3d
-jupyterlab-pygments==0.2.2
-    # via nbconvert
-jupyterlab-server==2.25.1
-    # via jupyterlab
+    # via nbformat
 jupyterlab-widgets==3.0.9
     # via ipywidgets
 kaleido==0.2.1
@@ -220,48 +127,20 @@ loguru==0.7.2
 markupsafe==2.1.3
     # via
     #   jinja2
-    #   nbconvert
-matplotlib==3.7.3
+    #   werkzeug
+matplotlib==3.7.4
     # via
     #   -r requirements.in
     #   descartes
     #   open3d
 matplotlib-inline==0.1.6
-    # via
-    #   ipykernel
-    #   ipython
-mistune==3.0.2
-    # via nbconvert
-nbclassic==1.0.0
-    # via
-    #   jupyterlab
-    #   notebook
-nbclient==0.9.0
-    # via nbconvert
-nbconvert==7.11.0
-    # via
-    #   jupyter-server
-    #   nbclassic
-    #   notebook
-nbformat==5.9.2
-    # via
-    #   jupyter-server
-    #   nbclassic
-    #   nbclient
-    #   nbconvert
-    #   notebook
+    # via ipython
+nbformat==5.7.0
+    # via open3d
 nest-asyncio==1.5.8
-    # via
-    #   ipykernel
-    #   jupyter-client
-    #   nbclassic
-    #   notebook
+    # via dash
 networkx==3.1
     # via alphashape
-notebook==6.5.6
-    # via jupyterlab
-notebook-shim==0.2.3
-    # via nbclassic
 numpy==1.24.4
     # via
     #   -r requirements.in
@@ -271,36 +150,27 @@ numpy==1.24.4
     #   matplotlib
     #   open3d
     #   pandas
+    #   pyquaternion
     #   rasterio
     #   scikit-learn
     #   scipy
     #   shapely
     #   snuggs
     #   trimesh
-open3d==0.13.0
+open3d==0.17.0
     # via -r requirements.in
-overrides==7.4.0
-    # via jupyter-server
 packaging==23.2
     # via
-    #   deprecation
     #   geopandas
-    #   ipykernel
-    #   jupyter-packaging
-    #   jupyter-server
-    #   jupyterlab
-    #   jupyterlab-server
     #   matplotlib
-    #   nbconvert
+    #   plotly
 pandas==2.0.3
     # via
     #   geopandas
     #   open3d
-pandocfilters==1.5.0
-    # via nbconvert
 parso==0.8.3
     # via jedi
-pexpect==4.8.0
+pexpect==4.9.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
@@ -312,80 +182,49 @@ pkgutil-resolve-name==1.3.10
     # via jsonschema
 platformdirs==4.0.0
     # via jupyter-core
-prometheus-client==0.18.0
-    # via
-    #   jupyter-server
-    #   nbclassic
-    #   notebook
+plotly==5.18.0
+    # via dash
 prompt-toolkit==3.0.41
     # via ipython
-psutil==5.9.6
-    # via ipykernel
 ptyprocess==0.7.0
-    # via
-    #   pexpect
-    #   terminado
+    # via pexpect
 pure-eval==0.2.2
     # via stack-data
-pycparser==2.21
-    # via cffi
 pygeohash==1.2.0
     # via -r requirements.in
-pygments==2.16.1
-    # via
-    #   ipython
-    #   nbconvert
-    #   open3d
+pygments==2.17.2
+    # via ipython
 pyparsing==3.1.1
     # via
     #   matplotlib
     #   snuggs
 pyproj==3.5.0
     # via geopandas
+pyquaternion==0.9.9
+    # via open3d
 python-dateutil==2.8.2
     # via
-    #   arrow
-    #   jupyter-client
     #   matplotlib
     #   pandas
-python-json-logger==2.0.7
-    # via jupyter-events
 pytz==2023.3.post1
-    # via
-    #   babel
-    #   pandas
+    # via pandas
 pyyaml==6.0.1
     # via
     #   -r requirements.in
-    #   jupyter-events
     #   open3d
-pyzmq==24.0.1
-    # via
-    #   ipykernel
-    #   jupyter-client
-    #   jupyter-server
-    #   nbclassic
-    #   notebook
 rasterio==1.3.9
     # via -r requirements.in
-referencing==0.31.0
+referencing==0.31.1
     # via
     #   jsonschema
     #   jsonschema-specifications
-    #   jupyter-events
 requests==2.31.0
     # via
     #   -r requirements.in
-    #   jupyterlab-server
-rfc3339-validator==0.1.4
-    # via
-    #   jsonschema
-    #   jupyter-events
-rfc3986-validator==0.1.1
-    # via
-    #   jsonschema
-    #   jupyter-events
-rpds-py==0.13.0
+    #   dash
+retrying==1.3.4
+    # via dash
+rpds-py==0.13.2
     # via
     #   jsonschema
     #   referencing
@@ -397,11 +236,6 @@ scipy==1.10.1
     # via
     #   alphashape
     #   scikit-learn
-send2trash==1.8.2
-    # via
-    #   jupyter-server
-    #   nbclassic
-    #   notebook
 shapely==2.0.2
     # via
     #   -r requirements.in
@@ -410,95 +244,48 @@ shapely==2.0.2
 six==1.16.0
     # via
     #   asttokens
-    #   bleach
     #   fiona
     #   python-dateutil
-    #   rfc3339-validator
-sniffio==1.3.0
-    # via anyio
+    #   retrying
 snuggs==1.4.7
     # via rasterio
-soupsieve==2.5
-    # via beautifulsoup4
 stack-data==0.6.3
     # via ipython
-terminado==0.18.0
-    # via
-    #   jupyter-server
-    #   jupyter-server-terminals
-    #   nbclassic
-    #   notebook
+tenacity==8.2.3
+    # via plotly
 threadpoolctl==3.2.0
     # via scikit-learn
-tinycss2==1.2.1
-    # via nbconvert
-tomli==2.0.1
-    # via jupyterlab
-tomlkit==0.12.3
-    # via jupyter-packaging
-tornado==6.3.3
-    # via
-    #   ipykernel
-    #   jupyter-client
-    #   jupyter-server
-    #   jupyterlab
-    #   nbclassic
-    #   notebook
-    #   terminado
 tqdm==4.66.1
     # via open3d
-traitlets==5.13.0
+traitlets==5.14.0
     # via
     #   comm
-    #   ipykernel
     #   ipython
     #   ipywidgets
-    #   jupyter-client
     #   jupyter-core
-    #   jupyter-events
-    #   jupyter-server
     #   matplotlib-inline
-    #   nbclassic
-    #   nbclient
-    #   nbconvert
     #   nbformat
-    #   notebook
-trimesh==4.0.4
+trimesh==4.0.5
     # via alphashape
-types-python-dateutil==2.8.19.14
-    # via arrow
 typing-extensions==4.8.0
-    # via ipython
+    # via
+    #   dash
+    #   ipython
 tzdata==2023.3
     # via pandas
-uri-template==1.3.0
-    # via jsonschema
 urllib3==2.1.0
     # via requests
-wcwidth==0.2.10
+wcwidth==0.2.12
     # via prompt-toolkit
-webcolors==1.13
-    # via jsonschema
-webencodings==0.5.1
+werkzeug==3.0.1
     # via
-    #   bleach
-    #   tinycss2
-websocket-client==1.6.4
-    # via jupyter-server
-wheel==0.41.3
-    # via
-    #   jupyter-packaging
+    #   dash
+    #   flask
     #   open3d
 whitebox==2.3.1
     # via -r requirements.in
 widgetsnbextension==4.0.9
     # via ipywidgets
-y-py==0.6.2
-    # via
-    #   jupyter-ydoc
-    #   ypy-websocket
-ypy-websocket==0.8.4
-    # via jupyter-server-ydoc
 zipp==3.17.0
     # via
     #   importlib-metadata

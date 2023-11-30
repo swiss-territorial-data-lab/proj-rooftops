@@ -11,7 +11,7 @@ laspy
 loguru
 matplotlib
 numpy
-open3d==0.13.0
+open3d
 pygeohash
 pyyaml
 rasterio
