@@ -18,7 +18,7 @@ logger = misc.format_logger(logger)
 # Functions --------------------------
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD, visualisation=False):
-    """Etimate the difference in free and occupied surfaces between labels and detections.
+    """Estimate the difference in free and occupied areas between labels and detections.
 
     Args:
         WORKING_DIR (path): working directory
@@ -27,7 +27,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         DETECTIONS (path): file of the detections
         ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
-        method (string): method to use for the assessment of the results, either one-to-one, one-to-many or many-to-many.
+        method (string): method used for the assessment of the results, either one-to-one, one-to-many or many-to-many.
         visualisation (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:

@@ -36,15 +36,15 @@ def objective(trial):
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
     # NUMBER_PLANES = trial.suggest_int('number_planes', 3, 25, step=1)
-    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.005, 0.15, step=0.0075)
+    DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.005, 0.22, step=0.0075)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
-    ITERATIONS = trial.suggest_int('iterations', 3000, 15000, step=500)
-    EPS_PLANES = trial.suggest_float('eps_planes', 5, 30, step=1)
-    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 500, 2000, step=100)
-    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.2, 0.75, step=0.01)
-    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 5, 25, step=1)
-    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 1, 75, step=2)
-    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 100, 300, step=10)
+    ITERATIONS = trial.suggest_int('iterations', 3000, 16000, step=500)
+    EPS_PLANES = trial.suggest_float('eps_planes', 1, 12, step=1)
+    MIN_POINTS_PLANES = trial.suggest_int('min_points_planes', 25, 750, step=25)
+    EPS_CLUSTERS = trial.suggest_float('eps_clusters', 0.3, 1.4, step=0.01)
+    MIN_POINTS_CLUSTERS = trial.suggest_int('min_points_clusters', 2, 50, step=1)
+    AREA_MIN_PLANES = trial.suggest_int('min_plane_area', 1, 95, step=2)
+    AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 150, 300, step=10)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
     dict_parameters_pcd_seg={

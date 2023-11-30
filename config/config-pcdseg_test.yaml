@@ -9,7 +9,7 @@ prepare_data.py:
   output_dir: processed/PCD_segmentation/test_zone
   filters:
     # building_type: residential
-    # roof_inclination: pitched
+    # roof_inclination: mixed
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
@@ -25,15 +25,15 @@ pcd_segmentation.py:
   egids: completed_egids.csv
   segmentation:
     planes:
-      number_planes: 19
-      distance_threshold: 0.02
-      ransac: 4
-      iterations: 3000
-      eps: 24
-      min_points: 1700
+      # number_planes: 5
+      distance_threshold: 0.0725
+      ransac: 3
+      iterations: 7000
+      eps: 11
+      min_points: 1200
     clusters:
-      eps: 0.47
-      min_points: 16
+      eps: 0.8
+      min_points: 27
   visualisation: False
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
@@ -45,8 +45,8 @@ vectorization.py:
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 61        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
-    max: 300       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    min: 91        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 210       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   visualisation: False
 
@@ -64,8 +64,8 @@ assess_results.py:
   visualisation: True
   object_attributes:
     parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
-    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10, 100]]
+    area_ranges:  [[0,0.5], [0.5, 1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 
 
 # 5 - Estimate the free surface

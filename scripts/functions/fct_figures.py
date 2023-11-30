@@ -186,7 +186,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
 def plot_surface_bin(dir_plots, df, bins):
 
-    fig, _ = plt.subplots(1, 1, figsize=(17,8))
+    fig, ax = plt.subplots(1, 1)
 
     bins = list(set(bins).intersection(df.columns))
     bins.sort()
@@ -194,8 +194,9 @@ def plot_surface_bin(dir_plots, df, bins):
     values = df[bins].iloc[0]
 
     df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
+    df.plot.bar(x='bins', y='val', rot=0, color='limegreen', figsize=(8, 6))
 
+    plt.setp(ax.get_xticklabels(), rotation=33)
     plt.xlabel('Free surface area (%)', fontweight='bold')
     plt.ylabel('Accurate detection (%)', fontweight='bold')
     plt.legend('', frameon=False)
