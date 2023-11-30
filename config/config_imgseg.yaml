@@ -17,7 +17,7 @@ generate_tiles.py:
 segment_images.py:
   working_dir: .
   image_dir:  input/image_segmentation/tiles/training
-  output_dir: output/image_segmentation/training_v1
+  output_dir: output/image_segmentation/training
   vector_extension: gpkg # 'gpkg' or 'shp'
   image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -59,7 +59,7 @@ produce_vector_layer.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: output/image_segmentation/training_v1
+  output_dir: output/image_segmentation/training
   vector_extension: gpkg # 'gpkg' or 'shp'
   crs: "EPSG:2056" # Projection of the input file
 
@@ -70,7 +70,7 @@ assess_results.py:
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: output/image_segmentation/training_v1
+  output_dir: output/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -87,7 +87,7 @@ assess_surface.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: output/image_segmentation/training_v1
+  output_dir: output/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
