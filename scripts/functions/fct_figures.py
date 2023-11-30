@@ -186,9 +186,10 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
 def plot_surface_bin(dir_plots, df, bins):
 
-    fig, _ = plt.subplots(1, 1, figsize=(12,8))
+    fig, _ = plt.subplots(1, 1, figsize=(17,8))
 
-    bins = list(set(bins).intersection(df.keys()))
+    bins = list(set(bins).intersection(df.columns))
+    bins.sort()
 
     values = df[bins].iloc[0]
 
