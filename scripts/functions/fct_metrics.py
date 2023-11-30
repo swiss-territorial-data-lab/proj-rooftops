@@ -21,18 +21,15 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
         logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
         sys.exit(1)
 
-    egid_surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
-     # Assess surface bins, 0: different bin, 1: same bin
-    egid_surfaces_df[f'assess_{surface_type}_area_bins'] = [
-        1 if area_det == area_label else 0
-        for area_det, area_label in zip(egid_surfaces_df[f'bin_{surface_type}_area_dets (%)'], egid_surfaces_df[f'bin_{surface_type}_area_labels (%)'])
-    ]
 
     # Determine relative results
+
+    # by EGID
+    egid_surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
+    # total
     surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
          / surfaces_df[f'{surface_type}_area_labels']
-    
-    # Compute relative error by attriubte
+    # by attriubte
     attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
         / attribute_surface_df[f'{surface_type}_area_labels']
     
@@ -61,7 +58,7 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
         for egid in egid_surfaces_df.EGID.unique() 
     ]
 
-    # Warn in case fo negative values in surface computation
+    # Warn in case of negative values in surface computation
     nbr_tmp = egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0].shape[0]
     if nbr_tmp > 0:
         logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
@@ -71,13 +68,15 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
     bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
     egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
-    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels)
+    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(
+        egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels
+    )
 
     # Get the global surface
     if not isinstance(surfaces_df, pd.DataFrame):
         surfaces_df=pd.DataFrame()
     surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
-    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'].median()
+    surfaces_df[f'med_ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'].median()
 
     # Compute surface by roof attributes
     tmp_df = pd.DataFrame()
@@ -86,8 +85,8 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
 
     for attribute in roof_attributes:
         for val in egid_surfaces_df[attribute].unique():
-            attribute_surface_dict['value'] = val
             attribute_surface_dict['attribute'] = attribute
+            attribute_surface_dict['value'] = val
             for var in surface_types:
                 surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].iloc[0]
                 attribute_surface_dict[var] = surface

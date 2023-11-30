@@ -365,8 +365,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
     roof_attributes = egids.keys().tolist()
     roof_attributes.remove('EGID')
-    if 'nbr_elemen' in roof_attributes:
-        roof_attributes.remove('nbr_elemen')
+    if 'nbr_elem' in roof_attributes:
+        roof_attributes.remove('nbr_elem')
 
     # Compute metrics by roof attributes 
     if additional_metrics:

@@ -184,11 +184,10 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     return plot_path
 
 
-def plot_surface_bin(dir_plots, df, bins, attribute):
+def plot_surface_bin(dir_plots, df, bins):
 
     fig, _ = plt.subplots(1, 1, figsize=(12,8))
 
-    df = df[df['attribute'] == attribute] 
     bins = list(set(bins).intersection(df.keys()))
 
     values = df[bins].iloc[0]
@@ -199,10 +198,10 @@ def plot_surface_bin(dir_plots, df, bins, attribute):
     plt.xlabel('Free surface area (%)', fontweight='bold')
     plt.ylabel('Accurate detection (%)', fontweight='bold')
     plt.legend('', frameon=False)
-    plt.title(attribute)
+    plt.title('EGID')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_accuracy_{attribute}.png')  
+    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
