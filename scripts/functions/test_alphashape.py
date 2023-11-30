@@ -5,14 +5,14 @@
 __all__ = ['optimizealpha']
 import sys
 import logging
+import numpy as np
+import rtree  # Needed by trimesh
 import shapely
 from shapely.geometry import MultiPoint
 from shapely.errors import GEOSException
 from shapely.validation import make_valid
 import trimesh
 from typing import Union, Tuple, List
-import rtree  # Needed by trimesh
-import numpy as np
 try:
     import geopandas
     USE_GP = True
@@ -25,7 +25,7 @@ def _testalpha(points: Union[List[Tuple[float]], np.ndarray], alpha: float):
     Evaluates an alpha parameter.
 
     This helper function creates an alpha shape with the given points and alpha
-    parameter.  It then checks that the produced shape is a Polygon and that it
+    parameter. It then checks that the produced shape is a Polygon and that it
     intersects all the input points.
 
     Args:
@@ -36,7 +36,9 @@ def _testalpha(points: Union[List[Tuple[float]], np.ndarray], alpha: float):
         bool: True if the resulting alpha shape is a single polygon that
             intersects all the input data points.
     """
+
     from alphashape import alphashape
+
     try:
         polygon = alphashape(points, alpha)
     except shapely.errors.GEOSException as e:
@@ -74,7 +76,6 @@ def optimizealpha(points: Union[List[Tuple[float]], np.ndarray],
     convex hull around the points.
 
     Args:
-
         points: an iterable container of points
         max_iterations (int): maximum number of iterations while finding the
             solution
@@ -83,10 +84,9 @@ def optimizealpha(points: Union[List[Tuple[float]], np.ndarray],
         silent: silence warnings
 
     Returns:
-
         float: The optimized alpha parameter
-
     """
+    
     # Convert to a shapely multipoint object if not one already
     if USE_GP and isinstance(points, geopandas.GeoDataFrame):
         points = points['geometry']
