@@ -59,7 +59,7 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     return exploded_gdf
 
 
-def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056, min_plane_area = 18, max_cluster_area = 42, alpha_shape = None, visu = False):
+def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, min_plane_area=18, max_cluster_area=42, alpha_shape=None, visu=False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
     Args:
@@ -91,7 +91,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
     written_layers = {feature_path: []}
 
     # Get the EGIDS of interest
-    egids=pd.read_csv(EGIDS)
+    egids = pd.read_csv(EGIDS)
 
     # Get the rooftops shapes
     rooftops = gpd.read_file(SHP_EGID_ROOFS)
@@ -127,7 +127,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         cluster_multipoly_gdf = pcdseg.vectorize_concave(cluster_df, cluster, epsg, alpha_shape, visu)
         # cluster_multipoly_gdf = pcdseg.vectorize_convex(cluster_df, cluster, EPSG)
 
-
         # Deal with multipolygon
         plane_multipoly_gdf['multipoly_id'] = plane_multipoly_gdf.index
         plane_vec_gdf = handle_multipolygon(plane_multipoly_gdf) if not plane_multipoly_gdf.empty else plane_multipoly_gdf
@@ -135,16 +134,15 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
         cluster_multipoly_gdf['multipoly_id'] = cluster_multipoly_gdf.index
         cluster_vec_gdf = handle_multipolygon(cluster_multipoly_gdf) if not cluster_multipoly_gdf.empty else cluster_multipoly_gdf
 
-
         # Filtering: identify and isolate plane that are too small
         if not plane_vec_gdf.empty:
             small_plane_gdf = plane_vec_gdf[plane_vec_gdf['area'] <= min_plane_area]
-            plane_vec_gdf.drop(small_plane_gdf.index, inplace = True)
+            plane_vec_gdf.drop(small_plane_gdf.index, inplace=True)
 
             # If it exists, add cluster previously classified as plane to the object class 
             if not small_plane_gdf.empty:
                 print("")
-                logger.info(f"Add {len(small_plane_gdf)} plane{'s' if len(small_plane_gdf)>1 else ''} to the objects.") 
+                logger.info(f"Add {len(small_plane_gdf)} plane{'s' if len(small_plane_gdf) > 1 else ''} to the objects.") 
                 cluster_vec_gdf = pd.concat([cluster_vec_gdf, small_plane_gdf], ignore_index=True, axis=0)
                 cluster_vec_gdf.loc[cluster_vec_gdf["class"] == "plane", "class"] = 'object' 
             del small_plane_gdf
@@ -157,7 +155,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
             # If it exists, add cluster previously classified as object to the plane class 
             if not large_objects_gdf.empty:
                 print("")
-                logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf)>1 else ''} to the roof sections.") 
+                logger.info(f"Add {len(large_objects_gdf)} object{'s' if len(large_objects_gdf) > 1 else ''} to the roof sections.") 
                 plane_vec_gdf = pd.concat([plane_vec_gdf, large_objects_gdf], ignore_index=True, axis=0)
                 plane_vec_gdf.loc[plane_vec_gdf["class"] == "plane", "class"] = 'object' 
             del large_objects_gdf
@@ -190,7 +188,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
             objects_gdf = cluster_vec_gdf.copy()
 
         if not plane_vec_gdf.empty:
-            free_gdf['area']=free_gdf.area
+            free_gdf['area'] = free_gdf.area
 
         # Build occupation geodataframe
         occupation_df = pd.concat([free_gdf, objects_gdf], ignore_index=True)
@@ -206,7 +204,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg = 2056,
             clipped_occupation_gdf.loc[:,'area'] = clipped_occupation_gdf.area
             clipped_occupation_gdf['EGID'] = egid
             all_occupation_gdf = pd.concat([all_occupation_gdf, clipped_occupation_gdf[all_occupation_gdf.columns]], ignore_index=True)
-
 
     all_occupation_gdf['det_id'] = all_occupation_gdf.index
     all_occupation_gdf.to_file(feature_path, layer='occupation_for_all_EGIDs', index=False)

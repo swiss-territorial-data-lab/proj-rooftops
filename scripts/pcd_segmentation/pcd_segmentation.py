@@ -66,7 +66,6 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     number_planes_ini = number_planes
 
     for egid_info in egids.itertuples():
-
         file_name = 'EGID_' + str(egid_info.EGID)
         # Read pcd file and get points array
         csv_input_path = os.path.join(INPUT_DIR, file_name + ".csv")
