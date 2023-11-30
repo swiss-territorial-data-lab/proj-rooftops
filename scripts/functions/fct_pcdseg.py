@@ -17,7 +17,7 @@ sys.path.insert(1, 'scripts')
 from functions.test_alphashape import optimizealpha
 
 
-def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
+def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu=False):
     """Vectorize clustered points to a concave polygon
 
     Args:
@@ -32,7 +32,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
     """
 
     try:
-        object_type=df['type'].unique()[0]
+        object_type = df['type'].unique()[0]
     except IndexError as e:
         logger.error('No elements to vectorize. Returning an empty dataframe.')
         return gpd.GeoDataFrame()
@@ -46,34 +46,33 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
     for group in plan_groups:
 
         points_df = df[df['group'] == group]
-        points_df = points_df.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
+        points_df = points_df.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis=1) 
         points = points_df.to_numpy()
 
         # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
         if not alpha_ini:
             alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
-            alpha_shape = alphashape.alphashape(points, alpha = alpha)
-            # logger.info(f"   - alpha shape value = {alpha}")
+            alpha_shape = alphashape.alphashape(points, alpha=alpha)
         else:
-            alpha=alpha_ini
+            alpha = alpha_ini
             optimized_alpha = False
             try:
-                alpha_shape = alphashape.alphashape(points, alpha = alpha)
+                alpha_shape = alphashape.alphashape(points, alpha=alpha)
             except GEOSException:
                 try:
                     # Try a second time before doing the optimization to save time.
-                    alpha_shape = alphashape.alphashape(points, alpha = 1)
+                    alpha_shape = alphashape.alphashape(points, alpha=1)
                 except GEOSException:
                     alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
-                    alpha_shape = alphashape.alphashape(points, alpha = alpha)
+                    alpha_shape = alphashape.alphashape(points, alpha=alpha)
                     optimized_alpha = True
             except QhullError:
-                if (points_df.X.max()-points_df.X.min()<1) and (points_df.Y.max()-points_df.Y.min()<1):
+                if (points_df.X.max() - points_df.X.min() < 1) and (points_df.Y.max() - points_df.Y.min() < 1):
                     continue
         
             if alpha_shape.is_empty and not optimized_alpha:
                 alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
-                alpha_shape = alphashape.alphashape(points, alpha = alpha)
+                alpha_shape = alphashape.alphashape(points, alpha=alpha)
                 optimized_alpha = True
 
         if optimized_alpha:
@@ -94,7 +93,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
         elif alpha_shape.geom_type in ['LineString', 'Point']:
             continue
         else:
-            logger.critical(f'The created polygon has not a managed geometry type : {alpha_shape.geom_type}')
+            logger.critical(f'The created polygon has not a managed geometry type: {alpha_shape.geom_type}')
             sys.exit(1)
 
         # Build the final dataframe
@@ -104,7 +103,7 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu = False):
         polygon_df = pd.concat([polygon_df, pcd_df], ignore_index=True)
     
     if polygon_df.empty:
-        polygon_gdf=gpd.GeoDataFrame()
+        polygon_gdf = gpd.GeoDataFrame()
         logger.warning('Vectorization retruned an empty dataframe.')
     else:
         polygon_gdf = gpd.GeoDataFrame(polygon_df, crs='EPSG:{}'.format(epsg), geometry='geometry')
@@ -126,7 +125,7 @@ def vectorize_convex(df, plan_groups, epsg=2056, visu=False):
     """
 
     object_type=df['type'].unique()[0]
-    if len(df.type.unique())>1:
+    if len(df.type.unique()) > 1:
         logger.warning('Several different types were passsed to the function "vectorize_concave".')
 
     logger.info(f"Compute 2D vector from points groups of type {object_type}:")
@@ -140,14 +139,14 @@ def vectorize_convex(df, plan_groups, epsg=2056, visu=False):
 
         # 
         points = df[df['group'] == group]
-        points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis = 1) 
+        points = points.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis=1) 
         points = points.to_numpy()
 
         hull = ConvexHull(points)
         # area = hull.volume
 
         if visu:
-            fig, (ax1, ax2) = plt.subplots(ncols = 2, figsize = (10, 3))
+            fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 3))
             for ax in (ax1, ax2):
                 ax.plot(points[:, 0], points[:, 1], '.', color='k')
                 if ax == ax1:
@@ -156,7 +155,7 @@ def vectorize_convex(df, plan_groups, epsg=2056, visu=False):
                     ax.set_title('Convex hull')
                     for simplex in hull.simplices:
                         ax.plot(points[simplex, 0], points[simplex, 1], 'c')
-                    ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec = 'r', color = 'none', lw = 1, markersize = 10)
+                    ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec='r', color='none', lw=1, markersize=10)
             plt.show()
 
         polylist = []

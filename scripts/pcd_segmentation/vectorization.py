@@ -50,9 +50,9 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     number_parts_df = exploded_gdf['multipoly_id'].value_counts()
     for multipoly_id, number_parts in number_parts_df.items():
         if number_parts > 25:
-            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=0.5))].copy()
+            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id == multipoly_id) & (exploded_gdf.area <= 0.5))].copy()
         elif number_parts > limit_number:
-            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id==multipoly_id) & (exploded_gdf.area<=limit_area))].copy()
+            exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id == multipoly_id) & (exploded_gdf.area <= limit_area))].copy()
 
     exploded_gdf.reset_index(drop=True, inplace=True)
 
@@ -96,7 +96,8 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
     # Get the rooftops shapes
     rooftops = gpd.read_file(SHP_EGID_ROOFS)
 
-    all_occupation_gdf=gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(epsg))
+    all_occupation_gdf = gpd.GeoDataFrame(columns=['occupation', 'EGID', 'area', 'geometry'], crs='EPSG:{}'.format(epsg))
+    
     for egid in tqdm(egids.EGID.to_numpy()):
         file_name = 'EGID_' + str(egid)
 
@@ -150,7 +151,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
         # Filtering: identify and isolate objects that are too big
         if not cluster_vec_gdf.empty:
             large_objects_gdf = cluster_vec_gdf[cluster_vec_gdf['area'] > max_cluster_area]
-            cluster_vec_gdf.drop(large_objects_gdf.index, inplace = True)        
+            cluster_vec_gdf.drop(large_objects_gdf.index, inplace=True)        
 
             # If it exists, add cluster previously classified as object to the plane class 
             if not large_objects_gdf.empty:
