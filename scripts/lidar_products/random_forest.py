@@ -169,7 +169,9 @@ if TRAIN:
     agreement_df = pd.concat([agreement_ocen_df, agreement_ocan_df], ignore_index=True)
     agreement_df['office'] = ['OCEN', 'OCAN']
 
-    agreement_df.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates.csv'), index=False)
+    filepath = os.path.join(OUTPUT_DIR, 'agreement_rates.csv')
+    agreement_df.to_csv(filepath, index=False)
+    written_files.append(filepath)
 
 else:
     _, features_array = prepare_features(features_df)
