@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -40,8 +41,8 @@ def plot_surface(dir_plots, df, attribute, xlabel):
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax[0], x='value', y=['free_surface_label', 'occupied_surface_label',], kind='bar', stacked=True, rot=0, color = color_list)
-    df.plot(ax=ax[1], x='value', y=['free_surface_det', 'occupied_surface_det',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax[0], x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, color = color_list)
+    df.plot(ax=ax[1], x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, color = color_list)
     for b, c in zip(ax[0].containers, ax[1].containers):
         labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
         labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
@@ -73,20 +74,21 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     color_list = ['limegreen', 'orange', 'tomato']  
     counts_list = ['TP', 'FP', 'FN']    
 
-    df = df[df['attribute'] == attribute]  
+    df = df[df['attribute'] == attribute].copy()
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-    
-    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
-
-    for c in ax.containers:
-        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
 
     if attribute == 'object_class':
+        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, stacked=True)
         plt.xticks(rotation=40, ha='right')
+    else:
+        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.7)
     plt.xlabel(xlabel, fontweight='bold')
 
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    for c in ax.containers:
+        labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+
+    # plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
@@ -101,17 +103,36 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
-    color_list = ['limegreen', 'orange', 'tomato']  
-    counts_list = ['TP', 'FP', 'FN']    
+    format_plot = {'gt': {'color_list': ['limegreen', 'tomato'], 'count_list': ['TP', 'FN'], 'position': -0.05},
+                   'dt': {'color_list': ['limegreen', 'orange'], 'count_list': ['TP', 'FP'], 'position': 1.05}}
 
-    df = df[df['attribute'] == attribute]  
-    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-    df['sum'] = df.sum(axis=1)
+    df = df[df['attribute'] == attribute] 
+    for variables in format_plot.values():
 
-    for count in counts_list:
-        df[count] =  df[count] / df['sum']
+        df_subset = df[variables['count_list']+['value']].set_index('value')
+        df_subset['sum'] = df_subset.sum(axis=1)
+
+        for count in variables['count_list']:
+            df_subset[count] = df_subset[count] / df_subset['sum']
+        
+        df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'])
+
+        if attribute == 'object_class':
+            break
+
+    # fig, ax = plt.subplots(figsize=(12,8))
+
+    # color_list = ['limegreen', 'orange', 'tomato']  
+    # counts_list = ['TP', 'FP', 'FN']    
+
+    # df = df[df['attribute'] == attribute]  
+    # df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
+    # df['sum'] = df.sum(axis=1)
+
+    # for count in counts_list:
+    #     df[count] =  df[count] / df['sum']
     
-    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0, width = 0.5)
+    # df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0, width = 0.5)
 
     for c in ax.containers:
         labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
@@ -157,6 +178,32 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
  
     plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_surface_bin(dir_plots, df, bins):
+
+    fig, ax = plt.subplots(1, 1)
+
+    bins = list(set(bins).intersection(df.columns))
+    bins.sort()
+
+    values = df[bins].iloc[0]
+
+    df = pd.DataFrame({'bins':bins, 'val':values * 100})
+    df.plot.bar(x='bins', y='val', rot=0, color='limegreen', figsize=(8, 6))
+
+    plt.setp(ax.get_xticklabels(), rotation=33)
+    plt.xlabel('Free surface area (%)', fontweight='bold')
+    plt.ylabel('Accurate detection (%)', fontweight='bold')
+    plt.legend('', frameon=False)
+    plt.title('EGID')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 

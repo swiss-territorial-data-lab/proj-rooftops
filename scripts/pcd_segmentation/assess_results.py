@@ -52,6 +52,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
+    if not visualisation and os.path.exists(os.path.join(OUTPUT_DIR, method)):
+        os.system(f"rm -r {os.path.join(OUTPUT_DIR, method)}")
     output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, method))
     threshold_str = str(threshold).replace('.', 'dot')
 
@@ -93,6 +95,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
         
+    # Clip labels to the corresponding roof
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
         labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
@@ -104,7 +107,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf=labels_gdf.explode(ignore_index=True)
+    labels_gdf=labels_gdf.explode(ignore_index=True).reset_index(drop=True)
 
     nbr_labels=labels_gdf.shape[0]
     logger.info(f"    - {nbr_labels} labels")
@@ -124,7 +127,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
     else:
         detections_gdf['ID_DET'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(index_part=False)
+    detections_gdf=detections_gdf.explode(index_parts=False).reset_index(drop=True)
     logger.info(f"    - {len(detections_gdf)} detections")
     
 
@@ -362,8 +365,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_egid_df = pd.merge(metrics_egid_df, egids, on='EGID')
     roof_attributes = egids.keys().tolist()
     roof_attributes.remove('EGID')
-    if 'nbr_elemen' in roof_attributes:
-        roof_attributes.remove('nbr_elemen')
+    if 'nbr_elem' in roof_attributes:
+        roof_attributes.remove('nbr_elem')
 
     # Compute metrics by roof attributes 
     if additional_metrics:
@@ -445,7 +448,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_centroid': r'Object distance (m)'} 
 
-        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+        # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_objects_df.attribute.unique():
             if attr in xlabel_dict.keys():
                 _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
