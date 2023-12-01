@@ -23,7 +23,7 @@ import pcd_segmentation
 import vectorization
 import assess_results
 
-logger=format_logger(logger)
+logger = format_logger(logger)
 
 # Define functions --------------------------
 
@@ -47,7 +47,7 @@ def objective(trial):
     AREA_MAX_OBJECTS = trial.suggest_int('max_cluster_area', 100, 300, step=10)
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
-    dict_parameters_pcd_seg={
+    dict_parameters_pcd_seg = {
         # 'number_planes':NUMBER_PLANES,
         'distance_threshold':DISTANCE_THERSHOLD,
         'ransac': RANSAC,
@@ -58,7 +58,7 @@ def objective(trial):
         'min_points_clusters': MIN_POINTS_CLUSTERS,
     }
 
-    dict_parameters_vect={
+    dict_parameters_vect = {
         'min_plane_area': AREA_MIN_PLANES,
         'max_cluster_area': AREA_MAX_OBJECTS,
         # 'alpha_shape': ALPHA_SHAPE,
@@ -108,44 +108,44 @@ logger.info(f"Using {args.config_file} as config file.")
 with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-WORKING_DIR=cfg['working_dir']
-INPUT_DIR='.'
-OUTPUT_DIR='.'
+WORKING_DIR = cfg['working_dir']
+INPUT_DIR = '.'
+OUTPUT_DIR = '.'
 
-EGIDS=cfg['egids']
-LABELS=cfg['ground_truth']
+EGIDS = cfg['egids']
+LABELS = cfg['ground_truth']
 ROOFS = cfg['roofs']
-EPSG=cfg['epsg']
+EPSG = cfg['epsg']
 
-SEGMENTATION=cfg['parameters']['segmentation']
+SEGMENTATION = cfg['parameters']['segmentation']
 
-# NBR_PLANES=SEGMENTATION['planes']['number_planes']
-# DISTANCE_THRESHOLD=SEGMENTATION['planes']['distance_threshold']
-# RANSAC=SEGMENTATION['planes']['ransac']
-# ITERATIONS=SEGMENTATION['planes']['iterations']
-# EPS_PLANES=SEGMENTATION['planes']['eps']
-# MIN_POINTS_PLANES=SEGMENTATION['planes']['min_points']
-# EPS_CLUSTERS=SEGMENTATION['clusters']['eps']
-# MIN_POINTS_CLUSTERS=SEGMENTATION['clusters']['min_points']
-# MIN_AREA_PLANES=cfg['parameters']['area_threshold']['min']
-# MAX_AREA_OBJECTS=cfg['parameters']['area_threshold']['max']
-ALPHA_SHAPE=cfg['parameters']['alpha_shape']
+# NBR_PLANES = SEGMENTATION['planes']['number_planes']
+# DISTANCE_THRESHOLD = SEGMENTATION['planes']['distance_threshold']
+# RANSAC = SEGMENTATION['planes']['ransac']
+# ITERATIONS = SEGMENTATION['planes']['iterations']
+# EPS_PLANES = SEGMENTATION['planes']['eps']
+# MIN_POINTS_PLANES = SEGMENTATION['planes']['min_points']
+# EPS_CLUSTERS = SEGMENTATION['clusters']['eps']
+# MIN_POINTS_CLUSTERS = SEGMENTATION['clusters']['min_points']
+# MIN_AREA_PLANES = cfg['parameters']['area_threshold']['min']
+# MAX_AREA_OBJECTS = cfg['parameters']['area_threshold']['max']
+ALPHA_SHAPE = cfg['parameters']['alpha_shape']
 
-METHOD=cfg['method']
-VISUALISATION=cfg['visualisation']
+METHOD = cfg['method']
+VISUALISATION = cfg['visualisation']
 
 os.chdir(WORKING_DIR)
 _ = ensure_dir_exists(OUTPUT_DIR)
 output_plots = ensure_dir_exists(os.path.join(OUTPUT_DIR, 'plots'))
 
 written_files = []
-study_path=os.path.join(OUTPUT_DIR, 'study.pkl')
+study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
 
-logger.info('Optimization of the hyperparameters for Open3d')
+logger.info('Optimization of Open3d hyperparameters')
 
-study=optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
+study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
 # study = joblib.load(open(study_path, 'rb'))
-study.optimize(objective, n_trials=50, callbacks=[callback])
+study.optimize(objective, n_trials=5, callbacks=[callback])
 
 joblib.dump(study, study_path)
 written_files.append(study_path)

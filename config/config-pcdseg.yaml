@@ -83,9 +83,9 @@ calculate_free_surface.py:
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
-  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
+  working_dir: /mnt/data-03/cherny/git/proj-rooftops/output/pcd_segmentation
   egids: completed_egids.csv
-  ground_truth: ../../ground_truth/roofs_STDL_proofed_2023-10-30_training.shp
+  ground_truth: ../../input/ground_truth/occupation/roofs_STDL_proofed_2023-10-30_training.shp
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   parameters:
@@ -105,4 +105,4 @@ optimize_hyperparam_LiDAR.py:
       max: 42       # m2. Above this value the vectorized object in will be classified as plane and not object
     alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   method: fusion
-  visualisation: None
+  visualisation: False
