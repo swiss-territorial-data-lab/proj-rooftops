@@ -8,6 +8,8 @@ addict==2.4.0
     # via open3d
 affine==2.4.0
     # via rasterio
+alembic==1.12.1
+    # via optuna
 alphashape==1.3.1
     # via -r requirements.in
 ansi2html==1.8.0
@@ -52,6 +54,8 @@ cligj==0.7.2
     # via
     #   fiona
     #   rasterio
+colorlog==6.7.0
+    # via optuna
 comm==0.2.0
     # via ipywidgets
 configargparse==1.7
@@ -84,15 +88,19 @@ fonttools==4.45.1
     # via matplotlib
 geopandas==0.13.2
     # via -r requirements.in
+greenlet==3.0.1
+    # via sqlalchemy
 idna==3.6
     # via requests
 importlib-metadata==6.8.0
     # via
+    #   alembic
     #   dash
     #   fiona
     #   flask
 importlib-resources==6.1.1
     # via
+    #   alembic
     #   jsonschema
     #   jsonschema-specifications
     #   matplotlib
@@ -124,9 +132,12 @@ laspy==2.5.1
     # via -r requirements.in
 loguru==0.7.2
     # via -r requirements.in
+mako==1.3.0
+    # via alembic
 markupsafe==2.1.3
     # via
     #   jinja2
+    #   mako
     #   werkzeug
 matplotlib==3.7.4
     # via
@@ -149,6 +160,7 @@ numpy==1.24.4
     #   laspy
     #   matplotlib
     #   open3d
+    #   optuna
     #   pandas
     #   pyquaternion
     #   rasterio
@@ -159,10 +171,13 @@ numpy==1.24.4
     #   trimesh
 open3d==0.17.0
     # via -r requirements.in
+optuna==3.4.0
+    # via -r requirements.in
 packaging==23.2
     # via
     #   geopandas
     #   matplotlib
+    #   optuna
     #   plotly
 pandas==2.0.3
     # via
@@ -212,6 +227,7 @@ pyyaml==6.0.1
     # via
     #   -r requirements.in
     #   open3d
+    #   optuna
 rasterio==1.3.9
     # via -r requirements.in
 referencing==0.31.1
@@ -249,6 +265,10 @@ six==1.16.0
     #   retrying
 snuggs==1.4.7
     # via rasterio
+sqlalchemy==2.0.23
+    # via
+    #   alembic
+    #   optuna
 stack-data==0.6.3
     # via ipython
 tenacity==8.2.3
@@ -256,7 +276,9 @@ tenacity==8.2.3
 threadpoolctl==3.2.0
     # via scikit-learn
 tqdm==4.66.1
-    # via open3d
+    # via
+    #   open3d
+    #   optuna
 traitlets==5.14.0
     # via
     #   comm
@@ -269,8 +291,10 @@ trimesh==4.0.5
     # via alphashape
 typing-extensions==4.8.0
     # via
+    #   alembic
     #   dash
     #   ipython
+    #   sqlalchemy
 tzdata==2023.3
     # via pandas
 urllib3==2.1.0

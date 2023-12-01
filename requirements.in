@@ -12,6 +12,7 @@ loguru
 matplotlib
 numpy
 open3d
+optuna
 pygeohash
 pyyaml
 rasterio
