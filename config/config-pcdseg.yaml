@@ -106,3 +106,17 @@ optimize_hyperparam_LiDAR.py:
     alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
   method: fusion
   visualisation: None
+
+
+post_processings.py:
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data\processed\PCD_segmentation
+  output_dir: improved_results
+  merge_files: False
+  rdp: True
+  buffer: False
+  buffer_size: 0.10
+  detections: improved_results/detections.gpkg
+  files:
+    all_detections: 2_100_iter_all_fnp/all_EGID_occupation_47_best.gpkg
+    residential_pitched: 12_125_iter_resid_pitched_fnp/all_EGID_occupation_31_best_IoU.gpkg
+    administrative: 8_100_iter_admin_fnp/all_EGID_occupation_27.gpkg
