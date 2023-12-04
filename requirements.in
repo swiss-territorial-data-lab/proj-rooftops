@@ -12,6 +12,7 @@ loguru
 matplotlib
 numpy
 open3d
+optuna
 pyyaml
 rasterio
 requests

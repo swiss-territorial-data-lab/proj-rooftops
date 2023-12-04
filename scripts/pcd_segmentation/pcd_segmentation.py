@@ -78,8 +78,8 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         # Conversion of numpy array to Open3D format + visualisation
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(array_pts)
-        # if visu:
-        #     o3d.visualization.draw_geometries([pcd])
+        if visu:
+            o3d.visualization.draw_geometries([pcd])
 
         # Point cloud plane segmentation  
 
