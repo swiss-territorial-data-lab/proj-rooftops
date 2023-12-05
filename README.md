@@ -17,7 +17,7 @@ Goal: Determine the space available on rooftops by detecting objects. Production
 
 ### Hardware
 
-For the processing of the *images*, a CUDA-compatible GPU is needed.
+For the processing of the *images*, a CUDA-compatible GPU is needed. <br>
 For the processing of the *LiDAR point cloud*, there is no hardware requirement.
 
 ### Installation
@@ -37,11 +37,11 @@ All the dependencies required for the project are listed in `requirements.in` an
 
     - Requirements for the image workflow only
 
-            $ pip install -r requirements/requirements_LiDAR.txt
+            $ pip install -r requirements/requirements_images.txt
 
     - Requirements for the LiDAR workflow only
 
-            $ pip install -r requirements/requirements_images.txt
+            $ pip install -r requirements/requirements_LiDAR.txt
 
 
 _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
