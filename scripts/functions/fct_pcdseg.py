@@ -49,8 +49,9 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu=False):
         points_df = points_df.drop(['Unnamed: 0', 'Z', 'group', 'type'], axis=1) 
         points = points_df.to_numpy()
 
-        # Produce alpha shapes point, i.e. bounding polygons containing a set of points. alpha parameter can be tuned
+        # Produce alpha shapes point, i.e. bounding polygons containing a set of points.
         if not alpha_ini:
+            # Tune alpha if undefined
             alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
             alpha_shape = alphashape.alphashape(points, alpha=alpha)
         else:
@@ -60,16 +61,18 @@ def vectorize_concave(df, plan_groups, epsg=2056, alpha_ini=None, visu=False):
                 alpha_shape = alphashape.alphashape(points, alpha=alpha)
             except GEOSException:
                 try:
-                    # Try a second time before doing the optimization to save time.
+                    # Try a second time with alpha=1 before doing the time-costly optimization of alpha.
                     alpha_shape = alphashape.alphashape(points, alpha=1)
                 except GEOSException:
                     alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
                     alpha_shape = alphashape.alphashape(points, alpha=alpha)
                     optimized_alpha = True
             except QhullError:
+                # Ignore Qhull error if the polygon is negligeable.
                 if (points_df.X.max() - points_df.X.min() < 1) and (points_df.Y.max() - points_df.Y.min() < 1):
                     continue
         
+            # If the result is empty and alpha was not optimized, optimize alpha to obtain a better result.
             if alpha_shape.is_empty and not optimized_alpha:
                 alpha = optimizealpha(points, upper=10, max_iterations=1000, silent=True)
                 alpha_shape = alphashape.alphashape(points, alpha=alpha)
