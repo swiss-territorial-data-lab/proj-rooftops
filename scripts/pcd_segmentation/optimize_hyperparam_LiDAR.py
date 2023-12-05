@@ -145,7 +145,7 @@ logger.info('Optimization of Open3d hyperparameters')
 
 study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
 # study = joblib.load(open(study_path, 'rb'))
-study.optimize(objective, n_trials=5, callbacks=[callback])
+study.optimize(objective, n_trials=50, callbacks=[callback])
 
 joblib.dump(study, study_path)
 written_files.append(study_path)

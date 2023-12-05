@@ -1,25 +1,25 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/ # Provide absolute path 
-  pcd_dir: input/pcd_segmentation/LiDAR/2019/
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  pcd_dir: initial/LiDAR/2019
   inputs:
-    pcd_tiles: input/pcd_segmentation/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: input/ground_truth/egid/EGIDs_GT_training.csv
-  output_dir: output/pcd_segmentation/
+    pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+    shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: EGIDs_GT_training.csv
+  output_dir: processed/PCD_segmentation
   filters:
     # building_type: residential
     # roof_inclination: mixed
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
-    distance_buffer: 1.0            #m, buffer value
+    distance_buffer: 1.0            # m, buffer value
   overwrite: False
-  visualisation: false
+  visualisation: False
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/output/pcd_segmentation/
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
   input_dir: .
   output_dir: .
   egids: completed_egids.csv
@@ -38,7 +38,7 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/output/pcd_segmentation/
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
   input_dir: .
   output_dir: .
   egids: completed_egids.csv
@@ -48,16 +48,16 @@ vectorization.py:
     min: 91        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
     max: 210       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
   alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
-  visualisation: True
+  visualisation: False
 
 # 4 - Evaluate the results
 assess_results.py: 
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/
-  output_dir: output/pcd_segmentation/
-  detections: output/pcd_segmentation/all_EGID_occupation.gpkg
-  ground_truth: input/ground_truth/occupation/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
-  egids: output/pcd_segmentation/completed_egids.csv
-  roofs: output/pcd_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  output_dir: processed/PCD_segmentation
+  detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
+  ground_truth: ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  egids: processed/PCD_segmentation/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: True
@@ -70,21 +70,20 @@ assess_results.py:
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/
-  output_dir: output/pcd_segmentation
-  detections: output/pcd_segmentation/all_EGID_occupation.gpkg
-  ground_truth: input/ground_truth/occupation/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
-  roofs: output/pcd_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  output_dir: processed/PCD_segmentation
+  detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
+  ground_truth: ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  egids: processed/PCD_segmentation/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100] 
-  egids: output/pcd_segmentation/completed_egids.csv
   method: fusion
-  threshold: 0.1
   visualisation: True
 
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
-  working_dir: /mnt/data-03/cherny/git/proj-rooftops/output/pcd_segmentation
+  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation
   egids: completed_egids.csv
   ground_truth: ../../ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
