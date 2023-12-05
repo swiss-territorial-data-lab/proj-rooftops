@@ -82,6 +82,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     logger.info(f"- Convert mask to vector")  
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
+        print(tile)
 
         # Subdivide the input images in smaller tiles if its number of pixel exceed the threshold value
         directory, file = os.path.split(tile)
@@ -115,23 +116,27 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         mask = file_path
         sam.generate(tilepath, mask, batch=BATCH, sample_size=(TILE_SIZE, TILE_SIZE), foreground=FOREGROUND, unique=UNIQUE, erosion_kernel=(3,3), mask_multiplier=MASK_MULTI)
 
-        written_files.append(file_path)  
+        if os.path.exists(file_path):
+            written_files.append(file_path)  
 
-        if SHOW:
+            # Convert segmentation mask to vector layer 
             file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
-                        tile.split('/')[-1].split('.')[0] + '_annotated.tif')   
-            sam.show_masks(cmap="binary_r")
-            sam.show_anns(axis="off", alpha=0.7, output=file_path)
-            written_files.append(file_path)
-
-        # Convert segmentation mask to vector layer 
-        file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
                     tile.split('/')[-1].split('.')[0] + '_segment')  
-        if SHP_EXT == 'gpkg': 
-            sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
-        elif SHP_EXT == 'shp':       
-            sam.tiff_to_vector(mask, file_path)
-        written_files.append(file_path)  
+        
+            if SHP_EXT == 'gpkg': 
+                sam.tiff_to_gpkg(mask, file_path, simplify_tolerance=None)
+            elif SHP_EXT == 'shp':       
+                sam.tiff_to_vector(mask, file_path)
+            written_files.append(file_path)  
+
+            if SHOW:
+                file_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images')),
+                            tile.split('/')[-1].split('.')[0] + '_annotated.tif')   
+                sam.show_masks(cmap="binary_r")
+                sam.show_anns(axis="off", alpha=0.7, output=file_path)
+                written_files.append(file_path)
+        else:
+            pass
 
     print()
     logger.info("The following files were written. Let's check them out!")
