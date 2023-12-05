@@ -88,9 +88,10 @@ def objective(trial):
     print('')
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]  
+    precision = metrics_df['precision'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]  
     iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
-    return f1, iou
+    return f1, precision, iou
 
 
 def callback(study, trial):
@@ -197,16 +198,16 @@ if __name__ == "__main__":
                 "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR,
                 "min_mask_region_area": MIN_MASK_REGION_AREA
                 }
-        study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameters optimization')   
+        study = optuna.create_study(directions=['maximize', 'maximize', 'maximize'], sampler=optuna.samplers.GridSampler(search_space), study_name='SAM hyperparameters optimization')   
     elif SAMPLER == 'TPESampler':
-        study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameters optimization') 
-    # study.optimize(objective, n_trials=N_TRIALS, callbacks=[callback])
-    study.optimize(objective, n_trials=N_TRIALS)
+        study = optuna.create_study(directions=['maximize', 'maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='SAM hyperparameters optimization') 
+    study.optimize(objective, n_trials=N_TRIALS, callbacks=[callback])
+    # study.optimize(objective, n_trials=N_TRIALS)
 
     joblib.dump(study, study_path)
     written_files.append(study_path)
 
-    targets = {0: 'f1 score', 1: 'median IoU'}
+    targets = {0: 'f1 score', 1: 'precision', 2: 'median IoU'}
 
     logger.info('Save the best hyperparameters')
     written_files.append(optimization.save_best_hyperparameters(study, targets, output_plots))

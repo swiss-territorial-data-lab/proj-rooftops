@@ -37,8 +37,8 @@ segment_images.py:
     custom_SAM: # customize the segment anything parameters (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
       enable: True
       custom_parameters: {
-        "points_per_side": 96,
-        "points_per_batch": 96,
+        "points_per_side": 64,
+        "points_per_batch": 64,
         "pred_iou_thresh": 0.85,
         "stability_score_thresh": 0.8,
         "stability_score_offset": 3.0,
@@ -78,8 +78,8 @@ assess_results.py:
   threshold: 0.1 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
-    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10, 100]]
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 
 # 5 - Estimate the free surface
 assess_surface.py:
@@ -102,7 +102,7 @@ optimize_hyperparameters.py:
   roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: output/image_segmentation/optimize_training_subsample
+  output_dir: output/image_segmentation/optimize_training_subsample_precision
   detections: vectors/roof_segmentation.gpkg
   vector_extension: gpkg # 'gpkg' or 'shp'
   crs: EPSG:2056 # Projection of the input file 
