@@ -291,51 +291,38 @@ def get_fractional_sets(dets_gdf, labels_gdf, method='one-to-one', iou_threshold
     return tp_gdf, fp_gdf, fn_gdf
 
 
-def get_free_area(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
+def get_free_area(objects_gdf, roofs_gdf, attribute='EGID'):
     """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
 
     Args:
-        detections_gdf (geodataframe): geodataframe of the detections
-        labels_gdf (geodataframe): geodataframe of the ground truth
+        objects_gdf (geodataframe): geodataframe of the detections or the ground truth
         roofs_gdf (geodataframe): geodataframe of the roofs
         attribute (string): attribute to dissolve by. Defaults to 'EGID'.
 
     Returns:
         labels_free_gdf: geodataframes of all the labels merged by roof with the occupied and free surface area by roof
-        detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
+        objects_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
     """
 
-    detections_by_attribute_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
-    labels_by_attribute_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
+    
     roofs_by_attribute_gdf = roofs_gdf.dissolve(by=attribute, as_index=False)
     roofs_by_attribute_gdf['roof_area'] = roofs_by_attribute_gdf.area
 
-    # Add value to empty gdf
-    if detections_by_attribute_gdf['geometry'].empty:
-        keys_list = detections_by_attribute_gdf.to_dict()
+    objects_by_attribute_gdf = objects_gdf.dissolve(by=attribute, as_index=False) 
+    # Add values to empty gdf
+    if objects_by_attribute_gdf['geometry'].empty:
+        keys_list = objects_by_attribute_gdf.to_dict()
         dic = dict.fromkeys(keys_list, 0)
-        detections_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        detections_by_attribute_gdf['occup_area'] = 0
-        detections_by_attribute_gdf['EGID'] = labels_by_attribute_gdf['EGID']
+        objects_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        objects_by_attribute_gdf['occup_area'] = 0
+        objects_by_attribute_gdf['EGID'] = roofs_by_attribute_gdf['EGID']
     else:
-        detections_by_attribute_gdf['occup_area'] = detections_by_attribute_gdf.area
+        objects_by_attribute_gdf['occup_area'] = objects_by_attribute_gdf.area
 
-    if labels_by_attribute_gdf['geometry'].empty:
-        keys_list = labels_by_attribute_gdf.to_dict()
-        dic = dict.fromkeys(keys_list, 0)
-        labels_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        labels_by_attribute_gdf['occup_area'] = 0
-    else:
-        labels_by_attribute_gdf['occup_area'] = labels_by_attribute_gdf.area
+    objects_with_area_gdf=pd.merge(objects_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    objects_with_area_gdf['free_area'] = objects_with_area_gdf.roof_area - objects_with_area_gdf.occup_area
 
-
-    detections_with_area_gdf=pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    detections_with_area_gdf['free_area'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occup_area
-
-    labels_with_area_gdf=pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    labels_with_area_gdf['free_area'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occup_area
-
-    return labels_with_area_gdf, detections_with_area_gdf
+    return objects_with_area_gdf
 
 
 def get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID'):

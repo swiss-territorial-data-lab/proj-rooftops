@@ -74,34 +74,39 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     logger.info(f"    - {len(roofs_gdf)} roofs")
 
     # Read the shapefile for labels
-    labels_gdf = gpd.read_file(LABELS)
+    if LABELS:
+        labels_gdf = gpd.read_file(LABELS)
 
-    if labels_gdf.EGID.dtype != 'int64':
-        labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
-    if 'type' in labels_gdf.columns:
-        labels_gdf['type'] = labels_gdf['type'].astype(int)
-        labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
-        # Type 12 corresponds to free surfaces, other classes are objects
-        labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
-        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        if labels_gdf.EGID.dtype != 'int64':
+            labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
+        if 'type' in labels_gdf.columns:
+            labels_gdf['type'] = labels_gdf['type'].astype(int)
+            labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
+            # Type 12 corresponds to free surfaces, other classes are objects
+            labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
+            labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        else:
+            labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
+            
+        for egid in array_egids:
+            labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
+            labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+
+            tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+            labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
+
+        labels_gdf['label_id'] = labels_gdf.id
+        labels_gdf['area'] = round(labels_gdf.area, 4)
+
+        labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+        labels_gdf = labels_gdf.explode(ignore_index=True)
+
+        nbr_labels = labels_gdf.shape[0]
+        logger.info(f"    - {nbr_labels} labels")
+
     else:
-        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
-        
-    for egid in array_egids:
-        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+        labels_gdf = gpd.GeoDataFrame()
 
-        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
-        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
-
-    labels_gdf['label_id'] = labels_gdf.id
-    labels_gdf['area'] = round(labels_gdf.area, 4)
-
-    labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf = labels_gdf.explode(ignore_index=True)
-
-    nbr_labels = labels_gdf.shape[0]
-    logger.info(f"    - {nbr_labels} labels")
 
     # Read the shapefile for detections
     detections_gdf = gpd.read_file(DETECTIONS) # , layer='occupation_for_all_EGIDS')
@@ -117,12 +122,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     logger.info(f"    - {len(detections_gdf)} detections")
 
     logger.info('Get the free and occupied surface by EGID')
-
-    labels_free_gdf, detections_free_gdf = metrics.get_free_area(
-        labels_gdf, 
-        detections_gdf,
-        roofs_gdf,
-    )
     
     egid_surfaces_df = egids.drop_duplicates(subset=['EGID']).reset_index(drop=True)
     egid_surfaces_df['total_area'] = [
@@ -131,54 +130,77 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         for egid in egid_surfaces_df.EGID.unique()
     ]
 
-    logger.info('    - for labels')
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(labels_free_gdf, egid_surfaces_df, 'free', 'labels', BINS, roof_attributes)
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
-        labels_free_gdf, egid_surfaces_df, 'occupied', 'labels', BINS, roof_attributes,
-        surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
-    )
     logger.info('    - for detections')
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
-        detections_free_gdf, egid_surfaces_df, 'free', 'detections', BINS, roof_attributes,
-        surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
-    )
+    detections_free_gdf = metrics.get_free_area(detections_gdf, roofs_gdf)
+    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(detections_free_gdf, egid_surfaces_df, 'free', 'detections', BINS, roof_attributes)
     egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
         detections_free_gdf, egid_surfaces_df, 'occupied', 'detections', BINS, roof_attributes,
         surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
     )
 
-    logger.info('Get the difference between labels and detections')
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'free')
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'occupied')
+    if not labels_gdf.empty:
+        logger.info('    - for labels')
+        labels_free_gdf = metrics.get_free_area(labels_gdf, roofs_gdf)
+        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
+            labels_free_gdf, egid_surfaces_df, 'free', 'labels', BINS, roof_attributes,
+            surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
+        )
+        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
+            labels_free_gdf, egid_surfaces_df, 'occupied', 'labels', BINS, roof_attributes,
+            surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
+        )
 
-    # Assess surface bins, 0: different bin, 1: same bin -> if ok on one side (free/occupied), it should be ok on the other.
-    egid_surfaces_df[f'assess_classif_bins'] = [
-        1 if bin_area_det == bin_area_label else 0
-        for bin_area_det, bin_area_label in zip(egid_surfaces_df[f'bin_free_area_dets (%)'], egid_surfaces_df[f'bin_free_area_labels (%)'])
-    ]
+        logger.info('Get the difference between labels and detections...')
+        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'free')
+        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'occupied')
+
+        # Assess surface bins, 0: different bin, 1: same bin -> if ok on one side (free/occupied), it should be ok on the other.
+        egid_surfaces_df[f'assess_classif_bins'] = [
+            1 if bin_area_det == bin_area_label else 0
+            for bin_area_det, bin_area_label in zip(egid_surfaces_df[f'bin_free_area_dets (%)'], egid_surfaces_df[f'bin_free_area_labels (%)'])
+        ]
+
+        # Determine the global number of EGID occupied areas in the correct bin
+        surfaces_df['right_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==1])
+        surfaces_df['wrong_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==0])
+
+        # Determine the global accuracy of detected areas
+        surfaces_df['global_bin_accuracy'] = surfaces_df['right_bin'] / len(egid_surfaces_df['EGID'])
+
+        # Determine the accuracy of detected surfaces by area bins
+        for area_bin in egid_surfaces_df['bin_free_area_labels (%)'].sort_values().unique():
+            surfaces_df['accuracy bin ' + area_bin] = len(
+                egid_surfaces_df.loc[(egid_surfaces_df['bin_free_area_labels (%)']==area_bin) & (egid_surfaces_df['assess_classif_bins']==1)]
+            ) \
+                / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)']==area_bin])
+            
+        print()
+        logger.info(f"Occupied surface relative error for all EGIDs = {(surfaces_df.loc[0,'occup_rel_diff'] ):.2f}")
+        logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_diff']):.2f}")
+        print()
+
+        if visualisation:
+            # Plots
+            xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
+            bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+
+            _ = figures.plot_surface_bin(output_dir, surfaces_df, bins=bin_labels)
+            for attr in attribute_surface_df.attribute.unique():
+                if attr in xlabel_dict.keys():
+                    filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
+                    written_files[filepath] = ''
+
+
+    logger.info('Save the calculated values...')
 
     # Save the values by EGID 
     feature_path = os.path.join(output_dir, 'EGID_surfaces.csv')
-    egid_surfaces_df[['EGID', 'roof_type', 'roof_inclination', 'total_area',
-       'free_area_labels', 'occup_area_labels', 'ratio_free_area_labels',
-       'free_area_dets', 'occup_area_dets', 'ratio_free_area_dets',
-       'free_rel_error', 'occup_rel_error',
-       ]].to_csv(feature_path, sep=',', index=False, float_format='%.3f')
+    egid_surfaces_df.drop(columns=[
+        'nbr_elem', 
+        'bin_free_area_dets (%)', 'bin_occup_area_dets (%)', 'bin_free_area_labels (%)', 'bin_occup_area_labels (%)', 'assess_classif_bins', 
+        'ratio_occup_area_dets', 'ratio_occup_area_labels'
+    ], errors='ignore').to_csv(feature_path, sep=',', index=False, float_format='%.3f')
     written_files[feature_path] = ''
-
-    # Determine the global number of EGID occupied areas in the correct bin
-    surfaces_df['right_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==1])
-    surfaces_df['wrong_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==0])
-
-    # Determine the global accuracy of detected areas
-    surfaces_df['global_bin_accuracy'] = surfaces_df['right_bin'] / len(egid_surfaces_df['EGID'])
-
-    # Determine the accuracy of detected surfaces by area bins
-    for area_bin in egid_surfaces_df['bin_free_area_labels (%)'].sort_values().unique():
-        surfaces_df['accuracy bin ' + area_bin] = len(
-            egid_surfaces_df.loc[(egid_surfaces_df['bin_free_area_labels (%)']==area_bin) & (egid_surfaces_df['assess_classif_bins']==1)]
-        ) \
-            / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)']==area_bin])
 
     # Save the global values
     feature_path = os.path.join(output_dir, 'global_surfaces.csv')
@@ -189,23 +211,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     feature_path = os.path.join(output_dir, 'surfaces_by_attributes.csv')
     attribute_surface_df.to_csv(feature_path, sep=',', index=False, float_format='%.3f')
     written_files[feature_path] = ''
-    
-
-    print()
-    logger.info(f"Occupied surface relative error for all EGIDs = {(surfaces_df.loc[0,'occup_rel_diff'] ):.2f}")
-    logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_diff']):.2f}")
-    print()
-
-    if visualisation:
-        # Plots
-        xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
-        bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
-
-        _ = figures.plot_surface_bin(output_dir, surfaces_df, bins=bin_labels)
-        for attr in attribute_surface_df.attribute.unique():
-            if attr in xlabel_dict.keys():
-                filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
-                written_files[filepath] = ''
 
     return written_files
     
@@ -230,7 +235,7 @@ if __name__ == "__main__":
     OUTPUT_DIR = cfg['output_dir']
 
     DETECTIONS=cfg['detections']
-    LABELS = cfg['ground_truth']
+    LABELS = cfg['ground_truth'] if 'ground_truth' in cfg.keys() else None
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
 
