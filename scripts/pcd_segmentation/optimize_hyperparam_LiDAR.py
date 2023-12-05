@@ -71,7 +71,6 @@ def objective(trial):
 
     _ = pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                               EGIDS,
-                              #   DISTANCE_THRESHOLD, RANSAC, ITERATIONS, EPS_PLANES, MIN_POINTS_PLANES, EPS_CLUSTERS, MIN_POINTS_CLUSTERS, number_planes=NUMBER_PLANES)
                               **dict_parameters_pcd_seg)
     all_occupation_gdf, _ = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
                                                     EGIDS, ROOFS, EPSG,
@@ -117,19 +116,8 @@ LABELS = cfg['ground_truth']
 ROOFS = cfg['roofs']
 EPSG = cfg['epsg']
 
-SEGMENTATION = cfg['parameters']['segmentation']
 
-# NBR_PLANES = SEGMENTATION['planes']['number_planes']
-# DISTANCE_THRESHOLD = SEGMENTATION['planes']['distance_threshold']
-# RANSAC = SEGMENTATION['planes']['ransac']
-# ITERATIONS = SEGMENTATION['planes']['iterations']
-# EPS_PLANES = SEGMENTATION['planes']['eps']
-# MIN_POINTS_PLANES = SEGMENTATION['planes']['min_points']
-# EPS_CLUSTERS = SEGMENTATION['clusters']['eps']
-# MIN_POINTS_CLUSTERS = SEGMENTATION['clusters']['min_points']
-# MIN_AREA_PLANES = cfg['parameters']['area_threshold']['min']
-# MAX_AREA_OBJECTS = cfg['parameters']['area_threshold']['max']
-ALPHA_SHAPE = cfg['parameters']['alpha_shape']
+ALPHA_SHAPE=cfg['parameters']['alpha_shape']
 
 METHOD = cfg['method']
 VISUALISATION = cfg['visualisation']

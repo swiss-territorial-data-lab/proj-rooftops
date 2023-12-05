@@ -3,6 +3,7 @@
 # Added try and error around line 39 to avoid exiting on error during the optimization.
 
 __all__ = ['optimizealpha']
+from alphashape import alphashape
 import sys
 import logging
 import numpy as np
@@ -37,8 +38,7 @@ def _testalpha(points: Union[List[Tuple[float]], np.ndarray], alpha: float):
             intersects all the input data points.
     """
 
-    from alphashape import alphashape
-
+    
     try:
         polygon = alphashape(points, alpha)
     except shapely.errors.GEOSException as e:

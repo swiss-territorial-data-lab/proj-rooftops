@@ -48,6 +48,7 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
         return exploded_gdf
 
     number_parts_df = exploded_gdf['multipoly_id'].value_counts()
+    # If segmentation and vectorization made residuals, delete them.
     for multipoly_id, number_parts in number_parts_df.items():
         if number_parts > 25:
             exploded_gdf = exploded_gdf[~((exploded_gdf.multipoly_id == multipoly_id) & (exploded_gdf.area <= 0.5))].copy()
@@ -115,7 +116,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
         if plane_df.empty:
             logger.error('No planes to vectorize')
         plane_multipoly_gdf = pcdseg.vectorize_concave(plane_df, plane, epsg, alpha_shape, visu)
-        # plane_multipoly_gdf = pcdseg.vectorize_convex(plane_df, plane) 
 
         # Load clusters in a dataframe 
         cluster_df = pcd_df[pcd_df['type'] == 'cluster']
@@ -126,7 +126,6 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
         if cluster_df.empty:
             logger.error('No clusters to vectorize')
         cluster_multipoly_gdf = pcdseg.vectorize_concave(cluster_df, cluster, epsg, alpha_shape, visu)
-        # cluster_multipoly_gdf = pcdseg.vectorize_convex(cluster_df, cluster, EPSG)
 
         # Deal with multipolygon
         plane_multipoly_gdf['multipoly_id'] = plane_multipoly_gdf.index
@@ -163,7 +162,7 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
 
         # Create occupation layer
         if not cluster_vec_gdf.empty:
-            # Drop cluster smaller than 1.5 pixels
+            # Drop clusters smaller than 1 pixel
             cluster_vec_gdf = cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
             cluster_vec_gdf.set_geometry('geometry', inplace=True)
 

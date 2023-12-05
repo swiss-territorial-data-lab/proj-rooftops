@@ -175,7 +175,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
     # Determine the accuracy of detected surfaces by area bins
     for area_bin in egid_surfaces_df['bin_free_area_labels (%)'].sort_values().unique():
-        surfaces_df['accuracy ' + area_bin] = len(
+        surfaces_df['accuracy bin ' + area_bin] = len(
             egid_surfaces_df.loc[(egid_surfaces_df['bin_free_area_labels (%)']==area_bin) & (egid_surfaces_df['assess_classif_bins']==1)]
         ) \
             / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)']==area_bin])
@@ -199,7 +199,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     if visualisation:
         # Plots
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
-        bin_labels = [f"accuracy {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+        bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
         _ = figures.plot_surface_bin(output_dir, surfaces_df, bins=bin_labels)
         for attr in attribute_surface_df.attribute.unique():
