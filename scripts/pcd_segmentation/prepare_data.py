@@ -26,7 +26,6 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-
 # Start chronometer
 tic = time.time()
 logger.info('Starting...')
@@ -74,6 +73,7 @@ os.chdir(WORKING_DIR) # WARNING: wbt requires absolute paths as input
 
 # Create an output directory in case it doesn't exist
 output_dir = misc.ensure_dir_exists(os.path.join(WORKING_DIR, OUTPUT_DIR))
+per_egid_dir = misc.ensure_dir_exists(os.path.join(output_dir, 'per_EGID_data'))
 
 written_files = []
 
@@ -94,12 +94,13 @@ elif ROOF_INCLINATION != 'all':
 
 logger.info(f'{egids.shape[0]} egids will be processed.')
 
-# Get the rooftops shapes for the selected EGIDs
+# Get the per-EGID rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
 
+# Produce light files of the selected EGIDs with the essential per-EGID information for the workflow
 rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    
 completed_egids = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
 
@@ -121,7 +122,7 @@ rooftops_on_tiles = tile_delimitation.sjoin(subset_rooftops, how='right', lsuffi
 for egid in tqdm(egids.EGID.to_numpy()):
     # Select the building shape  
     file_name = 'EGID_' + str(egid)
-    final_path = os.path.join(output_dir, file_name + '.csv')
+    final_path = os.path.join(per_egid_dir, file_name + '.csv')
 
     if (not OVERWRITE) & os.path.exists(final_path):
         continue
@@ -129,7 +130,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
     shape = subset_rooftops.loc[subset_rooftops['EGID'] == int(egid)].copy()
 
     # Write it to use it with WBT
-    shape_path = os.path.join(output_dir, file_name + ".shp")
+    shape_path = os.path.join(per_egid_dir, file_name + ".shp")
     shape.to_file(shape_path)
    
     # Select corresponding tiles
@@ -141,7 +142,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
         pcd_path = os.path.join(WORKING_DIR, tile.filepath)
 
         # Perform .las clip with shapefile    
-        clip_path = os.path.join(output_dir, file_name + '_' + tile.fme_basena + PCD_EXT)
+        clip_path = os.path.join(per_egid_dir, file_name + '_' + tile.fme_basena + PCD_EXT)
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
         with laspy.open(clip_path) as src:
@@ -155,7 +156,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
         whole_pcd_path = clip_path
     else:
         clipped_inputs = clipped_inputs.lstrip(', ')
-        whole_pcd_path = os.path.join(output_dir, file_name + PCD_EXT)
+        whole_pcd_path = os.path.join(per_egid_dir, file_name + PCD_EXT)
         wbt.lidar_join(
             clipped_inputs, 
             whole_pcd_path,

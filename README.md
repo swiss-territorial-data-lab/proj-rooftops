@@ -79,5 +79,5 @@ The scripts used above perform the following steps:
 4. `assess_results.py`: Evaluate the results based on the ground truth,
 5. `calculate_free_surface.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
 
-The workflow described here is working with the training subset of the ground truth. The configuration file can be changed and the one named `config-pcdseg_test.yaml` works with the test subset of the ground truth.
+The workflow described here is working with the training subset of the ground truth. The configuration file `config-pcdseg_test.yaml` works with the test subset of the ground truth.
 

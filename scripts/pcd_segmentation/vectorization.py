@@ -60,13 +60,13 @@ def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     return exploded_gdf
 
 
-def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, min_plane_area=18, max_cluster_area=42, alpha_shape=None, visu=False):
+def main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, SHP_EGID_ROOFS, epsg=2056, min_plane_area=18, max_cluster_area=42, alpha_shape=None, visu=False):
     """Transform the segmented point cloud into polygons and sort them into free space and cluster
 
     Args:
         WORKING_DIR (path): working directory
-        INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output directory
+        INPUT_DIR_PCD (path): input directory for the segmented point clouds
         EGIDS (list): EGIDs of interest
         epsg (int, optional): reference number of the CRS. Defaults to 2056.
         min_plane_area (float, optional): minimum area for a plane. Defaults to 5.
@@ -102,11 +102,12 @@ def main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, epsg=2056, m
     for egid in tqdm(egids.EGID.to_numpy()):
         file_name = 'EGID_' + str(egid)
 
-        input_dir = os.path.join(INPUT_DIR, file_name + "_segmented.csv")
+        input_path = os.path.join(INPUT_DIR_PCD, file_name + "_segmented.csv")
         try:
-            pcd_df = pd.read_csv(input_dir)
+            pcd_df = pd.read_csv(input_path)
         except FileNotFoundError:
             logger.error(f"No segmentation file for the EGID {egid}.")
+            continue
 
         # Create a plane dataframe
         plane_df = pcd_df[pcd_df['type'] == 'plane']
@@ -232,9 +233,9 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    INPUT_DIR = cfg['input_dir']
     OUTPUT_DIR = cfg['output_dir']
 
+    INPUT_DIR_PCD = cfg['input_dir_pcd']
     EGIDS = cfg['egids']
     SHP_EGID_ROOFS = cfg['roofs']
     EPSG = cfg['epsg']
@@ -243,7 +244,7 @@ if __name__ == "__main__":
     ALPHA = cfg['alpha_shape']
     VISU = cfg['visualisation']
 
-    all_occupation_gdf, written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
+    all_occupation_gdf, written_files = main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
 
     print()
     dict_only_key=list(written_files.keys())[0]

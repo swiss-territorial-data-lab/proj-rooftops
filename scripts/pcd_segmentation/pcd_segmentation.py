@@ -19,23 +19,23 @@ import pandas as pd
 o3d.utility.random.seed(0)
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as fct_misc
+import functions.fct_misc as misc
 
-logger = fct_misc.format_logger(logger)
+logger = misc.format_logger(logger)
 
 
 # Define functions ----------------------
 
-def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR, 
-          EGIDS, 
+def main (WORKING_DIR, OUTPUT_DIR, 
+          INPUT_DIR_PCD, EGIDS, 
           distance_threshold, ransac, iterations, eps_planes, min_points_planes, eps_clusters, min_points_clusters,
           number_planes=None, visu=False):
     """Perform segmentation of point cloud in planes and clusters in order to find the roof planes and roof objects.
 
     Args:
         WORKING_DIR (path): working directory
-        INPUT_DIR (path): input directory
         OUTPUT_DIR (path): output direcotry
+        INPUT_DIR_PCD (path): input directory for the clipped point clouds
         EGIDS (list): EGIDs of interest
         distance_threshold (float): distance to consider for the noise in the ransac algorithm
         ransac (int): number of points to consider for the ransac algorithm
@@ -54,7 +54,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    _ = fct_misc.ensure_dir_exists(OUTPUT_DIR)
+    per_egid_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'per_EGID_data'))
 
     written_files = []
 
@@ -68,7 +68,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
     for egid_info in egids.itertuples():
         file_name = 'EGID_' + str(egid_info.EGID)
         # Read pcd file and get points array
-        csv_input_path = os.path.join(INPUT_DIR, file_name + ".csv")
+        csv_input_path = os.path.join(INPUT_DIR_PCD, file_name + ".csv")
         pcd_df = pd.read_csv(csv_input_path)
         pcd_df = pcd_df.drop(['Unnamed: 0'], axis=1)
         pcd_df.sort_values(by=['X', 'Y', 'Z'], ignore_index=True, inplace=True)
@@ -151,7 +151,7 @@ def main (WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
         # Merge planes and clusters into a single dataframe 
         pcd_seg_df = pd.DataFrame(pd.concat([planes_df, clusters_df], ignore_index=True))
 
-        feature_path = os.path.join(OUTPUT_DIR, file_name + '_segmented.csv')
+        feature_path = os.path.join(per_egid_dir, file_name + '_segmented.csv')
         pcd_seg_df.to_csv(feature_path)
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
@@ -185,9 +185,9 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    INPUT_DIR = cfg['input_dir']
     OUTPUT_DIR = cfg['output_dir']
-
+    
+    INPUT_DIR_PCD = cfg['input_dir_pcd']
     EGIDS = cfg['egids']
 
     SEGMENTATION = cfg['segmentation']
@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     VISU = cfg['visualisation']
 
-    written_files = main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR, EGIDS, 
+    written_files = main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, 
         DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
         number_planes=NB_PLANES, 
         visu=VISU

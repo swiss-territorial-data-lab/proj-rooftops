@@ -35,7 +35,7 @@ def objective(trial):
     """
 
     # Suggest value range to test (range value not taken into account for GridSampler method)
-    # NUMBER_PLANES = trial.suggest_int('number_planes', 3, 25, step=1)
+    NUMBER_PLANES = trial.suggest_int('number_planes', 3, 25, step=1)
     DISTANCE_THERSHOLD = trial.suggest_float('distance_threshold', 0.005, 0.22, step=0.0075)
     RANSAC = trial.suggest_int('ransac', 3, 5, step=1)
     ITERATIONS = trial.suggest_int('iterations', 3000, 16000, step=500)
@@ -48,7 +48,7 @@ def objective(trial):
     # ALPHA_SHAPE = trial.suggest_float('alpha_shape', 0.1, 3, step=0.05)
 
     dict_parameters_pcd_seg = {
-        # 'number_planes':NUMBER_PLANES,
+        'number_planes':NUMBER_PLANES,
         'distance_threshold':DISTANCE_THERSHOLD,
         'ransac': RANSAC,
         'iterations': ITERATIONS,
@@ -69,11 +69,11 @@ def objective(trial):
     # print(dict_parameters_vect)
 
 
-    _ = pcd_segmentation.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
-                              EGIDS,
+    _ = pcd_segmentation.main(WORKING_DIR, OUTPUT_DIR,
+                              INPUT_DIR_PCD, EGIDS,
                               **dict_parameters_pcd_seg)
-    all_occupation_gdf, _ = vectorization.main(WORKING_DIR, INPUT_DIR, OUTPUT_DIR,
-                                                    EGIDS, ROOFS, EPSG,
+    all_occupation_gdf, _ = vectorization.main(WORKING_DIR, OUTPUT_DIR,
+                                                    INPUT_DIR_PCD, EGIDS, ROOFS, EPSG,
                                                     alpha_shape=ALPHA_SHAPE,
                                                     **dict_parameters_vect
     )
@@ -108,9 +108,9 @@ with open(args.config_file) as fp:
     cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 WORKING_DIR = cfg['working_dir']
-INPUT_DIR = '.'
-OUTPUT_DIR = '.'
+OUTPUT_DIR = cfg['output_dir']
 
+INPUT_DIR_PCD = cfg['input_dir_pcd']
 EGIDS = cfg['egids']
 LABELS = cfg['ground_truth']
 ROOFS = cfg['roofs']
@@ -133,7 +133,7 @@ logger.info('Optimization of Open3d hyperparameters')
 
 study = optuna.create_study(directions=['maximize', 'maximize'], sampler=optuna.samplers.TPESampler(), study_name='Optimization of the Open3d hyperparameters')
 # study = joblib.load(open(study_path, 'rb'))
-study.optimize(objective, n_trials=50, callbacks=[callback])
+study.optimize(objective, n_trials=3, callbacks=[callback])
 
 joblib.dump(study, study_path)
 written_files.append(study_path)
