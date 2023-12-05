@@ -17,8 +17,12 @@ import geopandas as gpd
 import numpy as np
 import open3d as o3d
 import pandas as pd
-import whitebox
-# whitebox.download_wbt(linux_musl=True, reset=True)        # Uncomment if issue with GLIBC library
+
+try:
+    import whitebox
+except:
+    whitebox.download_wbt(linux_musl=True, reset=True)        # in case of issues with the GLIBC library on Linux
+    import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
