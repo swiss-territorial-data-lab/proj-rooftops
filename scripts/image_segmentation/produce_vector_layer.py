@@ -30,8 +30,8 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    misc.ensure_dir_exists(OUTPUT_DIR)
-    detection_dir = os.path.join(OUTPUT_DIR, 'segmented_images')
+    detection_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images'))
+    _ = misc.ensure_dir_notempty(detection_dir)
     output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'vectors'))
 
     written_files = []

@@ -243,6 +243,22 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
+def ensure_dir_notempty(dirpath):
+    """Test if a directory is empty. If it is exit the script. 
+
+    Args:
+        dirpath (str): directory path to test
+    """
+
+    if len(os.listdir(dirpath)) == 0:
+        logger.error(f"{dirpath} is empty. No detection masks found") 
+        logger.info("Nothing left to be done: exiting")
+        sys.stderr.flush()
+        exit()
+    else:
+        pass
+    
+
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     """Prepare the geometries of two gdf to be processed (compute nearest distance between two shapes)
 
