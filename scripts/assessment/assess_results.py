@@ -113,6 +113,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
     # Read detections shapefile 
     DETECTIONS = os.path.join(OUTPUT_DIR, DETECTIONS)
+    _ = misc.ensure_file_exists(DETECTIONS)
     if isinstance(DETECTIONS, str):
         detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):

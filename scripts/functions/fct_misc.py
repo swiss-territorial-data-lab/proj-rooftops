@@ -254,10 +254,26 @@ def ensure_dir_notempty(dirpath):
         logger.error(f"{dirpath} is empty. No detection masks found") 
         logger.info("Nothing left to be done: exiting")
         sys.stderr.flush()
-        exit()
+        sys.exit()
     else:
         pass
     
+
+def ensure_file_exists(filepath):
+    """Test if a file exists. If not, exit the script.   
+
+    Args:
+        filepath (str): file path to test
+    """
+
+    if not os.path.isfile(filepath):
+        logger.error(f"{filepath} does not exist. No vector file to assess") 
+        logger.info("Nothing left to be done: exiting")
+        sys.stderr.flush()
+        sys.exit()
+    else:
+        pass
+
 
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     """Prepare the geometries of two gdf to be processed (compute nearest distance between two shapes)
