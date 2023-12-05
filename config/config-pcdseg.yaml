@@ -57,8 +57,8 @@ assess_results.py:
   input_dir_pcd: processed/PCD_segmentation/per_EGID_data
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
-  egids: processed/PCD_segmentation/per_EGID_data/completed_egids.csv
-  roofs: processed/PCD_segmentation/per_EGID_data/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  egids: processed/PCD_segmentation/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: True
@@ -74,7 +74,7 @@ calculate_free_surface.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation
   detections: processed/PCD_segmentation/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/completed_egids.csv
   roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100] 

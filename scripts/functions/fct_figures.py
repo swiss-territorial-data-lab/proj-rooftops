@@ -67,7 +67,7 @@ def plot_surface(dir_plots, df, attribute, xlabel):
 
     return plot_path
 
-def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
+def plot_groups(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
@@ -103,8 +103,8 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
-    format_plot = {'gt': {'color_list': ['limegreen', 'tomato'], 'count_list': ['TP', 'FN'], 'position': -0.05},
-                   'dt': {'color_list': ['limegreen', 'orange'], 'count_list': ['TP', 'FP'], 'position': 1.05}}
+    format_plot = {'gt': {'color_list': ['limegreen', 'tomato'], 'count_list': ['TP', 'FN'], 'position': -0.05, 'legend': ['TP', 'FN']},
+                   'dt': {'color_list': ['limegreen', 'orange'], 'count_list': ['TP', 'FP'], 'position': 1.05, 'legend': ['', 'FP']}}
 
     df = df[df['attribute'] == attribute] 
     for variables in format_plot.values():
@@ -114,11 +114,12 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
         for count in variables['count_list']:
             df_subset[count] = df_subset[count] / df_subset['sum']
-        
-        df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'])
 
         if attribute == 'object_class':
+            df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, align='center')
             break
+        else:
+            df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'], label=variables['legend'])
 
     # fig, ax = plt.subplots(figsize=(12,8))
 
@@ -143,6 +144,9 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
+    else:
+        old_xlim = plt.xlim()
+        plt.xlim(old_xlim[0], old_xlim[1] + 0.3)
     plt.xlabel(xlabel, fontweight='bold')
 
     plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    

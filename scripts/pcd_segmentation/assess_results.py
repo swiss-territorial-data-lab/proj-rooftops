@@ -443,7 +443,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
 
     if visualisation and additional_metrics:
-        # Plots
+        logger.info('Save some figures...')
+        
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '', 'building_type': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_centroid': r'Object distance (m)'} 
@@ -451,7 +452,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_objects_df.attribute.unique():
             if attr in xlabel_dict.keys():
-                _ = figures.plot_stacked_grouped(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_groups(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
                 _ = figures.plot_stacked_grouped_percent(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
                 _ = figures.plot_metrics(output_dir, metrics_objects_df, attribute=attr, xlabel=xlabel_dict[attr])
 
