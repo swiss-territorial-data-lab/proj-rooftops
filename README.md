@@ -1,46 +1,83 @@
-# proj-rooftops
+# Delimitation of the free areas on rooftops
 
-## Overview
+Goal: Determine the space available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
 
-Scripts allowing to:
-1. `prepare_data.py`: read and filter the 3D point cloud data
-2. `pcd_segmentation.py`: segment in planes and clusters the point cloud data
-3. `vectorization.py`: create 2D polygons from the segmented point cloud data
-4. `assess_results.py`: Evaluate the results
+**Table of content**
 
-## Data
+- [Requirements](#requirements)
+	- [Hardware](#hardware)
+    - [Installation](#installation)
+- [Image segmentation](#image-segmentation)
+- [LiDAR-based classification](#lidar-based-classification)
+- [LiDAR segmentation](#lidar-segmentation)
+    - [Data](#data)
+    - [Workflow](#workflow)
 
-Input lidar data are located here: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/LiDAR/2019/
-Input roof shapefile is locadted here: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/SHP_CAD_BATIMENT_HORSOL_TOIT
-Input GT is located here: /mnt/s3/proj-rooftops/02_Data/ground_truth/
+## Requirements
 
-## Comments
+### Hardware
 
-For now, the workflow works for a single building. EGID number of the building must be provided + the associated lidar tiles name. The GT for the given building must also be provided.
+For the processing of the *images*, a CUDA-compatible GPU is needed.
+For the processing of the *LiDAR point cloud*, there is no hardware requirement.
 
-## Workflow instructions
+### Installation
 
-Following the end-to-end, the workflow can be run by issuing the following list of actions and commands:
+The scripts have been developed with Python 3.8<!-- 3.10 actually for the pcdseg -->. For the image processing, PyTorch version 1.10 and CUDA version 11.3 were used.
 
-Clone `proj-rooftops` repository.
+All the dependencies required for the project are listed in `requirements.in` and `requirements.txt`. To install them:
 
-    $ cd proj-rooftops/
-    $ python3 -m venv <dir_path>/[name of the virtual environment]
-    $ source <dir_path>/[name of the virtual environment]/bin/activate
-    $ pip install -r requirements.txt
+- Create a Python virtual environment
 
-Adapt the paths and input values of the configuration files accordingly.
+        $ python3 -m venv <dir_path>/[name of the virtual environment]
+        $ source <dir_path>/[name of the virtual environment]/bin/activate
 
-    $ python3 scripts/pcd_segmentation/prepare_data.py config/config-pcdseg.yaml
-    $ python3 scripts/pcd_segmentation/pcd_segmentation.py config/config-pcdseg.yaml
-    $ python3 scripts/pcd_segmentation/vectorization.py config/config-pcdseg.yaml
-    $ python3 scripts/pcd_segmentation/assess_results.py config/config-pcdseg.yaml
+- Install dependencies
 
-## Improvements
+        $ pip install -r requirements/requirements.txt
 
-- The workflow works for a single building, it should be generalized to a list a building
-- Either the workflow is processing EGID by EGID either the workflow could process several EGID at the same time. There is LiDAR segmentation tools in whitebox-tools that we can look at as example. I did a test with "lidar_segmentation" (https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarSegmentation) on QGIS and it was working well.
-- If we process EGID by EGID, the lidar tiles must be automatically associated to the building EGID. Merging of lidar data will be necessary for building spanning over several tiles
-- The hyper parameters value must be optimized for several buildings
-- The assessment script can be improved 
-- Compressed LiDAR data can be stored on S3 and the script can fetch directly from there. 
+    - Requirements for the image workflow only
+
+            $ pip install -r requirements/requirements_LiDAR.txt
+
+    - Requirements for the LiDAR workflow only
+
+            $ pip install -r requirements/requirements_images.txt
+
+
+_requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
+
+        $ pip-compile requirements.in
+
+## Image segmentation
+
+## LiDAR-based classification
+
+## LiDAR segmentation
+
+### Data
+
+- LiDAR point cloud. Here, the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used.
+- Delimitation of the roof for each EGID.
+
+This workflow was tested with a ground truth produced for this project. The ground truth is available ... <br>
+The ground truth is split into the training and test set to see if the algorithm performs equally on new buildings.
+
+### Workflow
+
+```
+python scripts/pcd_segmentation/prepare_data.py config/config-pcdseg.yaml
+python scripts/pcd_segmentation/pcd_segmentation.py config/config-pcdseg.yaml
+python scripts/pcd_segmentation/vectorization.py config/config-pcdseg.yaml
+python scripts/pcd_segmentation/assess_results.py config/config-pcdseg.yaml
+python scripts/assessment/calculate_free_surface.py config/config-pcdseg.yaml
+```
+
+The scripts used above perform the following steps:
+1. `prepare_data.py`: read and filter the 3D point cloud data to keep the roofs of the selected EGIDs,
+2. `pcd_segmentation.py`: segment in planes and clusters the point cloud data,
+3. `vectorization.py`: create 2D polygons from the segmented point cloud data,
+4. `assess_results.py`: Evaluate the results based on the ground truth,
+5. `calculate_free_surface.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
+
+The workflow described here is working with the training subset of the ground truth. The configuration file can be changed and the one named `config-pcdseg_test.yaml` works with the test subset of the ground truth.
+
