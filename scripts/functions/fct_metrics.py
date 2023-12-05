@@ -40,15 +40,15 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
 
 def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surface_df=None):
 
-    if surface_type=='occupied':
-        surface_type='occup'
-    elif surface_type!='free':
+    if surface_type == 'occupied':
+        surface_type = 'occup'
+    elif surface_type != 'free':
         logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
         sys.exit(1)
 
-    if object_type=='detections':
-        object_type='dets'
-    elif object_type!='labels':
+    if object_type == 'detections':
+        object_type = 'dets'
+    elif object_type != 'labels':
         logger.critical('The object type is not valid. Please pass "detections" or "labels".')
         sys.exit(1)
 

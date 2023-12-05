@@ -14,8 +14,8 @@ prepare_data.py:
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
     distance_buffer: 1.0            # m, buffer value
-  overwrite: false
-  visualisation: false
+  overwrite: False
+  visualisation: False
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 

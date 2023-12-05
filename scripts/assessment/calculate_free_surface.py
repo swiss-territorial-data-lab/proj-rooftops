@@ -98,9 +98,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf=labels_gdf.explode(ignore_index=True)
+    labels_gdf = labels_gdf.explode(ignore_index=True)
 
-    nbr_labels=labels_gdf.shape[0]
+    nbr_labels = labels_gdf.shape[0]
     logger.info(f"    - {nbr_labels} labels")
 
     # Read the shapefile for detections
