@@ -82,7 +82,6 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     logger.info(f"- Convert mask to vector")  
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
-        print(tile)
 
         # Subdivide the input images in smaller tiles if its number of pixel exceed the threshold value
         directory, file = os.path.split(tile)
