@@ -1,7 +1,7 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
-  pcd_dir: initial/LiDAR/2019
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  pcd_dir: initial/LiDAR
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
@@ -19,28 +19,28 @@ prepare_data.py:
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation/test_zone
-  input_dir: .
-  output_dir: .
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/test_zone
+  input_dir: per_EGID_data
+  output_dir: per_EGID_data
   egids: completed_egids.csv
   segmentation:
     planes:
-      # number_planes: 5
-      distance_threshold: 0.0725
-      ransac: 3
-      iterations: 7000
-      eps: 11
-      min_points: 1200
+      # number_planes: 5            # Number of planes to expect
+      distance_threshold: 0.0725    # Max distance a point can be from the plane model, and still be considered an inlier
+      ransac: 3                     # Number of initial points to be considered inliers in each iteration
+      iterations: 7000              # Number of iterations
+      eps: 11                       # Density parameter that is used to find neighbouring points
+      min_points: 1200              # Minimum number of points to form a plane
     clusters:
-      eps: 0.8
-      min_points: 27
+      eps: 0.8                      # Density parameter that is used to find neighbouring points
+      min_points: 27                # Minimum number of points to form a cluster
   visualisation: False
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: /home/gsalamin/Documents/project_data/rooftops/processed/PCD_segmentation/test_zone
-  input_dir: .
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/test_zone
   output_dir: .
+  input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
@@ -52,7 +52,7 @@ vectorization.py:
 
 # 4 - Evaluate the results
 assess_results.py: 
-  working_dir: /home/gsalamin/Documents/project_data/rooftops
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation/test_zone
   detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
   ground_truth: ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
@@ -70,7 +70,7 @@ assess_results.py:
 
 # 5 - Estimate the free surface
 calculate_free_surface.py:
-    working_dir: /home/gsalamin/Documents/project_data/rooftops
+    working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
     output_dir: processed/PCD_segmentation/test_zone
     detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
     ground_truth: ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
