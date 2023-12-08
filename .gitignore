@@ -3,9 +3,9 @@
 
 # Folders
 data/
-output/
-input/
-model/
+output*/
+input*/
+model*/
 tests/
 .vscode/
 
