@@ -33,7 +33,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script prepares dataset to process the rooftops project (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script prepares the image dataset to process the rooftops project (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -93,7 +93,6 @@ if __name__ == "__main__":
     roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
-    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
 
     logger.info(f"  Number of building to process: {len(roofs_gdf)}")
 
@@ -110,8 +109,6 @@ if __name__ == "__main__":
     coords_list = [] 
 
     # Open or produce the rooftops boundary boxes shapes 
-    feature_path = os.path.join(OUTPUT_DIR, 'bbox.gpkg')
-
     logger.info("Produce building bounding box")
 
     for row in join_tiles_roofs.itertuples():
@@ -122,6 +119,7 @@ if __name__ == "__main__":
         coords_list.append(coords)
 
     bbox_list = gpd.GeoDataFrame(pd.DataFrame(egid_list, columns=['EGID']), crs='epsg:2056', geometry=coords_list).drop_duplicates(subset='EGID')
+    feature_path = os.path.join(OUTPUT_DIR, 'bbox.gpkg')
     bbox_list.to_file(feature_path)
     written_files.append(feature_path)  
 
@@ -137,15 +135,10 @@ if __name__ == "__main__":
 
         tiles_list = [os.path.join(IMAGE_DIR, image + '.tif') for image in image_list]   
 
-        raster_to_mosaic = []   
-        for tilepath in tiles_list:
-            raster = rasterio.open(tilepath)
-
-            # Mosaic images if rooftops shape is spread over several tiles 
-            if len(tiles_list) > 1:  
-                raster_to_mosaic.append(raster)
-
         if len(tiles_list) > 1:
+            # Mosaic images if rooftops shape is spread over several tiles 
+            raster_to_mosaic = [rasterio.open(tilepath) for tilepath in tiles_list]
+
             mosaic, output = merge(raster_to_mosaic)
 
             output_meta = raster.meta.copy()
@@ -161,9 +154,9 @@ if __name__ == "__main__":
                 dst_mosaic.write(mosaic)
 
             raster = rasterio.open(mosaic_path)
-            tile = mosaic_path
 
-        image = raster
+        else:
+            raster = rasterio.open(tiles_list[0])
 
         if MASK:
             egid_shape = roofs.loc[roofs['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)                
@@ -179,7 +172,7 @@ if __name__ == "__main__":
                 dst.write(mask_image)
             raster = rasterio.open(feature_mask_path)
 
-            image = raster
+        image = raster
 
         bbox_shape = bbox_list.loc[bbox_list['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)  
 
