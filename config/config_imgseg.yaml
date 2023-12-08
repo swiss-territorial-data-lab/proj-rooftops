@@ -3,7 +3,7 @@ generate_tiles.py:
   working_dir: inputs
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: ground_truth/tiles/Tuiles.shp
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: ground_truth/egid/EGIDs_GT_training.csv
   output_dir: image_segmentation/tiles/training
@@ -16,8 +16,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/training
-  output_dir: output/image_segmentation/training
+  image_dir:  inputs/image_segmentation/tiles/training
+  output_dir: outputs/image_segmentation/training
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -178,7 +178,7 @@ prepare_data.py:
 
 # Request tiles according to the provided AOI and tiles parameters
 generate_tilesets.py:
-  debug_mode: False               #reduced amount of tiles
+  debug_mode: False               # reduced amount of tiles
   datasets:
     aoi_tiles_geojson: output/SAM/tiles.geojson
     orthophotos_web_service:
