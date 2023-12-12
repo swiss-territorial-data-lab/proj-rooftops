@@ -71,12 +71,12 @@ Shapefiles are also used as input data and listed below:
 
 Following the end-to-end, the workflow can be run by issuing the following list of actions and commands:
 
-    $ python3 scripts/image_processing/generate_tiles.py config/config_imgseg.yaml
-    $ python3 scripts/image_processing/image_segmentation.py config/config_imgseg.yaml
-    $ python3 scripts/image_processing/produce_vector_layer.py config/config_imgseg.yaml
+    $ python3 scripts/image_segmentation/generate_tiles.py config/config_imgseg.yaml
+    $ python3 scripts/image_segmentation/image_segmentation.py config/config_imgseg.yaml
+    $ python3 scripts/image_segmentation/produce_vector_layer.py config/config_imgseg.yaml
     $ python3 scripts/assessment/assess_results.py config/config_imgseg.yaml
     $ python3 scripts/assessment/assess_surface.py config/config_imgseg.yaml
 
 The model optimization can be performed as follow:
 
-    $ python3 scripts/image_processing/optimize_hyperparameters.py config/config_imgseg.yaml
+    $ python3 scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
