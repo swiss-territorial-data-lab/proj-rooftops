@@ -38,7 +38,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     misc.ensure_dir_exists(OUTPUT_DIR)
     segmented_images_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images'))
     if METHOD=="resample":
-        resampling_dir = misc.ensure_dir_exists(os.path.join(directory, 'resample'))
+        resampling_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'resample'))
 
     written_files = []
 
@@ -92,7 +92,8 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
             elif METHOD=="resample":
                 logger.info(f"Image too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")
                 tilepath = os.path.join(resampling_dir, file)
-                gdal.Warp(tilepath, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')     
+                gdal.Warp(tilepath, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')
+                BATCH = False
         else:
             BATCH = False
 
