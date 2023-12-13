@@ -352,11 +352,11 @@ logger = format_logger(logger)
 def fillit(row):
     """A function to fill holes below an area threshold in a polygon"""
     newgeom=None
-    rings = [i for i in row["geometry"].interiors] #List all interior rings
-    if len(rings)>0: #If there are any rings
-        to_fill = [Polygon(ring) for ring in rings] #List the ones to fill
-        if len(to_fill)>0: #If there are any to fill
-            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) #Union the original geometry with all holes
+    rings = [i for i in row["geometry"].interiors] # List all interior rings
+    if len(rings)>0: # If there are any rings
+        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
+        if len(to_fill)>0: # If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) # Union the original geometry with all holes
     if newgeom:
         return newgeom
     else:

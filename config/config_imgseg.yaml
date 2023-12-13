@@ -56,21 +56,21 @@ segment_images.py:
 # 3 - Create an image mask keeping buildings
 produce_vector_layer.py:
   working_dir: .
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: output/image_segmentation/training
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/training
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: "EPSG:2056"              # Projection of the input file
 
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: output/image_segmentation/training
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -84,10 +84,10 @@ assess_results.py:
 # 5 - Estimate the free surface
 assess_surface.py:
   working_dir: .
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: output/image_segmentation/training
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  output_dir: outputs/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
   method: fusion                  # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -97,12 +97,12 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/training_subsample
-  # roofs: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: output/image_segmentation/optimize_training_subsample_precision
+  image_dir: inputs/image_segmentation/tiles/training_subsample
+  # roofs: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  output_dir: outputs/image_segmentation/optimize_training_subsample_precision
   detections: vectors/roof_segmentation.gpkg
   vector_extension: gpkg          # 'gpkg' or 'shp'
   crs: EPSG:2056                  # Projection of the input file 
@@ -154,10 +154,10 @@ optimize_hyperparameters.py:
 assess_dev.py:  
   working_dir: .
   ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
-  output_dir: output/metrics_charge
+  output_dir: outputs/metrics_charge
   detections: data/GT/synthetic_examples/detection_synthetic.gpkg
-  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: inputs/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: inputs/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   method: many-to-many
   threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
 
@@ -165,7 +165,7 @@ assess_dev.py:
 mask_for_buildings.py:
   transparency: true
   working_dir: data/
-  image_dir: ../input/tiles/
+  image_dir: ../inputs/tiles/
   roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 # Prepare the tiles geometry according to the AOI and zoom level
@@ -173,21 +173,21 @@ prepare_data.py:
   srs: "EPSG:2056"                 # Projection of the input file
   datasets:
     labels_shapefile: data/AOI.shp
-  output_folder: output/SAM/
+  output_folder: outputs/SAM/
   zoom_level: 18                   # z, keep between 15 and 18  
 
 # Request tiles according to the provided AOI and tiles parameters
 generate_tilesets.py:
   debug_mode: False               # reduced amount of tiles
   datasets:
-    aoi_tiles_geojson: output/SAM/tiles.geojson
+    aoi_tiles_geojson: outputs/SAM/tiles.geojson
     orthophotos_web_service:
       type: XYZ                   # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
       url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
       # url: https://wms.geo.admin.ch/service
       # layers: ch.swisstopo.swissimage
       # srs: "EPSG:2056"
-  output_folder: output/SAM/
+  output_folder: outputs/SAM/
   tile_size: 512 # per side, in pixels
   overwrite: True
   n_jobs: 10

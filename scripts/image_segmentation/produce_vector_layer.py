@@ -15,8 +15,6 @@ from tqdm import tqdm
 
 import geopandas as gpd
 import pandas as pd
-import numpy as np
-
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -41,19 +39,19 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     egids = pd.read_csv(EGIDS)
 
     # Get the rooftops shapes
-    logger.info("- Roofs shapes")
+    logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
     original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
     desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
     roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs['EGID'] = roofs['EGID'].astype(int)
-    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
 
-    logger.info(f"  Number of building to process: {len(roofs_gdf)}")
+    logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
 
     # Read all the shapefiles produced, filter them and merge them in a single layer  
-    logger.info(f"Read shapefiles' name")
+    logger.info(f"Read the name of the shapefiles")
     tiles = glob(os.path.join(detection_dir, '*.' + SHP_EXT))
     vector_layer = gpd.GeoDataFrame() 
 
@@ -70,7 +68,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
         # Prepare roofs shp
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid]
+        egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid].copy()
         egid_shp['area_roof'] = egid_shp.area
         egid_shp['geometry_roof'] = egid_shp.geometry
         buffer = 1
@@ -83,7 +81,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
                                             (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
-                                            (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially intersecting the roof extension
+                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes partially intersecting the roof extension
 
         objects_filtered['area'] = objects_filtered.area 
 
