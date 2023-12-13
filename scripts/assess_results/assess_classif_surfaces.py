@@ -90,7 +90,7 @@ for key in agreement_dict.keys():
 
 logger.info('Export the files...')
 agreement_pd = pd.DataFrame.from_dict(agreement_dict, orient='index', columns=np.append(np.array('global'), possible_classes))
-agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates_manual.csv'))
+agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates_manual_thrd.csv'))
 
 all_info_gdf = pd.merge(ocan_gdf, ocen_gdf[['OBJECTID', 'class', 'agreement', 'status', 'reason']], on='OBJECTID', suffixes=('_ocan', '_ocen'))
 filepath = os.path.join(OUTPUT_DIR, 'comparison_occupation_classif.gpkg')

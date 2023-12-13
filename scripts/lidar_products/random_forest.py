@@ -6,21 +6,18 @@
 import os
 import sys
 from argparse import ArgumentParser
-from glob import glob
 from loguru import logger
 from time import time
-from tqdm import tqdm
 from yaml import load, FullLoader
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, cross_validate
-from sklearn.tree import export_graphviz
+from sklearn.model_selection import train_test_split, cross_validate, cross_val_predict, cross_val_score, validation_curve
 
 import pickle
-import pydot
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
@@ -53,7 +50,7 @@ def prepare_features(features_df):
     return features_list, features_array
 
 
-def random_forest(labels_gdf, features_df, desc=None):
+def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = None):
     # https://towardsdatascience.com/random-forest-in-python-24d0893d51c0
 
     written_files = []
@@ -68,9 +65,33 @@ def random_forest(labels_gdf, features_df, desc=None):
 
     features_list, features_array = prepare_features(proofed_features_df)
 
-    train_features, test_features, train_labels, test_labels = train_test_split(features_array, labels_array, test_size = 0.25, random_state = 42)
+    train_features, test_features, train_labels, test_labels = train_test_split(features_array, labels_array, test_size = 0.20, random_state = seed)
 
-    rf = RandomForestClassifier(random_state = 42, n_estimators=20)
+    if not nbr_estimators:
+        rf_cv = RandomForestClassifier(random_state = seed)
+        test_range = range(3,75)
+        train_scores, validation_scores = validation_curve(rf_cv, train_features, train_labels, param_name='n_estimators', param_range=test_range, scoring=('balanced_accuracy'), cv=10)
+
+        validation_results = np.median(validation_scores, axis=1)
+        train_results = np.median(train_scores, axis=1)
+
+        fig, ax = plt.subplots()
+        ax.plot(test_range, train_results, label='training')
+        ax.plot(test_range, validation_results, label='validation')
+        ax.set_ylim([0.5, 1.1])
+        ax.grid(True, axis='x')
+        fig.legend()
+        ax.set_xlabel('Number of estimators')
+        ax.set_ylabel('Balanced accuracy')
+
+        filepath = os.path.join(OUTPUT_DIR, f'Validation_BA_{desc}.webp')
+        fig.savefig(filepath)
+        written_files.append(filepath)
+
+        nbr_estimators = test_range[validation_results.argmax()]
+        logger.info(f"The random forest will work with {nbr_estimators} trees.")
+
+    rf = RandomForestClassifier(random_state = seed, n_estimators=nbr_estimators)
     rf.fit(train_features, train_labels)
 
     filepath = os.path.join(OUTPUT_DIR, f'model_RF{"_" + desc if desc else ""}.pkl')
@@ -108,15 +129,6 @@ def random_forest(labels_gdf, features_df, desc=None):
     filepath = os.path.join(OUTPUT_DIR, f'importance{"_" + desc if desc else ""}.csv')
     importance_df.to_csv(filepath, index=False)
     written_files.append(filepath)
-    
-    scores = cross_validate(rf, features_array, labels_array, cv=10,
-                                scoring=('balanced_accuracy'),
-                                return_train_score=True)
-    scores_df = pd.DataFrame(scores)
-    
-    logger.info('Scores:')
-    [print(f'    - Run: {run.Index}, training: {round(run.train_score, 2)}, test: {round(run.test_score, 2)}') for run in scores_df.itertuples()]
-
 
     return pd.DataFrame(agreement, index=[0]), written_files
 
@@ -159,11 +171,11 @@ features_df = features_gdf.drop(columns=['tile_id', 'joined_area', 'EGID', 'ALTI
 
 if TRAIN:
     logger.info('Train and test a random forest for the OCEN')
-    agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN')
+    agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN', nbr_estimators=30)
     written_files.extend(tmp)
 
     logger.info('Train and test a random forest for the OCAN')
-    agreement_ocan_df, tmp = random_forest(ocan_gt, features_df, desc='OCAN')
+    agreement_ocan_df, tmp = random_forest(ocan_gt, features_df, desc='OCAN', nbr_estimators=31)
     written_files.extend(tmp)
 
     agreement_df = pd.concat([agreement_ocen_df, agreement_ocan_df], ignore_index=True)
@@ -198,4 +210,4 @@ for written_file in written_files:
 
 # Stop chronometer
 toc = time()
-logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
