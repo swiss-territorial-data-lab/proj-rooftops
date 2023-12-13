@@ -72,7 +72,7 @@ assess_results.py:
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   output_dir: outputs/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
-  method: fusion                 # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
   threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
@@ -86,10 +86,10 @@ assess_surface.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   output_dir: outputs/image_segmentation/training
   detections: vectors/roof_segmentation.gpkg
-  method: fusion                  # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
   bins: [0, 25, 50, 75, 100] 
   visualisation: True

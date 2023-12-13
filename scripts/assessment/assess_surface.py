@@ -24,7 +24,7 @@ logger = misc.format_logger(logger)
 
 # Functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method='one-to-one', threshold=0.1, visualisation=False):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method='one-to-one', visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -47,8 +47,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', METHOD))
-    threshold_str = str(THRESHOLD).replace('.', 'dot')
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', method))
 
     written_files={}
 
@@ -291,12 +290,11 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
 
     METHOD = cfg['method']
-    THRESHOLD = cfg['threshold']
     BINS = cfg['bins']
     VISUALISATION = cfg['visualisation']
 
     written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS,
-                         method=METHOD, threshold=THRESHOLD, visualisation=VISUALISATION)
+                         method=METHOD, visualisation=VISUALISATION)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():
