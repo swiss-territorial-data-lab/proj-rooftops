@@ -11,10 +11,8 @@ import yaml
 from loguru import logger
 
 import pandas as pd
-import matplotlib.pyplot as plt
 import joblib
 import optuna
-import torch
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
@@ -42,7 +40,7 @@ def objective(trial):
 
     logger.info(f"Call objective function for hyperparameters optimization")
 
-    # Suggest value range to test (range value not taken into account for GridSampler method)
+    # Suggest value ranges to test (not taken into account for the GridSampler method)
     PPS = trial.suggest_int('points_per_side', 32, 128, step=32)
     PPB = trial.suggest_int('points_per_batch', 32, 128, step=32)
     IOU_THD = trial.suggest_float('pred_iou_thresh', 0.6, 0.95, step=0.05)
