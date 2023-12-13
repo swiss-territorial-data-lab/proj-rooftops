@@ -59,12 +59,14 @@ predictions = gpd.read_file(PREDICTIONS_PATH, layer=PREDICTIONS_LAYER)
 
 logger.info('Calculate the satisfaction rate...')
 
+ocen_gt['OBJECTID'] = ocen_gt.OBJECTID.astype('int64')
 ocen_gdf = pd.merge(
     predictions[['OBJECTID', 'status', 'reason', 'std_i', 'MOE_i', 'median_r', 'mean_r', 'nodata_overlap', 'geometry']], 
     ocen_gt[['OBJECTID', 'class']], 
     on='OBJECTID'
 )
 ocen_gdf.rename(columns={'status_ocen': 'status'}, inplace=True)
+ocan_gt['OBJECTID'] = ocan_gt.OBJECTID.astype('int64')
 ocan_gdf = pd.merge(
     predictions[['OBJECTID', 'status', 'reason', 'std_i', 'MOE_i', 'median_r', 'mean_r', 'nodata_overlap', 'geometry']], 
     ocan_gt[['OBJECTID', 'class']], 
@@ -88,7 +90,7 @@ for key in agreement_dict.keys():
 
 logger.info('Export the files...')
 agreement_pd = pd.DataFrame.from_dict(agreement_dict, orient='index', columns=np.append(np.array('global'), possible_classes))
-agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates.csv'))
+agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates_manual.csv'))
 
 all_info_gdf = pd.merge(ocan_gdf, ocen_gdf[['OBJECTID', 'class', 'agreement', 'status', 'reason']], on='OBJECTID', suffixes=('_ocan', '_ocen'))
 filepath = os.path.join(OUTPUT_DIR, 'comparison_occupation_classif.gpkg')

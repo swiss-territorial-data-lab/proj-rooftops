@@ -45,7 +45,7 @@ filter_surfaces_by_attributes.py:
   working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   input_dir_images: processed/lidar/rasterized_lidar
   lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: initial/vector/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
 
 filter_for_objects.py:
