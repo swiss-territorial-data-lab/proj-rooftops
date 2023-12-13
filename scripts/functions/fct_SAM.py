@@ -103,7 +103,7 @@ def SAM_mask(IMAGE_DIR, OUTPUT_DIR, SIZE, CROP, SHP_ROOF, DL_CKP, CKP_DIR, CKP, 
 
 def filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files):
 
-    # Get the rooftops shapes
+    # Get the rooftop shapes
     ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
     feature_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
@@ -113,8 +113,7 @@ def filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files):
     else:
         logger.info(f"File {ROOFS_NAME[:-4]}_EGID.shp does not exist")
         logger.info(f"Create it")
-        # gdf_roofs = gpd.read_file(WORKING_DIR  + '/' + ROOFS_DIR  + '/' + ROOFS_NAME)
-        gdf_roofs = gpd.read_file(ROOFS_DIR  + '/' + ROOFS_NAME)
+        gdf_roofs = gpd.read_file(SHP_ROOFS)
         logger.info(f"Dissolved shapes by EGID number")
         rooftops = gdf_roofs.dissolve('EGID', as_index=False)
         rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1)
@@ -122,11 +121,9 @@ def filter(OUTPUT_DIR, SHP_ROOFS, SRS, DETECTION, SHP_EXT, written_files):
         written_files.append(feature_path)  
         logger.info(f"...done. A file was written: {feature_path}")
 
-    # Read all the shapefile produced, filter them with rooftop extension and merge them into a single layer  
+    # Read all the shapefiles produced, filter them with rooftop extension and merge them into a single layer  
     logger.info(f"Read shapefiles' name")
     tiles=glob(os.path.join(OUTPUT_DIR + 'segmented_images',  '*.' + SHP_EXT))
-    if '\\' in tiles[0]:
-        tiles = [tile.replace('\\', '/') for tile in tiles]
 
     vector_layer = gpd.GeoDataFrame() 
 

@@ -34,7 +34,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
 
     os.chdir(WORKING_DIR)
 
-    # Create an output directories in case they don't exist, so it is only verified once.
+    # Create output directories in case they don't exist, so it is only verified once.
     misc.ensure_dir_exists(OUTPUT_DIR)
     segmented_images_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images'))
     if METHOD=="resample":
@@ -48,7 +48,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
 
-    # Select and dowload the pretrained model checkpoints 
+    # Select and download the pretrained model checkpoints 
     if DL_CKP == True:
         dl_dir = misc.ensure_dir_exists(CKP_DIR)
         ckp_dir = os.path.join(os.path.expanduser('~'), dl_dir)
@@ -79,7 +79,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
 
-        # Subdivide the input images in smaller tiles if its number of pixel exceed the threshold value
+        # Subdivide the input image in smaller tiles if its number of pixel exceed the threshold value
         directory, file = os.path.split(tile)
         img = Image.open(tile)
         width, height = img.size
@@ -87,10 +87,10 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         tilepath = tile
         if size >= THD_SIZE:
             if METHOD=="batch":
-                logger.info(f"Image size too large to be processed -> subdivided in tiles of {TILE_SIZE} px size")
+                logger.info(f"Image too large to be processed -> subdivided in tiles of {TILE_SIZE} px size")
                 BATCH = True
             elif METHOD=="resample":
-                logger.info(f"Image size too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")
+                logger.info(f"Image too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")
                 tilepath = os.path.join(resampling_dir, file)
                 gdal.Warp(tilepath, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')     
         else:

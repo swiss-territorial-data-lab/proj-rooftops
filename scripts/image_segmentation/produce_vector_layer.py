@@ -38,7 +38,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     logger.info("- List of selected EGID")
     egids = pd.read_csv(EGIDS)
 
-    # Get the rooftops shapes
+    # Get the rooftop shapes
     logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
@@ -50,7 +50,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
 
-    # Read all the shapefiles produced, filter them and merge them in a single layer  
+    # Read all the shapefiles produced, filter them and merge them into a single layer  
     logger.info(f"Read the name of the shapefiles")
     tiles = glob(os.path.join(detection_dir, '*.' + SHP_EXT))
     vector_layer = gpd.GeoDataFrame() 
@@ -80,25 +80,25 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
-                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
-                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes partially intersecting the roof extension
+                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with an area close to the roof area 
+                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes intersecting the roof extension only partially
 
         objects_filtered['area'] = objects_filtered.area 
 
         objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof', 'index_right'], axis=1)
         objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-buffer))
         
-        # Merge/Combine multiple shapefiles into one gdf
+        # Concatenate the results into one geodataframe.
         vector_layer = gpd.pd.concat([vector_layer, objects_clip], ignore_index=True)
 
-    # # Save the vectors for each EGID in layers in a gpkg !!! Will be deleted at the end !!!
+    # # Save the vectors for each EGID in a gpkg !!! Will be deleted at the end !!!
     # feature_path = os.path.join(output_dir, "roof_segmentation_egid.gpkg")
     # for egid in vector_layer.EGID.unique():
     #     vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
     # written_files.append(feature_path)  
     # logger.info(f"...done. A file was written: {feature_path}")
 
-    # Save the vectors layer in a gpkg 
+    # Save the vector layer in a gpkg 
     vector_layer['fid'] = vector_layer.index
     feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
     vector_layer.to_file(feature_path)

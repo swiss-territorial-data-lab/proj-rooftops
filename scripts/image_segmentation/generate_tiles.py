@@ -83,7 +83,7 @@ if __name__ == "__main__":
     egids.to_csv(feature_path, index=False)
     written_files.append(feature_path)  
 
-    # Get the rooftops shapes
+    # Get the rooftop shapes
     logger.info("- Roofs shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     logger.info("- Tiles name")
     tiles = gpd.read_file(TILES)
 
-    # Find the image's tiles intersecting the rooftops' shapes  
+    # Find the image tiles intersecting the rooftop shapes  
     logger.info("Intersection of rooftop shapes and image tiles")
     join_tiles_roofs = gpd.sjoin(roofs_gdf, tiles, how="left")
     
@@ -108,8 +108,8 @@ if __name__ == "__main__":
     egid_list = []
     coords_list = [] 
 
-    # Open or produce the rooftops boundary boxes shapes 
-    logger.info("Produce building bounding box")
+    # Open or produce the bounding boxes of the rooftops
+    logger.info("Produce the bounding boxes of the buildings")
 
     for row in join_tiles_roofs.itertuples():
         egid = row.EGID
@@ -123,20 +123,20 @@ if __name__ == "__main__":
     bbox_list.to_file(feature_path)
     written_files.append(feature_path)  
 
-    # Get the image tile(s) number intersecting the rooftop shape 
+    # Get the number of image tile(s) intersecting the rooftop shape 
     logger.info("Finding the number of image tile(s) intersecting the rooftop shape")
     unique_egid = join_tiles_roofs["EGID"].unique() 
 
     if MASK:
         logger.info("Applying building mask")
 
-    for egid in tqdm(unique_egid, desc="Production of tiles fitting the roof's extent", total=len(unique_egid)):
+    for egid in tqdm(unique_egid, desc="Production of tiles fitting the extent of the roof", total=len(unique_egid)):
         image_list = join_tiles_roofs.loc[join_tiles_roofs['EGID'] == egid, 'TileName'].to_numpy().tolist()
 
         tiles_list = [os.path.join(IMAGE_DIR, image + '.tif') for image in image_list]   
 
         if len(tiles_list) > 1:
-            # Mosaic images if rooftops shape is spread over several tiles 
+            # Mosaic images if the rooftop shape is spread over several tiles 
             raster_to_mosaic = [rasterio.open(tilepath) for tilepath in tiles_list]
 
             mosaic, output = merge(raster_to_mosaic)
@@ -176,7 +176,7 @@ if __name__ == "__main__":
 
         bbox_shape = bbox_list.loc[bbox_list['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)  
 
-        # Clip image by the rooftops bounding box shape
+        # Clip image by the bounding boxes of the rooftops
         out_image, out_transform = mask(image, bbox_shape, crop = True)
         out_meta = image.meta
         out_meta.update({"driver": "GTiff",
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         else: 
             feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}.tif")
         
-        # Close readers so we can re-write, erase file
+        # Close reader so we can re-write it
         del raster, image
         with rasterio.open(feature_path, "w", **out_meta) as dst:
             dst.write(out_image)
