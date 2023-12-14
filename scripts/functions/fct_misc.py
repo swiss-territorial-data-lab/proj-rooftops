@@ -197,6 +197,52 @@ def geohash(row):
     return out
 
 
+def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detections):
+
+    # Get the EGIDS of interest
+    egids = pd.read_csv(path_egids)
+    array_egids = egids.EGID.to_numpy()
+    logger.info(f'    - {egids.shape[0]} selected EGIDs.')
+
+
+    if ('EGID' in path_roofs) | ('egid' in path_roofs):
+        roofs_gdf = gpd.read_file(path_roofs)
+    else:
+        # Get the rooftops shapes
+        _, ROOFS_NAME = os.path.split(path_roofs)
+        attribute = 'EGID'
+        original_file_path = path_roofs
+        desired_file_path = os.path.join(output_dir, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+
+        roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+
+    if labels:
+        if isinstance(labels, str):
+            labels_gdf = gpd.read_file(labels)
+        elif labels_gdf(labels, gpd.GeoDataFrame):
+            labels_gdf = labels.copy()
+
+        labels_gdf = format_labels(labels_gdf, roofs_gdf, array_egids)
+
+    else:
+        labels_gdf = gpd.GeoDataFrame()
+
+    # Read the shapefile for detections
+    if isinstance(detections, str):
+        detections_gdf = gpd.read_file(detections)
+    elif isinstance(detections, gpd.GeoDataFrame):
+        detections_gdf = detections.copy()
+    else:
+        logger.critical(f'Unrecognized variable type for the detections: {type(detections)}.')
+        sys.exit(1)
+
+    detections_gdf = format_detections(detections_gdf)
+
+    return egids, roofs_gdf, labels_gdf, detections_gdf
+
+
 def ensure_dir_exists(dirpath):
     """Test if a directory exists. If not, make it.  
 

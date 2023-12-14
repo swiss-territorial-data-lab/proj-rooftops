@@ -60,46 +60,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     written_files = {}
 
     logger.info('Get input data...')
-
-    # Get the EGIDS of interest
-    egids = pd.read_csv(EGIDS)
-    array_egids = egids.EGID.to_numpy()
-    logger.info(f'    - {egids.shape[0]} selected EGIDs.')
-
-    if ('EGID' in ROOFS) | ('egid' in ROOFS):
-        roofs_gdf = gpd.read_file(ROOFS)
-    else:
-        # Get the rooftops shapes
-        _, ROOFS_NAME = os.path.split(ROOFS)
-        attribute = 'EGID'
-        original_file_path = ROOFS
-        desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
-
-        roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
-
-    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
-    roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
-    logger.info(f"    - {len(roofs_gdf)} roofs")
-
-    # Read the shapefile for labels
-    if isinstance(LABELS, str):
-        labels_gdf = gpd.read_file(LABELS)
-    elif labels_gdf(LABELS, gpd.GeoDataFrame):
-        labels_gdf = LABELS.copy()
-
-    labels_gdf = misc.format_labels(labels_gdf, roofs_gdf, array_egids)
-
-    # Read the shapefile for detections
-    if isinstance(DETECTIONS, str):
-        detections_gdf = gpd.read_file(DETECTIONS)
-    elif isinstance(DETECTIONS, gpd.GeoDataFrame):
-        detections_gdf = DETECTIONS.copy()
-    else:
-        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}.')
-        sys.exit(1)
-
-    detections_gdf = misc.format_detections(detections_gdf)
-
+    
+    egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, OUTPUT_DIR, LABELS, DETECTIONS)
+    
     if (len(object_parameters) > 0) and additional_metrics:
 
         ranges_dict = {object_parameters[i]: ranges[i] for i in range(len(object_parameters))}
