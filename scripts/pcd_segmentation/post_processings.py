@@ -19,6 +19,7 @@ from shapely.geometry import mapping, Polygon
 from shapely.validation import make_valid
 
 from rdp import rdp
+import visvalingamwyatt as vw
 
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
@@ -45,10 +46,10 @@ WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
 
 MERGE_FILES = cfg['merge_files']
-RDP = cfg['rdp']
-BUFFER = cfg['buffer']
+RDP = cfg['rdp'] if 'rdp' in cfg.keys() else None
+BUFFER = cfg['buffer'] if 'buffer' in cfg.keys() else None
+VW = cfg['vw'] if 'vw' in cfg.keys() else None
 
-BUFFER_SIZE = cfg['buffer_size']
 
 os.chdir(WORKING_DIR)
 _ = misc.ensure_dir_exists(OUTPUT_DIR)
@@ -115,9 +116,10 @@ if RDP:
     simplified_dets_gdf.to_file(filepath)
     written_files.append(filepath)
 
-        
 
 if BUFFER:
+    BUFFER_SIZE = cfg['buffer_size']
+
     logger.info('Simplify the geometries with a buffer')
     buffered_dets_gdf = detections_gdf.copy()
     buffered_dets_gdf['geometry'] = buffered_dets_gdf.buffer(BUFFER_SIZE)
@@ -127,6 +129,41 @@ if BUFFER:
     buffered_dets_gdf.to_file(filepath)
     written_files.append(filepath)
 
+    detections_gdf = buffered_dets_gdf.copy()
+
+
+if VW:
+    VW_THRESHOLD = cfg['vw_threshold']
+
+    logger.info('Simplify the geometries with the Visvalingam-Wyatt algorithm')
+    simplified_dets_gdf = gpd.GeoDataFrame()
+    failed_transform = 0
+
+    if 'MultiPolygon' in detections_gdf.geometry.geom_type.values:
+        detections_gdf = detections_gdf.explode(ignore_index=True)
+    mapped_objects = mapping(detections_gdf)
+    for feature in tqdm(mapped_objects['features'], "Simplifying features"):
+        coords = feature['geometry']['coordinates'][0]
+        coords_post_vw = vw.Simplifier(coords).simplify(threshold=VW_THRESHOLD)
+        if len(coords_post_vw) >= 3:
+            feature['geometry']['coordinates'] = (tuple([tuple(arr) for arr in coords_post_vw]),)
+            continue
+        else:
+            coords_post_vw = vw.Simplifier(coords).simplify(threshold=VW_THRESHOLD/2)
+            if len(coords_post_vw) >= 3:
+                feature['geometry']['coordinates'] = (tuple([tuple(arr) for arr in coords_post_vw]),)
+                continue
+            
+        failed_transform += 1
+
+    simplified_dets_gdf = gpd.GeoDataFrame.from_features(mapped_objects, crs='EPSG:2056')
+    logger.info(f'{failed_transform} polygons on {simplified_dets_gdf.shape[0]} failed to be simplified.')
+
+    simplified_dets_gdf = misc.test_valid_geom(simplified_dets_gdf, correct=True, gdf_obj_name='simplified detections')
+
+    filepath = os.path.join(OUTPUT_DIR, 'simplified_detections_VW.gpkg')
+    simplified_dets_gdf.to_file(filepath)
+    written_files.append(filepath)
 
 
 print()
