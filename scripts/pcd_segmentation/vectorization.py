@@ -30,6 +30,55 @@ warnings.filterwarnings("ignore", message="root:Singular matrix")
 logger = format_logger(logger)
 
 
+# Define functions ---------------------
+
+def delete_overlapping_clusters(clusters_gdf):
+    """Delete clusters inside another cluster.
+
+    Args:
+        clusters_gdf (GeoDataFrame): clusters of objects as determined by the vecotrization procedure
+
+    Returns:
+        GeoDataFrame, int: Cleaned clusters and the number of fusion between two clusters that occured.
+    """
+        
+    reviewed_cluster = clusters_gdf.copy()
+    dropped_index = []
+
+    for cluster in clusters_gdf.itertuples():
+
+        # Stop if you are at the last line of the table
+        if cluster.Index+1 == clusters_gdf.shape[0]:
+            nbr_dropped_objects = len(dropped_index)
+            if nbr_dropped_objects > 0:
+                logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
+            break
+
+        for second_cluster in clusters_gdf.loc[clusters_gdf.index > cluster.Index].itertuples():
+            first_geometry = cluster.geometry
+            second_geometry = second_cluster.geometry
+            
+            if cluster.Index in dropped_index:
+                nbr_dropped_objects = len(dropped_index)
+                if cluster.Index+1 == clusters_gdf.shape[0] & nbr_dropped_objects > 0:
+                     logger.info(f'{nbr_dropped_objects} objects were dropped, because they were within another object.')
+                break
+
+            if first_geometry.intersects(second_geometry) & (second_cluster.Index not in dropped_index):
+                    
+                    if second_geometry.within(first_geometry):
+                        reviewed_cluster.drop(index=(second_cluster.Index), inplace=True)
+                        dropped_index.append(second_cluster.Index)
+
+                    elif first_geometry.within(second_geometry):
+                        reviewed_cluster.drop(index=(cluster.Index), inplace=True)
+                        dropped_index.append(cluster.Index)
+
+    reviewed_cluster.reset_index(drop=True, inplace=True)
+
+    return reviewed_cluster
+
+
 def handle_multipolygon(gdf, limit_number=10, limit_area=0.01):
     """Transform multipolygons into polygons
 
@@ -163,8 +212,9 @@ def main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, SHP_EGID_ROOFS, epsg=205
 
         # Create occupation layer
         if not cluster_vec_gdf.empty:
-            # Drop clusters smaller than 1 pixel
-            cluster_vec_gdf = cluster_vec_gdf[cluster_vec_gdf.area > 0.01]
+            # Drop clusters smaller than 1 pixel or inside another culster
+            cluster_vec_gdf = cluster_vec_gdf[cluster_vec_gdf.area > 0.01].copy()
+            cluster_vec_gdf = delete_overlapping_clusters(cluster_vec_gdf)
             cluster_vec_gdf.set_geometry('geometry', inplace=True)
 
             # Free polygon = Plane polygon(s) - Object polygon(s)
