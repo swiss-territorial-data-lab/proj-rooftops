@@ -21,7 +21,7 @@ from functions.fct_misc import format_logger, ensure_dir_exists
 import functions.fct_optimization as optimization
 import pcd_segmentation
 import vectorization
-import assess_results
+import assessment.assess_results as assess_results
 
 logger = format_logger(logger)
 
