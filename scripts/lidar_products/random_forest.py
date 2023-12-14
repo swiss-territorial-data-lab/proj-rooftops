@@ -24,19 +24,6 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-# Start chronometer
-tic = time()
-logger.info('Starting...')
-
-# Argument and parameter specification
-parser = ArgumentParser(description="The script classify the surfaces by occupation with an random forest.")
-parser.add_argument('config_file', type=str, help='Framework configuration file')
-args = parser.parse_args()
-
-logger.info(f"Using {args.config_file} as config file.")
-with open(args.config_file) as fp:
-    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
-
 
 # Define fuctions ----------------------------------
 
@@ -132,82 +119,102 @@ def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = 
 
     return pd.DataFrame(agreement, index=[0]), written_files
 
-# Define constants ----------------------------------
 
-WORKING_DIR = cfg['working_dir']
+if __name__ == '__main__':
 
-GT_PATH = cfg['gt_file']
-OCEN_LAYER = cfg['layer_ocen']
-OCAN_LAYER = cfg['layer_ocan']
+    # Start chronometer
+    tic = time()
+    logger.info('Starting...')
 
-PREDICTIONS_PATH = cfg['predictions_file']
-PREDICTIONS_LAYER = cfg['predictions_layer']
+    # Argument and parameter specification
+    parser = ArgumentParser(description="The script classifies the surfaces by occupation with a random forest.")
+    parser.add_argument('config_file', type=str, help='Framework configuration file')
+    args = parser.parse_args()
 
-TRAIN = cfg['train']
+    logger.info(f"Using {args.config_file} as config file.")
+    with open(args.config_file) as fp:
+        cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
-written_files = []
+    # Define constants ----------------------------------
 
-os.chdir(WORKING_DIR)
-OUTPUT_DIR = misc.ensure_dir_exists('processed/roofs')
+    WORKING_DIR = cfg['working_dir']
 
-# Data processing --------------------------------------
+    GT_PATH = cfg['gt_file']
+    OCEN_LAYER = cfg['layer_ocen']
+    OCAN_LAYER = cfg['layer_ocan']
 
-logger.info('Read the files')
+    PREDICTIONS_PATH = cfg['predictions_file']
+    PREDICTIONS_LAYER = cfg['predictions_layer']
 
-ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
+    TRAIN = cfg['train']
 
-ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
+    written_files = []
 
-all_features_gdf = gpd.read_file(PREDICTIONS_PATH, layer=PREDICTIONS_LAYER)
-features_gdf = all_features_gdf[
-    (all_features_gdf.area>2) 
-    & (all_features_gdf.status!='undefined')
-].copy()
-features_gdf['area'] = features_gdf.area
-features_df = features_gdf.drop(columns=['tile_id', 'joined_area', 'EGID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN', 'tilepath_intensity', 'tilepath_roughness',
-                         'count_i', 'count_r',
-                        #  'nodata_overlap', 'min_i', 'max_r', 'max_i', 'ALTI_MIN', 'mean_i', 'median_i',
-                         'status', 'reason', 'geometry'])
+    os.chdir(WORKING_DIR)
+    OUTPUT_DIR = misc.ensure_dir_exists('processed/roofs')
 
-if TRAIN:
-    logger.info('Train and test a random forest for the OCEN')
-    agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN', nbr_estimators=30)
-    written_files.extend(tmp)
+    # Data processing --------------------------------------
 
-    logger.info('Train and test a random forest for the OCAN')
-    agreement_ocan_df, tmp = random_forest(ocan_gt, features_df, desc='OCAN', nbr_estimators=31)
-    written_files.extend(tmp)
+    logger.info('Read the files')
 
-    agreement_df = pd.concat([agreement_ocen_df, agreement_ocan_df], ignore_index=True)
-    agreement_df['office'] = ['OCEN', 'OCAN']
+    ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
 
-    filepath = os.path.join(OUTPUT_DIR, 'agreement_rates.csv')
-    agreement_df.to_csv(filepath, index=False)
-    written_files.append(filepath)
+    ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
 
-else:
-    _, features_array = prepare_features(features_df)
+    logger.info('Format the data')
+    all_features_gdf = gpd.read_file(PREDICTIONS_PATH, layer=PREDICTIONS_LAYER)
+    features_gdf = all_features_gdf[
+        (all_features_gdf.area>2) 
+        # & (~all_features_gdf.median_r.isna())
+        & (all_features_gdf.status!='undefined')
+    ].copy()
+    features_gdf['area'] = features_gdf.area
+    features_df = features_gdf.drop(columns=['tile_id', 'joined_area', 'EGID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN', 'tilepath_intensity', 'tilepath_roughness',
+                            'count_i', 'count_r',
+                            #  'nodata_overlap', 'min_i', 'max_r', 'max_i', 'ALTI_MIN', 'mean_i', 'median_i',
+                            'status', 'reason', 'geometry'])
 
-    rf_model_ocan = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCAN.pkl'), 'rb'))
-    predictions_ocan = rf_model_ocan.predict(features_array)
+    if TRAIN:
+        logger.info('Train and test a random forest for the OCEN')
+        agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN', nbr_estimators=30)
+        written_files.extend(tmp)
 
-    features_gdf['pred_status_ocan'] = predictions_ocan
+        logger.info('Train and test a random forest for the OCAN')
+        agreement_ocan_df, tmp = random_forest(ocan_gt, features_df, desc='OCAN', nbr_estimators=31)
+        written_files.extend(tmp)
 
-    rf_model_ocen = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCEN.pkl'), 'rb'))
-    predictions_ocen = rf_model_ocen.predict(features_array)
+        agreement_df = pd.concat([agreement_ocen_df, agreement_ocan_df], ignore_index=True)
+        agreement_df['office'] = ['OCEN', 'OCAN']
 
-    features_gdf['pred_status_ocen'] = predictions_ocen
+        filepath = os.path.join(OUTPUT_DIR, 'agreement_rates.csv')
+        agreement_df.to_csv(filepath, index=False)
+        written_files.append(filepath)
 
-    filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
-    features_gdf.to_file(filepath, layer='roof_occupation_by_RF')
-    written_files.append(filepath)
+    else:
+        _, features_array = prepare_features(features_df)
+
+        logger.info('Classifiy the roof planes for the OCAN')
+        rf_model_ocan = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCAN.pkl'), 'rb'))
+        predictions_ocan = rf_model_ocan.predict(features_array)
+
+        features_gdf['pred_status_ocan'] = predictions_ocan
+
+        logger.info('Classifiy the roof planes for the OCEN')
+        rf_model_ocen = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCEN.pkl'), 'rb'))
+        predictions_ocen = rf_model_ocen.predict(features_array)
+
+        features_gdf['pred_status_ocen'] = predictions_ocen
+
+        filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
+        features_gdf.to_file(filepath, layer='roof_occupation_by_RF')
+        written_files.append(filepath)
 
 
-print()
-logger.info("The following files were written. Let's check them out!")
-for written_file in written_files:
-    logger.info(written_file)
+    print()
+    logger.info("The following files were written. Let's check them out!")
+    for written_file in written_files:
+        logger.info(written_file)
 
-# Stop chronometer
-toc = time()
-logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
+    # Stop chronometer
+    toc = time()
+    logger.success(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")

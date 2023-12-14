@@ -68,7 +68,7 @@ random_forest.py:
   layer_ocan: ocan_classification
   predictions_file: processed/roofs/roofs.gpkg
   predictions_layer: roof_occupation_for_RF
-  train: True
+  train: False
 
 
 segment_objects.py:
