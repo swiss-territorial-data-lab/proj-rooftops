@@ -75,51 +75,27 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
     # Read the shapefile for labels
     if LABELS:
-        labels_gdf = gpd.read_file(LABELS)
+        if isinstance(LABELS, str):
+            labels_gdf = gpd.read_file(LABELS)
+        elif labels_gdf(LABELS, gpd.GeoDataFrame):
+            labels_gdf = LABELS.copy()
 
-        if labels_gdf.EGID.dtype != 'int64':
-            labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
-        if 'type' in labels_gdf.columns:
-            labels_gdf['type'] = labels_gdf['type'].astype(int)
-            labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
-            # Type 12 corresponds to free surfaces, other classes are objects
-            labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
-            labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
-        else:
-            labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
-            
-        for egid in array_egids:
-            labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-            labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
-
-            tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
-            labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
-
-        labels_gdf['label_id'] = labels_gdf.id
-        labels_gdf['area'] = round(labels_gdf.area, 4)
-
-        labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
-        labels_gdf = labels_gdf.explode(ignore_index=True)
-
-        nbr_labels = labels_gdf.shape[0]
-        logger.info(f"    - {nbr_labels} labels")
+        labels_gdf = misc.format_labels(labels_gdf, roofs_gdf, array_egids)
 
     else:
         labels_gdf = gpd.GeoDataFrame()
 
 
     # Read the shapefile for detections
-    detections_gdf = gpd.read_file(DETECTIONS) # , layer='occupation_for_all_EGIDS')
-
-    if 'occupation' in detections_gdf.columns:
-        detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
-    detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
-    if 'det_id' in detections_gdf.columns:
-        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+    if isinstance(DETECTIONS, str):
+        detections_gdf = gpd.read_file(DETECTIONS)
+    elif isinstance(DETECTIONS, gpd.GeoDataFrame):
+        detections_gdf = DETECTIONS.copy()
     else:
-        detections_gdf['ID_DET'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(index_parts=False)
-    logger.info(f"    - {len(detections_gdf)} detections")
+        logger.critical(f'Unrecognized variable type for the detections: {type(DETECTIONS)}.')
+        sys.exit(1)
+
+    detections_gdf = misc.format_detections(detections_gdf)
 
     logger.info('Get the free and occupied surface by EGID')
     

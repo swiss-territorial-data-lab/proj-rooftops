@@ -69,7 +69,7 @@ assess_results.py:
 
 
 # 5 - Estimate the free surface
-calculate_free_surface.py:
+calculate_free_area.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation/post_processing_tests/buffer_VW_thsld0pt1
   detections: processed/PCD_segmentation/all_optimizations/improved_results/simplified_detections_buffer_VW_thsld0pt1.gpkg
@@ -94,6 +94,28 @@ optimize_hyperparam_LiDAR.py:
     alpha_shape: 2.4
   method: fusion
   visualisation: None
+
+
+# 4 & 5 bis
+combine_results.py: 
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: processed/PCD_segmentation/post_processing_tests/buffer_VW_thsld0pt1
+  detections: processed/PCD_segmentation/all_optimizations/improved_results/simplified_detections_buffer_VW_thsld0pt1.gpkg
+  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  egids: processed/PCD_segmentation/completed_egids.csv
+  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  classified_roofs:
+  classified_roofs_layer:
+  method: fusion
+  threshold: 0.1
+  additional_metrics: True
+  visualisation: True
+  object_attributes:
+    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+  bins: [0, 25, 50, 75, 85, 95, 100] 
+
 
 # 6 - Post-process the results to improve them
 post_processings.py:

@@ -214,6 +214,54 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
+def format_detections(detections_gdf):
+
+    if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
+    detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
+    if 'det_id' in detections_gdf.columns:
+        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+    else:
+        detections_gdf['ID_DET'] = detections_gdf.index
+    detections_gdf=detections_gdf.explode(index_parts=False).reset_index(drop=True)
+    logger.info(f"    - {len(detections_gdf)} detections")
+
+    return detections_gdf
+
+
+def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
+
+    if labels_gdf.EGID.dtype != 'int64':
+        labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
+    if 'type' in labels_gdf.columns:
+        labels_gdf['type'] = labels_gdf['type'].astype(int)
+        labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
+        # Type 12 corresponds to free surfaces, other classes are objects
+        labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(selected_egids_arr))].copy()
+    else:
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(selected_egids_arr)].copy()
+        
+    # Clip labels to the corresponding roof
+    for egid in selected_egids_arr:
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+
+        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
+
+    labels_gdf['label_id'] = labels_gdf.id
+    labels_gdf['area'] = round(labels_gdf.area, 4)
+
+    labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+    labels_gdf=labels_gdf.explode(ignore_index=True).reset_index(drop=True)
+
+    nbr_labels=labels_gdf.shape[0]
+    logger.info(f"    - {nbr_labels} labels")
+
+    return labels_gdf
+
+
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     """Prepare the geometries of two gdf to be processed (compute nearest distance between two shapes)
 

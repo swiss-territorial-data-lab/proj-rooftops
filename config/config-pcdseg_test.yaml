@@ -69,7 +69,7 @@ assess_results.py:
 
 
 # 5 - Estimate the free surface
-calculate_free_surface.py:
+calculate_free_area.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation/test_zone
   detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg

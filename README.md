@@ -69,7 +69,7 @@ python scripts/pcd_segmentation/prepare_data.py config/config-pcdseg.yaml
 python scripts/pcd_segmentation/pcd_segmentation.py config/config-pcdseg.yaml
 python scripts/pcd_segmentation/vectorization.py config/config-pcdseg.yaml
 python scripts/pcd_segmentation/assess_results.py config/config-pcdseg.yaml
-python scripts/assessment/calculate_free_surface.py config/config-pcdseg.yaml
+python scripts/assessment/calculate_free_area.py config/config-pcdseg.yaml
 ```
 
 The scripts used above perform the following steps:
@@ -77,7 +77,7 @@ The scripts used above perform the following steps:
 2. `pcd_segmentation.py`: segment in planes and clusters the point cloud data,
 3. `vectorization.py`: create 2D polygons from the segmented point cloud data,
 4. `assess_results.py`: Evaluate the results based on the ground truth,
-5. `calculate_free_surface.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
+5. `calculate_free_area.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
 
 The workflow described here is working with the training subset of the ground truth. The configuration file `config-pcdseg_test.yaml` works with the test subset of the ground truth.
 
