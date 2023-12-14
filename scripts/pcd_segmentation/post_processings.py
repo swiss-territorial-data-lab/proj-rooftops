@@ -46,7 +46,6 @@ WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
 
 MERGE_FILES = cfg['merge_files']
-RDP = cfg['rdp'] if 'rdp' in cfg.keys() else None
 BUFFER = cfg['buffer'] if 'buffer' in cfg.keys() else None
 VW = cfg['vw'] if 'vw' in cfg.keys() else None
 
@@ -79,42 +78,6 @@ if MERGE_FILES:
 
 else:
     detections_gdf = gpd.read_file(cfg['detections'])
-
-
-if RDP:
-
-    logger.info('Simplify the geometries with RDP')
-    simplified_dets_gdf = gpd.GeoDataFrame()
-    failed_transform = 0
-
-    if 'MultiPolygon' in detections_gdf.geometry.geom_type.values:
-        detections_gdf = detections_gdf.explode(ignore_index=True)
-    mapped_objects = mapping(detections_gdf)
-    for feature in tqdm(mapped_objects['features'], "Simplifying features"):
-        coords = feature['geometry']['coordinates']
-        coords_post_rdp = [rdp(x, epsilon=0.25) for x in coords]
-        feature['geometry']['coordinates'] = tuple(coords_post_rdp)
-        # try:
-        #     if len(coords_post_rdp[0]) > 3:
-        #         if (not Polygon(coords_post_rdp[0]).is_valid) & (make_valid(Polygon(coords_post_rdp[0])).geom_type=='Polygon'):
-        #             coords_post_rdp = mapping(make_valid(Polygon(coords_post_rdp[0])))['coordinates']
-        #         elif (not Polygon(coords_post_rdp[0]).is_valid):
-        #             coords_post_rdp = coords
-        #             failed_transform +=1
-
-        #         feature['geometry']['coordinates'] = tuple(coords_post_rdp)
-        #         tmp_gdf = gpd.GeoDataFrame.from_features(mapped_objects, crs='EPSG:2056')
-        #     else:
-        #         failed_transform += 1
-        # except ValueError:
-        #     failed_transform +=1
-
-    simplified_dets_gdf = gpd.GeoDataFrame.from_features(mapped_objects, crs='EPSG:2056')
-    logger.info(f'{failed_transform} polygons on {simplified_dets_gdf.shape[0]} failed to be simplified.')
-
-    filepath = os.path.join(OUTPUT_DIR, 'simplified_detections_RDP.gpkg')
-    simplified_dets_gdf.to_file(filepath)
-    written_files.append(filepath)
 
 
 if BUFFER:

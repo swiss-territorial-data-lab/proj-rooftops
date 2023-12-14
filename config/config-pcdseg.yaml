@@ -100,7 +100,6 @@ post_processings.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/all_optimizations
   output_dir: improved_results
   merge_files: False
-  rdp: False
   buffer: True
   vw: True
   vw_threshold: 0.1
