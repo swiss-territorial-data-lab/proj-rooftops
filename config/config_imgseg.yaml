@@ -132,7 +132,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     visualisation_masks: False 
   optimization:
-    n_trials: 5                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
+    n_trials: 50                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
     sampler: TPESampler           # Choices: 1:TPESampler; 2:GridSampler 
     param_grid:                   # Define explicit hyperameter values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method.
       points_per_side: [160, 160]

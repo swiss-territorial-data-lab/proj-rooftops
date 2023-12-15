@@ -50,7 +50,7 @@ If the installation is successful the message "You are using a modified version 
 2. `segment_images.py` : produces detection masks and vectorizes them,
 3. `produce_vector_layer.py` : filters the vector layer for each building and aggregates of all layers into a single layer (binary: free/occupied),
 4. `assess_results.py` : evaluates the results by comparing them to ground truth, computes metrics and and tags the detections,
-5. `optimize_hyperparameters.py` : Optuna framework to optimize hyperparameters based on the f1 score and median IoU over buildings.
+5. `optimize_hyperparameters.py` : optimization of SAM hyperparameters to maximize given metrics (f1-score, median IoU,...). Based on [Oputna](https://optuna.org/) framework.
 
 ### Data
 
