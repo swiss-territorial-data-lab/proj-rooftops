@@ -87,7 +87,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         tilepath = tile
         if size >= THD_SIZE:
             if METHOD=="batch":
-                logger.info(f"Image too large to be processed -> subdivided in tiles of {TILE_SIZE} px size")
+                logger.info(f"Image too large to be processed -> subdivided in tiles of {TILE_SIZE} px")
                 BATCH = True
             elif METHOD=="resample":
                 logger.info(f"Image too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")

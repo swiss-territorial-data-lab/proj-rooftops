@@ -68,11 +68,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         roofs = gpd.read_file(roofs)
     else:  
         # Get the rooftops shapes
+        logger.info("- Roof shapes")
         ROOFS_DIR, ROOFS_NAME = os.path.split(roofs)
-        attribute = 'EGID'
-        original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-        desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp") 
-        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+        desired_file_path = roofs[:-4]  + "_EGID.shp"
+        roofs = misc.dissolve_by_attribute(desired_file_path, roofs, name=ROOFS_NAME[:-4], attribute='EGID')
 
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()

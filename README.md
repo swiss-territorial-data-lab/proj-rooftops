@@ -5,7 +5,7 @@
 ## Image segmentation 
 
 ### Overview
-The set of scripts are dedicated to detecting objects in images. Tiles fitting the extension of building in a given AOI are produced. The **Segment-Anything Model** (https://github.com/facebookresearch/segment-anything) is then used to perform image segmentation using a pre-trained model. The detection masks are converted to vectors and filtered. Finally, the results are evaluated by comparing them with Ground Truth labels defined by domain experts. To process SAM with georeferenced data, the framework `segment-geospatial` (https://github.com/opengeos/segment-geospatial) is used. 
+The set of scripts is dedicated to object detection in images. Tiles fitting to the extension of buildings in a given AOI are produced. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework to using [SAM](https://github.com/facebookresearch/segment-anything) (**Segment-Anything Model**) with georeferenced data. Detection masks are converted to vectors and filtered. Finally, the results are evaluated by comparing them with Ground Truth labels defined by domain experts. 
 
 ### Requirements
 
@@ -42,9 +42,9 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         $ pip install -e .
 
-If the installation is successful the message "You are using a modified version of segment-geospatial library (v 0.10.0 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
+If the installation is successful the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
-### Files structure
+### Files description and folder structure
 
 1. `generate_tiles.py` : produces custom tiles of the extension of a given roof,
 2. `segment_images.py` : produces detection masks and vectorizes them,
@@ -62,14 +62,17 @@ Shapefiles are also used as input data and listed below:
 
 - Data linked to the building selection of the ground truth:
 
-    - Roof shapes: shapefile derived from the layer CAD_BATIMENT_HORSOL_TOIT.shp (https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto). It is filtered with the EGID of the selected buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/EGIDs_selected_GT.csv (list can be adapted)
+    - Roof shapes: shapefile derived from the layer [CAD_BATIMENT_HORSOL_TOIT.shp](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto). It is filtered with the EGID of the selected buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/EGIDs_selected_GT.csv (list can be adapted)
     - Tile shape: shapefile of the true orthophoto tiles overlapping the selected buildings: /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TUILES_TRUEORTHO/Tuiles.shp
-    - Ground truth shapes (labels): shapefile of the true orthophoto tiles overlapping the selected buildings: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-11-13.shp
-    - EGIDs list (egids): list of egids selected for the training (EGIDs_GT_training.csv) and test (EGIDs_GT_test.csv) process of the algorithm. For the optimization of the image segmentation, the training list is too long to optimize the result in a reasonable time. Therefore, a reduced list is proposed (EGIDs_GT_training_subsample_imgseg.csv). The files can be found here: /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/.
+    - Ground truth shapes (labels): shapefile of the ground truth lables: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-11-13.shp
+    - EGIDs lists (egids): /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/
+        - EGIDs_GT_test.csv: list of egids selected to control the performance of the algorithm on a test dataset.
+        - EGIDs_GT_training.csv: list of egids selected to perform hyperparameter optimization of algorithms on a training dataset. 
+        - EGIDs_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too large to perform hyperparameters optimization within a reasonable time. Therefore, a reduced training list of 25 buildings is proposed. 
 
 ### Workflow
 
-Following the end-to-end, the workflow can be run by issuing the following list of actions and commands:
+The workflow can be run by issuing the following list of actions and commands:
 
     $ python3 scripts/image_segmentation/generate_tiles.py config/config_imgseg.yaml
     $ python3 scripts/image_segmentation/image_segmentation.py config/config_imgseg.yaml

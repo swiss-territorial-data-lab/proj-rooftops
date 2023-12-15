@@ -5,8 +5,8 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training.csv
-  output_dir: image_segmentation/tiles/training
+  egids: ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: image_segmentation/tiles/review
   filters:
     building_type: all
     roof_inclination: all
@@ -16,8 +16,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/training
-  output_dir: outputs/image_segmentation/training
+  image_dir:  inputs/image_segmentation/tiles/review
+  output_dir: outputs/image_segmentation/review
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -28,8 +28,8 @@ segment_images.py:
     checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
       method: batch           # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
-      thd_size: 5500000       # pixel  s
-      tile_size: 512          # pixels (square). Will be ignore if method=resample
+      thd_size: 5500000       # pixels
+      tile_size: 512          # pixels (square). Will be ignored if method=resample
       resample: 0.2           # m, pixel size. Will be ignore if method=batch
     foreground: True          # if True, save only foreground masks, no background mask 
     unique: True              # attribute unique ID to mask 
@@ -58,8 +58,8 @@ filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: outputs/image_segmentation/training
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/review
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: "EPSG:2056"              # Projection of the input file
 
@@ -69,8 +69,8 @@ assess_results.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg.csv
-  output_dir: outputs/image_segmentation/training
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/review
   detections: vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -86,8 +86,8 @@ assess_surface.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: outputs/image_segmentation/training
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/review
   detections: vectors/roof_segmentation.gpkg
   method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
@@ -97,12 +97,12 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: inputs/image_segmentation/tiles/training_subsample
+  image_dir: inputs/image_segmentation/tiles/review
   # roofs: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: outputs/image_segmentation/optimize_training_subsample_precision
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/optimize_treview
   detections: vectors/roof_segmentation.gpkg
   vector_extension: gpkg          # 'gpkg' or 'shp'
   crs: EPSG:2056                  # Projection of the input file 
@@ -112,8 +112,8 @@ optimize_hyperparameters.py:
   threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
-    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10, 100]]
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
   image_crop:                     # Activate the option to crop the input image according to pixel coordinates
     enable: false
     size: [0, 1026, 0, 1026] 
@@ -132,7 +132,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     visualisation_masks: False 
   optimization:
-    n_trials: 50                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
+    n_trials: 5                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
     sampler: TPESampler           # Choices: 1:TPESampler; 2:GridSampler 
     param_grid:                   # Define explicit hyperameter values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method.
       points_per_side: [160, 160]

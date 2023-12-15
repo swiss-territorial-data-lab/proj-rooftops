@@ -84,17 +84,13 @@ if __name__ == "__main__":
     written_files.append(feature_path)  
 
     # Get the rooftop shapes
-    logger.info("- Roofs shapes")
+    logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    attribute = 'EGID'
-    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
-    
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    desired_file_path = ROOFS[:-4]  + "_EGID.shp"
+    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     roofs['EGID'] = roofs['EGID'].astype(int)
-    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
-
-    logger.info(f"  Number of building to process: {len(roofs_gdf)}")
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
+    logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
 
     # AOI 
     logger.info("- Tiles name")

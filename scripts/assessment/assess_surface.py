@@ -102,12 +102,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     logger.info(f"- {len(detections_gdf)} detection's shapes")
 
     # Get the rooftops shapes
+    logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    attribute = 'EGID'
-    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    desired_file_path = ROOFS[:-4]  + "_EGID.shp"
+    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
     roofs_gdf['area'] = round(roofs_gdf['geometry'].area, 4)

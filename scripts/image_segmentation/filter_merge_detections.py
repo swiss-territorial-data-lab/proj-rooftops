@@ -45,7 +45,6 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
-
     logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
 
     # Read all the shapefiles produced, filter them and merge them into a single layer  
