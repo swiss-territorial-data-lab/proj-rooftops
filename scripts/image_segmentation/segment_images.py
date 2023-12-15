@@ -30,7 +30,7 @@ logger = misc.format_logger(logger)
 def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,
          FOREGROUND, UNIQUE, MASK_MULTI, 
-         SHOW, CUSTOM_SAM, sam_dic={}):
+         VISU, CUSTOM_SAM, sam_dic={}):
 
     os.chdir(WORKING_DIR)
 
@@ -121,7 +121,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
                 sam.tiff_to_vector(mask_path, file_path)
             written_files.append(file_path)  
 
-            if SHOW:
+            if VISU:
                 file_path = os.path.join(segmented_images_dir, file.split('.')[0] + '_annotated.tif')   
                 sam.show_masks(cmap="binary_r")
                 sam.show_anns(axis="off", alpha=0.7, output=file_path)
@@ -179,12 +179,12 @@ if __name__ == "__main__":
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']['enable']
     CUSTOM_PARAMETERS = cfg['SAM']['custom_SAM']['custom_parameters']
-    SHOW = cfg['SAM']['show_masks']
+    VISU = cfg['SAM']['visualisation_masks']
 
     main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,
          FOREGROUND, UNIQUE, MASK_MULTI, 
-         SHOW, CUSTOM_SAM, CUSTOM_PARAMETERS
+         VISU, CUSTOM_SAM, CUSTOM_PARAMETERS
          )
 
     # Stop chronometer  

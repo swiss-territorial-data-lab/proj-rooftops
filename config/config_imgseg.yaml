@@ -51,10 +51,10 @@ segment_images.py:
         "min_mask_region_area": 200,
         # "output_mode": str = "binary_mask",
         }
-    show_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
+    visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
-produce_vector_layer.py:
+filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
@@ -130,7 +130,7 @@ optimize_hyperparameters.py:
     unique: True
     mask_multiplier: 255
     custom_SAM: True
-    show_masks: False 
+    visualisation_masks: False 
   optimization:
     n_trials: 50                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
     sampler: TPESampler           # Choices: 1:TPESampler; 2:GridSampler 
