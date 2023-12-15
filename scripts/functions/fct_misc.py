@@ -217,17 +217,18 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    logger.info(f'    - {roofs_gdf.shape[0]} roofs')
 
-    if labels:
-        if isinstance(labels, str):
-            labels_gdf = gpd.read_file(labels)
-        elif labels_gdf(labels, gpd.GeoDataFrame):
-            labels_gdf = labels.copy()
-
-        labels_gdf = format_labels(labels_gdf, roofs_gdf, array_egids)
-
+    if isinstance(labels, str):
+        labels_gdf = gpd.read_file(labels)
+    elif isinstance(labels, gpd.GeoDataFrame):
+        labels_gdf = labels.copy()
     else:
         labels_gdf = gpd.GeoDataFrame()
+
+    if not labels_gdf.empty:
+        labels_gdf = format_labels(labels_gdf, roofs_gdf, array_egids)
+
 
     # Read the shapefile for detections
     if isinstance(detections, str):

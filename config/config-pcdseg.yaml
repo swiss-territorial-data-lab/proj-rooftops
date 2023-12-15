@@ -73,7 +73,7 @@ calculate_free_area.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation/post_processing_tests/buffer_VW_thsld0pt1
   detections: processed/PCD_segmentation/all_optimizations/improved_results/simplified_detections_buffer_VW_thsld0pt1.gpkg
-  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  # ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/completed_egids.csv
   roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100] 
@@ -104,8 +104,8 @@ combine_results.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/completed_egids.csv
   roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  classified_roofs:
-  classified_roofs_layer:
+  classified_roofs: processed/roofs/roofs.gpkg
+  classified_roofs_layer: roof_occupation_by_RF
   method: fusion
   threshold: 0.1
   additional_metrics: True

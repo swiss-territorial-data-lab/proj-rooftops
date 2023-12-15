@@ -59,7 +59,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     written_files = {}
 
-    logger.info('Get input data...')
+    logger.info('Get input data')
     
     egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, OUTPUT_DIR, LABELS, DETECTIONS)
     
