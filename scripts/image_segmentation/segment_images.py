@@ -144,7 +144,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to transform 3D segmented point clouds to 2D polygons (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script segments georeferenced images using SAM and samgeo tools (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
