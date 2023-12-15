@@ -151,7 +151,7 @@ optimize_hyperparameters.py:
 ## Additional scripts - sandbox
 
 # Evaluate the results: test on synthetic examples for development
-assess_dev.py:  
+assess_synthetic_examples.py:  
   working_dir: .
   ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
   output_dir: outputs/metrics_charge
