@@ -75,8 +75,9 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
     # Get the global surface
     if not isinstance(surfaces_df, pd.DataFrame):
         surfaces_df=pd.DataFrame()
-    surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
-    surfaces_df[f'med_ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'].median()
+    sum_surface = egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()
+    surfaces_df[f'{surface_type}_area_{object_type}'] = [sum_surface]
+    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = sum_surface / egid_surfaces_df['total_area'].sum()
 
     # Compute surface by roof attributes
     tmp_df = pd.DataFrame()
