@@ -87,6 +87,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'free')
         egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'occupied')
 
+        # Error of the occupied area relative to the total area
+        for df in [egid_surfaces_df, surfaces_df, attribute_surface_df]:
+            df['rel_occup_error'] = abs(df.occup_area_dets - df.occup_area_labels) / df.total_area
+
         # Assess surface bins, 0: different bin, 1: same bin -> if ok on one side (free/occupied), it should be ok on the other.
         egid_surfaces_df[f'assess_classif_bins'] = [
             1 if bin_area_det == bin_area_label else 0
