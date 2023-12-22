@@ -54,7 +54,7 @@ vectorization.py:
 assess_results.py: 
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: processed/PCD_segmentation/all_optimizations/improved_results/test_zone
-  detections: processed/PCD_segmentation/all_optimizations/improved_results/test_zone/simplified_detections_buffer.gpkg
+  detections: processed/PCD_segmentation/all_optimizations/improved_results/test_zone/simplified_detections_VW.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: processed/PCD_segmentation/test_zone/completed_egids.csv
   roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
@@ -71,8 +71,8 @@ assess_results.py:
 # 5 - Estimate the free surface
 calculate_free_area.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  output_dir: processed/PCD_segmentation/test_zone
-  detections: processed/PCD_segmentation/test_zone/all_EGID_occupation.gpkg
+  output_dir: processed/PCD_segmentation/all_optimizations/improved_results/test_zone
+  detections: processed/PCD_segmentation/all_optimizations/improved_results/test_zone/simplified_detections_VW.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: processed/PCD_segmentation/test_zone/completed_egids.csv
   roofs: processed/PCD_segmentation/test_zone/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
@@ -85,9 +85,10 @@ post_processings.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/all_optimizations
   output_dir: improved_results/test_zone
   merge_files: True
-  rdp: False
   buffer: True
   buffer_size: 1
+  vw: True
+  vw_threshold: 0.1
   detections: improved_results/test_zone/detections_test_zone.gpkg
   files:
     all_detections: 2_100_iter_all_fnp/test_zone/all_EGID_occupation.gpkg
