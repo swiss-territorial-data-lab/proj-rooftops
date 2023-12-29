@@ -1,13 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 # 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
+#  proj-rooftops
 
 
 import os
@@ -90,11 +84,12 @@ for key in agreement_dict.keys():
 
 logger.info('Export the files...')
 agreement_pd = pd.DataFrame.from_dict(agreement_dict, orient='index', columns=np.append(np.array('global'), possible_classes))
-agreement_pd.to_csv(os.path.join(OUTPUT_DIR, 'agreement_rates_manual_thrd.csv'))
+filepath_csv = os.path.join(OUTPUT_DIR, 'agreement_rates_manual_thrd.csv')
+agreement_pd.to_csv(filepath_csv)
 
 all_info_gdf = pd.merge(ocan_gdf, ocen_gdf[['OBJECTID', 'class', 'agreement', 'status', 'reason']], on='OBJECTID', suffixes=('_ocan', '_ocen'))
 filepath = os.path.join(OUTPUT_DIR, 'comparison_occupation_classif.gpkg')
 all_info_gdf[['OBJECTID', 'class_ocan', 'agreement_ocan', 'status_ocan', 'reason_ocan', 'class_ocen', 'agreement_ocen', 'status_ocen', 'reason_ocen',
               'std_i', 'MOE_i', 'median_r', 'mean_r', 'nodata_overlap', 'geometry']].to_file(filepath)
 
-logger.success(f'One file was written: "{filepath}".')
+logger.success(f'Two files were written: "{filepath}" and {filepath_csv}.')

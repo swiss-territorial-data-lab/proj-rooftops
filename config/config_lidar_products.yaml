@@ -68,7 +68,7 @@ random_forest.py:
   layer_ocan: ocan_classification
   predictions_file: processed/roofs/roofs.gpkg
   predictions_layer: roof_occupation_for_RF
-  train: False
+  train: True
 
 
 segment_objects.py:
@@ -87,6 +87,6 @@ assess_classif_surfaces.py:
   gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
-  predictions_file: processed/roofs/roofs.gpkg
+  predictions_file: processed/roofs/roofs_test.gpkg
   predictions_layer: roof_occupation
   

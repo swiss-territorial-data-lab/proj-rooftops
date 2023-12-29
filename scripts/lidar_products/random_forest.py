@@ -30,11 +30,12 @@ logger = misc.format_logger(logger)
 def prepare_features(features_df):
 
     features_df.loc[features_df.nodata_overlap.isna(), 'nodata_overlap'] = 0
+    features_id = features_df.OBJECTID.to_numpy()
     features_df.drop(columns=['OBJECTID'], inplace=True)
     features_list = features_df.columns.tolist()
     features_array = np.array(features_df)
 
-    return features_list, features_array
+    return features_list, features_array, features_id
 
 
 def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = None):
@@ -50,9 +51,11 @@ def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = 
     filtered_labels_gdf.loc[filtered_labels_gdf['class']=='not occupied', 'class'] = 'potentially free'
     labels_array = filtered_labels_gdf['class'].to_numpy()
 
-    features_list, features_array = prepare_features(proofed_features_df)
+    features_list, features_array, features_id = prepare_features(proofed_features_df)
 
-    train_features, test_features, train_labels, test_labels = train_test_split(features_array, labels_array, test_size = 0.20, random_state = seed)
+    train_features, test_features, train_labels, test_labels, train_id, test_id = train_test_split(
+        features_array, labels_array, features_id, test_size = 0.20, random_state = seed
+    )
 
     if not nbr_estimators:
         rf_cv = RandomForestClassifier(random_state = seed)
@@ -87,6 +90,7 @@ def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = 
 
     results_df = pd.DataFrame(
         {
+            'OBJECTID': test_id,
             'predicted_class': rf.predict(test_features),
             'real_class': test_labels,
             'predicted_probability': [max(proba) for proba in rf.predict_proba(test_features)]
