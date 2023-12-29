@@ -2,12 +2,6 @@
 # -*- coding: utf-8 -*-
 # 
 #  proj-rooftops
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-
 
 import argparse
 import os
@@ -30,15 +24,6 @@ import functions.fct_misc as misc
 
 logger = misc.format_logger(logger)
 
-# Argument and parameter specification
-parser = argparse.ArgumentParser(description="The script classifies the roof planes by occupation degree.")
-parser.add_argument('config_file', type=str, help='Framework configuration file')
-args = parser.parse_args()
-
-logger.info(f"Using {args.config_file} as config file.")
-with open(args.config_file) as fp:
-    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
-
 # Define functions ---------------
 
 def cause_occupation(df, message='Undefined cause'):
@@ -57,6 +42,15 @@ def cause_occupation(df, message='Undefined cause'):
     return df
 
 # Define parameters ---------------
+
+# Argument and parameter specification
+parser = argparse.ArgumentParser(description="The script classifies the roof planes by occupation degree.")
+parser.add_argument('config_file', type=str, help='Framework configuration file')
+args = parser.parse_args()
+
+logger.info(f"Using {args.config_file} as config file.")
+with open(args.config_file) as fp:
+    cfg = load(fp, Loader=FullLoader)[os.path.basename(__file__)]
 
 DEBUG = cfg['debug_mode']
 CHECK_TILES = cfg['check_tiles']
@@ -88,8 +82,11 @@ im_list_roughness = glob(os.path.join(INPUT_DIR_IMAGES, 'roughness', '*.tif'))
 lidar_tiles = gpd.read_file(LIDAR_TILES)
 roofs = gpd.read_file(ROOFS)
 
+roofs.drop(columns=['ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], inplace=True)
+
 logger.info('Filtering roofs below threshold area...')
-small_roofs = roofs[roofs['SHAPE_AREA'] < PROJECTED_AREA].reset_index(drop=True)
+condition = roofs.area < PROJECTED_AREA
+small_roofs = roofs[condition].reset_index(drop=True)
 small_roofs = cause_occupation(small_roofs, f'Projected area < {PROJECTED_AREA} m2')
 small_roofs['nodata_overlap'] = NaN
 
@@ -97,7 +94,7 @@ logger.info(f'{small_roofs.shape[0]} roof planes are classified as occupied' +
             f' because their projected surface is smaller than {PROJECTED_AREA} m2.')
 logger.info(f'A total projected area of {small_roofs.geometry.area.sum().round(1)} m2 was eliminated.')
 
-large_roofs = roofs[~(roofs['SHAPE_AREA']<PROJECTED_AREA)].copy()
+large_roofs = roofs[~condition].copy()
 
 if DEBUG:
     large_roofs = large_roofs.sample(frac=0.1, ignore_index=True, random_state=1)
@@ -264,16 +261,19 @@ if final_nbr_roofs != nbr_existing_clipped_roofs:
 roofs_occupation = pd.concat([zs_per_filtred_roofs, roofs_high_variability, small_roofs, other_classes_roofs, no_roofs], ignore_index=True)
 roofs_occupation['clipped_area'] = roofs_occupation.geometry.area
 
-roofs_occupation = roofs_occupation[~((roofs_occupation.count_i==0) & (roofs_occupation.clipped_area < 0.2))].copy()
-if roofs_occupation[roofs_occupation.count_i==0].shape[0]!=0:
-    logger.warning(f'There are still {roofs_occupation[roofs_occupation.count_i==0].shape[0]} roofs with missing zonal statistics.')
+# roofs_occupation = roofs_occupation[~((roofs_occupation.count_i==0) & (roofs_occupation.clipped_area < 0.2))].copy()
+condition= (roofs_occupation.count_i==0) | (roofs_occupation.count_r==0)
+roofs_occupation.loc[condition, 'status'] = 'undefined'
+roofs_occupation.loc[condition, 'reason'] = 'not enough values to determine zonal statistics'
+if roofs_occupation[condition].shape[0]!=0:
+    logger.warning(f'There are still {roofs_occupation[condition].shape[0]} roofs set as undefind because of missing zonal statistics.')
 
 roofs_occupation_cleaned = roofs_occupation.sort_values('clipped_area', ascending=False).drop_duplicates('OBJECTID', ignore_index=True)
 logger.info(f'{roofs_occupation.shape[0]-roofs_occupation_cleaned.shape[0]} geometries were deleted'+
             f' because they were duplicated due to label clipping.')
 
 # Reattach to original geometries
-roofs_occupation_cleaned_df = pd.DataFrame(roofs_occupation_cleaned.drop(columns=['geometry', 'clipped_area']))
+roofs_occupation_cleaned_df = pd.DataFrame(roofs_occupation_cleaned.drop(columns=['geometry', 'clipped_area', 'tilepath_intensity', 'tilepath_roughness']))
 roofs_occupation_cleaned_gdf = gpd.GeoDataFrame(roofs_occupation_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'), crs='EPSG:2056')
 roofs_occupation_cleaned_gdf = roofs_occupation_cleaned_gdf.round(3)
 roofs_occupation_cleaned_gdf.drop(columns=['max_i', 'min_i', 'mean_i', 'max_r', 'min_r', 'mean_r', 'count_r', 'tile_id'])
