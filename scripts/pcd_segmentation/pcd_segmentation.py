@@ -54,7 +54,7 @@ def main (WORKING_DIR, OUTPUT_DIR,
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    per_egid_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'per_EGID_data'))
+    per_egid_dir = misc.ensure_dir_exists(OUTPUT_DIR)
 
     written_files = []
 
