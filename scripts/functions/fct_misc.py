@@ -103,9 +103,9 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf = gpd.read_file(original_file)
 
         logger.info(f"Dissolved shapes by {attribute}")
-        gdf['geometry'] = gdf['geometry'].buffer(0.05, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps 
+        gdf['geometry'] = gdf['geometry'].buffer(0.05, join_style=2) # apply a small buffer to prevent thin spaces due to polygons gaps 
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
-        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.05, join_style='mitre')
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-0.05, join_style=2)
         
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
@@ -291,7 +291,7 @@ def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
     # Clip labels to the corresponding roof
     for egid in selected_egids_arr:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style=2), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)

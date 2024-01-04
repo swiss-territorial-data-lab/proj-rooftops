@@ -4,8 +4,8 @@ generate_tiles.py:
   image_dir: data/true_ortho_2019
   output_dir: outputs/OD
   tiles: data/true_ortho_2019/Tuiles.shp
-  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs_full_GT.csv
+  roofs: data/vectors/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: data/EGIDs_full_GT.csv
   filters:
     building_type: all
     roof_inclination: all
@@ -19,8 +19,8 @@ generate_tiles.py:
 prepare_data.py:
   working_dir: /home/gsalamin/Documents/GitHub/proj-rooftops
   output_dir: outputs/OD
-  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: EGIDs_full_GT.csv
+  roofs: data/vectors/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: data/EGIDs_full_GT.csv
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13.shp
   filters:
     building_type: all

@@ -49,8 +49,6 @@ ROOF_INCLINATION = FILTERS['roof_inclination']
 PREPARE_LABELS = FILTERS['prepare_labels']
 PREPARE_TILES = FILTERS['prepare_tiles']
 
-BUFFER = cfg['buffer']
-
 os.chdir(WORKING_DIR)
 # Create an output directory in case it doesn't exist
 _ = misc.ensure_dir_exists(OUTPUT_DIR)
@@ -83,12 +81,10 @@ if ('EGID' in ROOFS) | ('egid' in ROOFS):
     roofs_gdf = gpd.read_file(ROOFS)
 else:
     # Get the rooftops shapes
-    _, ROOFS_NAME = os.path.split(ROOFS)
     attribute = 'EGID'
-    original_file_path = ROOFS
-    desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+    desired_file_path = ROOFS[:-4] + "_" + attribute + ".shp"
 
-    roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    roofs_gdf = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=os.path.basename(ROOFS)[:-4], attribute=attribute)
 
 roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
 

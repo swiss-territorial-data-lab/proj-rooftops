@@ -87,9 +87,8 @@ if __name__ == "__main__":
 
     # Get the rooftop shapes
     logger.info("- Roof shapes")
-    ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     desired_file_path = ROOFS[:-4]  + "_EGID.shp"
-    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
+    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=os.path.basename(ROOFS)[:-4], attribute='EGID')
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
     logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
