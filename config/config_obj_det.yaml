@@ -1,10 +1,10 @@
-# 1 - Tiles generation
+# 1 - Create tiles
 generate_tiles.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  image_dir: initial/images/true_ortho_2019
-  output_dir: processed/OD
-  tiles: initial/images/true_ortho_2019/Tuiles.shp
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  working_dir: /home/gsalamin/Documents/GitHub/proj-rooftops
+  image_dir: data/true_ortho_2019
+  output_dir: outputs/OD
+  tiles: data/true_ortho_2019/Tuiles.shp
+  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: EGIDs_full_GT.csv
   filters:
     building_type: all
@@ -17,11 +17,11 @@ generate_tiles.py:
 
 # 2 - Prepare vector data
 prepare_data.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  output_dir: processed/OD
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  working_dir: /home/gsalamin/Documents/GitHub/proj-rooftops
+  output_dir: outputs/OD
+  roofs: data/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: EGIDs_full_GT.csv
-  ground_truth: ground_truth/roofs_STDL_proofed_2023-11-13.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13.shp
   filters:
     building_type: all
     roof_inclination: all
@@ -35,7 +35,7 @@ generate_tilesets.py:
   debug_mode: 
     enable: False  # sample of tiles
     nb_tiles_max: 10
-  working_directory: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/OD
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
   datasets:
     aoi_tiles: bbox.gpkg
     ground_truth_labels: ground_truth_labels.gpkg
@@ -50,10 +50,25 @@ generate_tilesets.py:
   # seed: 2
   COCO_metadata:
     year: 2019
-    version: 2.0
+    version: x
     description: True orthophotos du canton de Genève 2019
-    contributor: DIT
-    url: x
+    contributor: DT
+    url: https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56
     license:
       name: x
       url: x
+
+
+# 4 - Train a model
+train_model.py:
+  debug_mode: False
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
+  log_subfolder: logs
+  sample_tagged_img_subfolder: sample_training_images
+  COCO_files:
+    trn: COCO_trn.json
+    val: COCO_val.json
+    tst: COCO_tst.json
+  detectron2_config_file: ../../config/detectron2_config_GE.yaml
+  model_weights:
+    model_zoo_checkpoint_url: COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
