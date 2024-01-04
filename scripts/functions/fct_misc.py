@@ -288,13 +288,7 @@ def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
     else:
         labels_gdf = labels_gdf[labels_gdf.EGID.isin(selected_egids_arr)].copy()
         
-    # Clip labels to the corresponding roof
-    for egid in selected_egids_arr:
-        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style=2), keep_geom_type=True)
-
-        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
-        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
+    labels_gdf = labels_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID.isin(selected_egids_arr), 'geometry'].buffer(-0.01, join_style=2), keep_geom_type=True)
 
     labels_gdf.rename(columns={'id':'label_id'}, inplace=True)
     labels_gdf['area'] = round(labels_gdf.area, 4)

@@ -132,10 +132,9 @@ if __name__ == "__main__":
 
     for egid in tqdm(unique_egid, desc="Production of tiles fitting the extent of the roof", total=len(unique_egid)):
 
-        if MASK:
-            feature_mask_path=os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'masked_images')),
-                                    f"tile_EGID_{int(egid)}_masked.tif")
-            feature_path = feature_mask_path
+        if OD:
+            minx, miny , str_egid = bbox_gdf.loc[bbox_gdf['EGID'] == egid, 'id'].iloc[0].lstrip('(').rstrip(')').split(', ')
+            feature_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'images_OD')), f"{str_egid}_{minx}_{miny}.tif")
         else: 
             feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}.tif")
 
@@ -171,16 +170,15 @@ if __name__ == "__main__":
             raster = rasterio.open(tiles_list[0])
 
         if MASK:
-            egid_shape = roofs.loc[roofs['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)                
+            if not OD:
+                egid_shape = roofs.loc[roofs['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)
+            else:
+                egid_shape = roofs.loc[roofs['EGID'].isin(unique_egid)].buffer(BUFFER, join_style=2)
 
             mask_image, mask_transform = mask(raster, egid_shape)
             mask_meta=raster.meta.copy()
 
             mask_meta.update({'transform': mask_transform})
-                
-            with rasterio.open(feature_mask_path, 'w', **mask_meta) as dst:
-                dst.write(mask_image)
-            raster = rasterio.open(feature_mask_path)
 
         image = raster
 
@@ -195,17 +193,15 @@ if __name__ == "__main__":
                         "transform": out_transform,
                         "crs": rasterio.CRS.from_epsg(2056)})
         
-        # Close reader so we can re-write it
-        del raster, image
-        with rasterio.open(feature_path, "w", **out_meta) as dst:
-            dst.write(out_image)
-        written_files.append(feature_path)  
+        if not OD:
+            # Close reader so we can re-write it
+            del raster, image
+            with rasterio.open(feature_path, "w", **out_meta) as dst:
+                dst.write(out_image)
+            written_files.append(feature_path)  
 
-        # If the object detector will be used, save a name as the (min_x, min_y, EGID).
-        if OD:
-            logger.info('Save the images with the name "<EGID>_<min x>_<min y>.tif for the STDL\'s object detector')
-            minx, miny , egid = bbox_gdf.loc[bbox_gdf['EGID'] == egid, 'id'].iloc[0].lstrip('(').rstrip(')').split(', ')
-            feature_path = os.path.join(misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'images')), f"{egid}_{minx}_{miny}.tif")
+        else:
+            # If the object detector will be used, save a name as the (min_x, min_y, EGID).
             with rasterio.open(feature_path, "w", **out_meta) as dst:
                 dst.write(out_image)
             written_files.append(feature_path)  
