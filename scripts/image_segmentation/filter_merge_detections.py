@@ -15,8 +15,6 @@ from tqdm import tqdm
 
 import geopandas as gpd
 import pandas as pd
-import numpy as np
-
 
 # the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
@@ -40,20 +38,17 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
     logger.info("- List of selected EGID")
     egids = pd.read_csv(EGIDS)
 
-    # Get the rooftops shapes
-    logger.info("- Roofs shapes")
+    # Get the rooftop shapes
+    logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    attribute = 'EGID'
-    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+    desired_file_path = ROOFS[:-4]  + "_EGID.shp"
+    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     roofs['EGID'] = roofs['EGID'].astype(int)
-    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())]
+    roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
+    logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
 
-    logger.info(f"  Number of building to process: {len(roofs_gdf)}")
-
-    # Read all the shapefiles produced, filter them and merge them in a single layer  
-    logger.info(f"Read shapefiles' name")
+    # Read all the shapefiles produced, filter them and merge them into a single layer  
+    logger.info(f"Read the name of the shapefiles")
     tiles = glob(os.path.join(detection_dir, '*.' + SHP_EXT))
     vector_layer = gpd.GeoDataFrame() 
 
@@ -70,7 +65,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
         # Prepare roofs shp
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
-        egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid]
+        egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid].copy()
         egid_shp['area_roof'] = egid_shp.area
         egid_shp['geometry_roof'] = egid_shp.geometry
         buffer = 1
@@ -82,25 +77,18 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
-                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with surface close to the roof surface 
-                                            (objects_selection['intersection_frac'] >= 0.5)] # Filter shapes partially intersecting the roof extension
+                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with an area close to the roof area 
+                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes intersecting the roof extension only partially
 
         objects_filtered['area'] = objects_filtered.area 
 
         objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof', 'index_right'], axis=1)
         objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-buffer))
         
-        # Merge/Combine multiple shapefiles into one gdf
+        # Concatenate the results into one geodataframe.
         vector_layer = gpd.pd.concat([vector_layer, objects_clip], ignore_index=True)
 
-    # # Save the vectors for each EGID in layers in a gpkg !!! Will be deleted at the end !!!
-    # feature_path = os.path.join(output_dir, "roof_segmentation_egid.gpkg")
-    # for egid in vector_layer.EGID.unique():
-    #     vector_layer[vector_layer.EGID == egid].to_file(feature_path, driver="GPKG", layer=str(int(egid)))
-    # written_files.append(feature_path)  
-    # logger.info(f"...done. A file was written: {feature_path}")
-
-    # Save the vectors layer in a gpkg 
+    # Save the vector layer in a gpkg 
     vector_layer['fid'] = vector_layer.index
     feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
     vector_layer.to_file(feature_path)
@@ -121,7 +109,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script prepares dataset to process the rooftops project (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script filters and merges object detections into a single vector layer (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 

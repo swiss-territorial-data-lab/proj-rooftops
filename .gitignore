@@ -2,11 +2,12 @@
 **/*/test*.ipynb
 
 # Folders
-data/*
-output/*
-input/*
-model/*
-tests/*
+data/
+output*/
+input*/
+model*/
+tests/
+.vscode/
 
 
 # Byte-compiled / optimized / DLL files

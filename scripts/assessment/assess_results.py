@@ -68,11 +68,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         roofs = gpd.read_file(roofs)
     else:  
         # Get the rooftops shapes
+        logger.info("- Roof shapes")
         ROOFS_DIR, ROOFS_NAME = os.path.split(roofs)
-        attribute = 'EGID'
-        original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-        desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp") 
-        roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+        desired_file_path = roofs[:-4]  + "_EGID.shp"
+        roofs = misc.dissolve_by_attribute(desired_file_path, roofs, name=ROOFS_NAME[:-4], attribute='EGID')
 
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(array_egids)].copy()
@@ -84,17 +83,18 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     if labels_gdf.EGID.dtype != 'int64':
         labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
     if 'occupation' in labels_gdf.columns:
-        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        labels_gdf = labels_gdf[(labels_gdf.occupation.astype(int) == 1) & (labels_gdf.EGID.isin(array_egids))].copy()
     if 'type' in labels_gdf.columns:
         labels_gdf['type'] = labels_gdf['type'].astype(int)
         labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
-        # Type 12 corresponds to free surfaces, other classes are ojects
+        # Type 12 corresponds to free surfaces, other classes are objects
         labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
         logger.info("- Filter objects and EGID")
-        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(egids.EGID.to_numpy()))].copy()
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(array_egids))].copy()
     else:
-        labels_gdf = labels_gdf[labels_gdf.EGID.isin(egids.EGID.to_numpy())].copy()
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(array_egids)].copy()
 
+    # Clip labels to the corresponding roof
     for egid in array_egids:
         labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
         # labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.10, join_style='mitre'), keep_geom_type=True)
@@ -224,7 +224,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
 
             logger.info("- Metrics per object's class")
             for object_class in sorted(labels_gdf.descr.unique()):
-                filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr'] == object_class]
+                filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr'] == object_class].copy()
                     
                 TP = float(filter_gt_gdf['TP_charge'].sum())
                 FN = float(filter_gt_gdf['FN_charge'].sum())
@@ -241,8 +241,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for val in param_ranges:
-                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])]
-                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
+                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])].copy()
+                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])].copy()
                         
                         TP = float(filter_gt_gdf['TP_charge'].sum())
                         FN = float(filter_gt_gdf['FN_charge'].sum())
@@ -329,7 +329,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for val in param_ranges:
-                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])]
+                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])].copy()
                             
                         TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='TP'].shape[0])
                         FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='FN'].shape[0])

@@ -11,10 +11,8 @@ import yaml
 from loguru import logger
 
 import pandas as pd
-import matplotlib.pyplot as plt
 import joblib
 import optuna
-import torch
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
@@ -24,7 +22,7 @@ import functions.fct_misc as misc
 import functions.fct_optimization as optimization
 
 import segment_images
-import produce_vector_layer
+import filter_merge_detections
 import assessment.assess_results as assess_results
 
 logger = misc.format_logger(logger)
@@ -42,7 +40,7 @@ def objective(trial):
 
     logger.info(f"Call objective function for hyperparameters optimization")
 
-    # Suggest value range to test (range value not taken into account for GridSampler method)
+    # Suggest value ranges to test (not taken into account for the GridSampler method)
     PPS = trial.suggest_int('points_per_side', 32, 128, step=32)
     PPB = trial.suggest_int('points_per_batch', 32, 128, step=32)
     IOU_THD = trial.suggest_float('pred_iou_thresh', 0.6, 0.95, step=0.05)
@@ -76,9 +74,9 @@ def objective(trial):
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD_LARGE_TILES, THD_SIZE, TILE_SIZE, RESAMPLE,
          FOREGROUND, UNIQUE, MASK_MULTI, 
-         SHOW, CUSTOM_SAM, SAM_parameters
+         VISU, CUSTOM_SAM, SAM_parameters
          )
-    produce_vector_layer.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
+    filter_merge_detections.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
     metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
                                              method=METHOD, threshold=THRESHOLD,
                                              roofs=ROOFS,
@@ -155,7 +153,7 @@ if __name__ == "__main__":
     UNIQUE = cfg['SAM']['unique']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']
-    SHOW = cfg['SAM']['show_masks']
+    VISU = cfg['SAM']['visualisation_masks']
     N_TRIALS = cfg['optimization']['n_trials']
     SAMPLER = cfg['optimization']['sampler']
     PPS = cfg['optimization']['param_grid']['points_per_side']

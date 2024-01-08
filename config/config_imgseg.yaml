@@ -1,40 +1,40 @@
 # 1 - Tiles generation
 generate_tiles.py:
-  working_dir: input
+  working_dir: inputs
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   tiles: ground_truth/tiles/Tuiles.shp
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training.csv
-  output_dir: image_segmentation/tiles/training
+  egids: ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: image_segmentation/tiles/review
   filters:
     building_type: all
     roof_inclination: all
   buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
-  mask: False                # Choose if a building mask (by EGID) is applied to image
+  mask: False                # Choose if a mask (by EGID) is applied to image to only keep the building visible
 
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  input/image_segmentation/tiles/training
-  output_dir: output/image_segmentation/training
-  vector_extension: gpkg # 'gpkg' or 'shp'
-  image_crop: # Activate the option to crop the input image according to pixel coordinates (for performing tests)
+  image_dir:  inputs/image_segmentation/tiles/review
+  output_dir: outputs/image_segmentation/review
+  vector_extension: gpkg      # 'gpkg' or 'shp'
+  image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
-    size: [0, 1026, 0, 1026] # Crop image to perform test 
+    size: [0, 1026, 0, 1026]  # Crop image to perform test 
   SAM:
-    dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    dl_checkpoints: False     # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
-      method: batch # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
-      thd_size: 5500000 # pixel  
-      tile_size: 512 # pixel (square). Will be ignore if method=resample
-      resample: 0.2 # m, pixel size. Will be ignore if method=batch
-    foreground: True # if True, save only foreground masks, no background mask 
-    unique: True # attribute unique ID to mask 
+      method: batch           # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
+      thd_size: 5500000       # pixels
+      tile_size: 512          # pixels (square). Will be ignored if method=resample
+      resample: 0.2           # m, pixel size. Will be ignore if method=batch
+    foreground: True          # if True, save only foreground masks, no background mask 
+    unique: True              # attribute unique ID to mask 
     mask_multiplier: 255
-    custom_SAM: # customize the segment anything parameters (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
+    custom_SAM:               # customize the parameters for Segment Anything (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
       enable: True
       custom_parameters: {
         "points_per_side": 64,
@@ -51,17 +51,17 @@ segment_images.py:
         "min_mask_region_area": 200,
         # "output_mode": str = "binary_mask",
         }
-    show_masks: False # Enable to show binary and annotated masks (save annotated mask) 
+    visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Create an image mask keeping buildings
-produce_vector_layer.py:
+filter_merge_detections.py:
   working_dir: .
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: output/image_segmentation/training
-  vector_extension: gpkg # 'gpkg' or 'shp'
-  crs: "EPSG:2056" # Projection of the input file
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/review
+  vector_extension: gpkg        # 'gpkg' or 'shp'
+  crs: "EPSG:2056"              # Projection of the input file
 
 
 # 4 - Evaluate the results
@@ -76,7 +76,7 @@ assess_results.py:
   method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
-  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+  threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
@@ -90,7 +90,7 @@ assess_surface.py:
   egids: input/ground_truth/egid/EGIDs_GT_training_all_all.csv
   output_dir: output/image_segmentation/training_v2
   detections: vectors/roof_segmentation.gpkg
-  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
   bins: [0, 25, 50, 75, 100] 
   visualisation: True
@@ -98,44 +98,44 @@ assess_surface.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: input/image_segmentation/tiles/training_subsample
-  # roofs: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: input/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: input/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
-  output_dir: output/image_segmentation/optimize_training_subsample_precision
+  image_dir: inputs/image_segmentation/tiles/review
+  # roofs: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/optimize_treview
   detections: vectors/roof_segmentation.gpkg
-  vector_extension: gpkg # 'gpkg' or 'shp'
-  crs: EPSG:2056 # Projection of the input file 
-  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  vector_extension: gpkg          # 'gpkg' or 'shp'
+  crs: EPSG:2056                  # Projection of the input file 
+  method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: False
   visualisation: True
-  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+  threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
-    area_ranges:  [[0,1], [1,10], [10,50], [50,100]] 
-    distance_ranges: [[0,1], [1,10], [10, 100]]
-  image_crop: # Activate the option to crop the input image according to pixel coordinates
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+  image_crop:                     # Activate the option to crop the input image according to pixel coordinates
     enable: false
     size: [0, 1026, 0, 1026] 
   SAM:
-    dl_checkpoints: False # True: automatic dl from server, Flase: dl manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    dl_checkpoints: False         # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
     checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     batch:
-      method: batch # choice 1:"batch", 2:"resample". Batch method subdivide the image in smaller tiles (tile_size). Resample method downscale the pixel size to the resample pixel size given
-      thd_size: 5500000  # pixel  
-      tile_size: 512 # pixel (square)
-      resample: 0.2 # m, pixel size. Will be ignore if method=batch
+      method: batch               # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
+      thd_size: 5500000           # pixels
+      tile_size: 512              # pixels (square)
+      resample: 0.2               # m, pixel size. Will be ignore if method=batch
     foreground: True
     unique: True
     mask_multiplier: 255
     custom_SAM: True
-    show_masks: False 
+    visualisation_masks: False 
   optimization:
-    n_trials: 50 # Maximum number of trial to perform to find the optimized hyperparamters. Can be less if all the parameter search combination have been explored 
-    sampler: TPESampler # Choices: 1:TPESampler; 2:GridSampler 
-    param_grid: # Define explicit hyperameters values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method 
+    n_trials: 50                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
+    sampler: TPESampler           # Choices: 1:TPESampler; 2:GridSampler 
+    param_grid:                   # Define explicit hyperameter values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method.
       points_per_side: [160, 160]
       points_per_batch: [64, 64]
       pred_iou_thresh: [0.9, 0.9]
@@ -149,56 +149,46 @@ optimize_hyperparameters.py:
       min_mask_region_area: [50, 50]
 
 
-## Additional scripts/processes - sandbox
-
-# 4 - Evaluate the results
-clip_output.py:  
-  working_dir: .
-  pcd_seg: output/pcd_segmentation/outputs/final_detections_pcd_seg.gpkg
-  layer_pcd: detections_pcd_seg # detections_test_zone  #  
-  roofs: input/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
-  img_seg: output/image_segmentation/training_equal_precision_recall/vectors/roof_segmentation.gpkg
-  egids: input/ground_truth/egid/EGIDs_GT_full.csv
-  output_dir: output/results_combination/training/config2
+## Additional scripts - sandbox
 
 # !!! Evaluate the results: test on synthetic examples for development
-assess_dev.py:  
+assess_synthetic_examples.py:  
   working_dir: .
   ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
-  output_dir: output/metrics_charge
+  output_dir: outputs/metrics_charge
   detections: data/GT/synthetic_examples/detection_synthetic.gpkg
-  egids: input/image_segmentation/ground_truth/EGIDs_full_GT.csv
-  roofs: input/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: inputs/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: inputs/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   method: many-to-many
-  threshold: 0.1 # Threshold value to consider that a detection overlaps a label
+  threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
 
-# Create an image mask keeping buildings
+# Create an image mask keeping the buildings visible
 mask_for_buildings.py:
   transparency: true
   working_dir: data/
-  image_dir: ../input/tiles/
+  image_dir: ../inputs/tiles/
   roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
 
-# Prepare the tiles geometry according to the AOI and zoom level
+# Prepare the tile geometry according to the AOI and zoom level
 prepare_data.py: 
-  srs: "EPSG:2056"                       # Projection of the input file
+  srs: "EPSG:2056"                 # Projection of the input file
   datasets:
     labels_shapefile: data/AOI.shp
-  output_folder: output/SAM/
-  zoom_level: 18    #z, keep between 15 and 18  
+  output_folder: outputs/SAM/
+  zoom_level: 18                   # z, keep between 15 and 18  
 
 # Request tiles according to the provided AOI and tiles parameters
 generate_tilesets.py:
-  debug_mode: False             #reduced amount of tiles
+  debug_mode: False               # reduced amount of tiles
   datasets:
-    aoi_tiles_geojson: output/SAM/tiles.geojson
+    aoi_tiles_geojson: outputs/SAM/tiles.geojson
     orthophotos_web_service:
-      type: XYZ # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
+      type: XYZ                   # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
       url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
       # url: https://wms.geo.admin.ch/service
       # layers: ch.swisstopo.swissimage
       # srs: "EPSG:2056"
-  output_folder: output/SAM/
+  output_folder: outputs/SAM/
   tile_size: 512 # per side, in pixels
   overwrite: True
   n_jobs: 10

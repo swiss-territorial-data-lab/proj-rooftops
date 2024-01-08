@@ -24,7 +24,7 @@ logger = misc.format_logger(logger)
 
 # Functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method='one-to-one', threshold=0.1, visualisation=False):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method='one-to-one', visualisation=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -47,8 +47,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', METHOD))
-    threshold_str = str(THRESHOLD).replace('.', 'dot')
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', method))
 
     written_files={}
 
@@ -103,12 +102,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
     logger.info(f"- {len(detections_gdf)} detection's shapes")
 
     # Get the rooftops shapes
+    logger.info("- Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
-    attribute = 'EGID'
-    original_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME)
-    desired_file_path = os.path.join(ROOFS_DIR, ROOFS_NAME[:-4]  + "_" + attribute + ".shp")
+    desired_file_path = ROOFS[:-4]  + "_EGID.shp"
+    roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
     
-    roofs = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
     roofs_gdf['area'] = round(roofs_gdf['geometry'].area, 4)
@@ -234,7 +232,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
             attribute_surface_dict['attribute'] = attribute
             attribute_surface_dict['value'] = val
             for var in surface_types:
-                surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, var].iloc[0]
+                surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].sum() if var==f'{surface_type}_area_{object_type}' \
+                    else egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].median()
                 attribute_surface_dict[var] = surface
             
             attribute_surface_df = pd.concat([attribute_surface_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
@@ -291,12 +290,11 @@ if __name__ == "__main__":
     EGIDS = cfg['egids']
 
     METHOD = cfg['method']
-    THRESHOLD = cfg['threshold']
     BINS = cfg['bins']
     VISUALISATION = cfg['visualisation']
 
     written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS,
-                         method=METHOD, threshold=THRESHOLD, visualisation=VISUALISATION)
+                         method=METHOD, visualisation=VISUALISATION)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():

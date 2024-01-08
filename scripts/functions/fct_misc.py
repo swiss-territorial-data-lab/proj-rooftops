@@ -137,7 +137,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         logger.info(f"Dissolved shapes by {attribute}")
         gdf.geometry = gdf.apply(lambda row: make_valid(row.geometry) if not row.geometry.is_valid else row.geometry, axis=1)
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
-        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.001, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps        
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.01, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps        
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
         attribute_count = gdf_considered_sections.EGID.value_counts()
@@ -352,11 +352,11 @@ logger = format_logger(logger)
 def fillit(row):
     """A function to fill holes below an area threshold in a polygon"""
     newgeom=None
-    rings = [i for i in row["geometry"].interiors] #List all interior rings
-    if len(rings)>0: #If there are any rings
-        to_fill = [Polygon(ring) for ring in rings] #List the ones to fill
-        if len(to_fill)>0: #If there are any to fill
-            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) #Union the original geometry with all holes
+    rings = [i for i in row["geometry"].interiors] # List all interior rings
+    if len(rings)>0: # If there are any rings
+        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
+        if len(to_fill)>0: # If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) # Union the original geometry with all holes
     if newgeom:
         return newgeom
     else:
