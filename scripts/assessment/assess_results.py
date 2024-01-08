@@ -137,11 +137,16 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
   
         ranges_dict = {object_parameters[i]: ranges[i] for i in range(len(object_parameters))}
 
-        ## Nearest distance between polygons
+        ## Get nearest distance between polygons
         labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_label', rsuffix='_roof')
-        labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_label', rsuffix='_roof')       
+        labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_label', rsuffix='_roof')      
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
+        detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
+
+        ## Get roundness of polygons
+        labels_gdf = misc.roundness(labels_gdf)   
+        detections_gdf = misc.roundness(detections_gdf)
 
     # Detections count
     logger.info(f"Method used for detections counting:")
@@ -454,7 +459,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
         # Plots
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)'} 
+                    'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
 
         _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_df.attribute.unique():
@@ -500,9 +505,10 @@ if __name__ == "__main__":
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges']
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges']
+    ROUND_RANGES = cfg['object_attributes']['round_ranges']
     VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
 
-    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
+    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] + [ROUND_RANGES] 
 
     metrics_df, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
                                              method=METHOD, threshold=THRESHOLD,
