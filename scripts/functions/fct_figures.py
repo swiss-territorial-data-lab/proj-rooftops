@@ -94,6 +94,39 @@ def plot_surface_bin(dir_plots, df, bins, attribute):
     return plot_path
 
 
+def plot_groups(dir_plots, df, attribute, xlabel):
+
+    fig, ax = plt.subplots(figsize=(12,8))
+
+    color_list = ['limegreen', 'orange', 'tomato']  
+    counts_list = ['TP', 'FP', 'FN']    
+
+    df = df[df['attribute'] == attribute].copy()
+    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
+
+
+    if attribute == 'object_class':
+        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, stacked=True)
+        plt.xticks(rotation=40, ha='right')
+    else:
+        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.7)
+    plt.xlabel(xlabel, fontweight='bold')
+
+    for c in ax.containers:
+        labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+
+    # plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    plt.title(f'Counts by {attribute.replace("_", " ")}')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+    
+    return plot_path
+
+
 def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
@@ -134,14 +167,17 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     fig, ax = plt.subplots(figsize=(12,8))
 
     df = df[df['attribute'] == attribute]  
-    if df['FP'].isnull().values.any():
+    # if df['FP'].isnull().values.any():
+    if attribute != 'EGID' or attribute!= 'object_class':
+
         color_list = ['limegreen', 'tomato']  
         counts_list = ['TP', 'FN']  
+        df = df[['value', 'TP', 'FN']].set_index('value')
     else:
         color_list = ['limegreen', 'orange', 'tomato']  
         counts_list = ['TP', 'FP', 'FN'] 
+        df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
 
-    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
     df['sum'] = df.sum(axis=1)
 
     for count in counts_list:

@@ -115,7 +115,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     DETECTIONS = os.path.join(OUTPUT_DIR, DETECTIONS)
     _ = misc.ensure_file_exists(DETECTIONS)
     if isinstance(DETECTIONS, str):
-        detections_gdf = gpd.read_file(DETECTIONS) #, layer='occupation_for_all_EGIDS')
+        detections_gdf = gpd.read_file(DETECTIONS)
     elif isinstance(DETECTIONS, gpd.GeoDataFrame):
         detections_gdf = DETECTIONS.copy()
     else:
@@ -154,6 +154,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     metrics_df = pd.DataFrame()
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
+
+    if detections_gdf.shape[0]==0:
+        logger.error('No detection is available, returning 0 as f1 score and IoU average.')
+        return 0, 0, []
 
     if method == 'charges' or method == 'fusion':
 
@@ -236,22 +240,20 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
     
-            if (len(object_class) > 0) and isinstance(roofs, gpd.GeoDataFrame):
+            if (len(object_class) > 0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
                 logger.info("- Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
-                    for val in param_ranges:
-                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= val[0]) & (tagged_gt_gdf[parameter] <= val[1])].copy()
-                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])].copy()
+                    for lim_inf, lim_sup in param_ranges:
+                        filter_gt_gdf = tagged_gt_gdf[(tagged_gt_gdf[parameter] >= lim_inf) & (tagged_gt_gdf[parameter] <= lim_sup)]
+                        filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= lim_inf) & (tagged_dets_gdf[parameter] <= lim_sup)]
                         
                         TP = float(filter_gt_gdf['TP_charge'].sum())
+                        FP = float(filter_dets_gdf['FP_charge'].sum()) 
                         FN = float(filter_gt_gdf['FN_charge'].sum())
-                        FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
-                        rem_list = ['FP', 'precision', 'f1']
-                        [metrics_results.pop(key) for key in rem_list]
-                        tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
+                        tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': f"{lim_inf}-{lim_sup}", **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
     else:
@@ -316,10 +318,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                 
                 TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
                 FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
-                FP = 0
+                FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
-                rem_list = ['FP', 'precision', 'f1']
                 [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
@@ -336,7 +337,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                         FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
-                        rem_list = ['FP', 'precision', 'f1']
                         [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
@@ -361,10 +361,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     written_files[feature_path] = ''
 
     # Compute Jaccard index and free surface for all buildings 
-    iou_mean = round(metrics_egid_df['IoU_EGID'].mean(), 3)
-    iou_median = round(metrics_egid_df['IoU_EGID'].median(), 3)
-    metrics_df['IoU_mean'] = iou_mean
-    metrics_df['IoU_median'] = iou_median
+    metrics_df['IoU_mean'] = round(metrics_egid_df['IoU_EGID'].mean(), 3)
+    metrics_df['IoU_median']= round(metrics_egid_df['IoU_EGID'].median(), 3)
 
     feature_path = os.path.join(output_dir, 'metrics.csv')
     metrics_df.to_csv(feature_path, index=False)
@@ -426,45 +424,45 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
     filename = os.path.join(output_dir, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
-    if labels_diff != 0:
-        logger.warning(f'There are {int(nbr_labels)} labels in input and {int(nbr_tagged_labels)} labels in output.')
-        
-        if (method == 'one-to-one') or (method == 'one-to-many'):
-            logger.info(f'The list of the problematic labels is exported to {filename}.')
+    if (labels_diff != 0) and (method != 'fusion'):
+        logger.error(f'There are {nbr_labels} labels in input and {nbr_tagged_labels} labels in output.')
+        logger.info(f'The list of the problematic labels is exported to {filename}.')
 
-            if (labels_diff > 0):
-                tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
+        if labels_diff > 0:
+            tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
-                untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
-                untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
+            untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+            untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
 
-                layer_name = 'missing_label_tags'
-                untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
+            layer_name = 'missing_label_tags'
+            untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
-            elif (labels_diff < 0 ):
-                all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
+        elif labels_diff < 0:
+            all_tagged_labels_gdf=pd.concat([tp_gdf, fn_gdf])
 
-                duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-                duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
-                duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
+            duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+            duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
-                layer_name = 'duplicated_label_tags'
-                duplicated_labels.to_file(filename, layer=layer_name, index=False)
-                
-            written_files[filename] = layer_name
+            layer_name = 'duplicated_label_tags'
+            duplicated_labels.to_file(filename, layer=layer_name, index=False)
+            
+        written_files[filename] = layer_name
 
 
     if visualisation and additional_metrics:
         # Plots
-        xlabel_dic = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
+        xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)'} 
 
-        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dic)
-        for i in metrics_df.attribute.unique():
-            _ = figures.plot_stacked_grouped(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-            _ = figures.plot_stacked_grouped_percent(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
-            _ = figures.plot_metrics(output_dir, metrics_df, attribute=i, xlabel=xlabel_dic[i])
+        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+        for attr in metrics_df.attribute.unique():
+            if attr in xlabel_dict.keys():
+                _ = figures.plot_groups(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
+                # _ = figures.plot_stacked_grouped(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_stacked_grouped_percent(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_metrics(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
 
     return metrics_df, written_files
 
