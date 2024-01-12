@@ -454,6 +454,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
             
         written_files[filename] = layer_name
 
+    
 
     if visualisation and additional_metrics:
         # Plots
@@ -461,7 +462,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, method='one-to-one'
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
 
-        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+
+        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=object_parameters, xlabel=xlabel_dict)
+        _ = figures.plot_stacked_grouped_object(output_dir, labels_gdf, param_ranges=ranges_dict['roundness'], attribute='object_class')
+        _ = figures.plot_histo_object(output_dir, labels_gdf, attribute='object_class')
+
         for attr in metrics_df.attribute.unique():
             if attr in xlabel_dict.keys():
                 _ = figures.plot_groups(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
