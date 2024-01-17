@@ -11,7 +11,8 @@ Goal: Determine the space available on rooftops by detecting objects. Production
 
 ### Hardware
 
-The scripts have been run with Ubuntu 20.04 OS on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4)  <!-- That's our installation, not a requirement. A requirement would be to have a CUDA-compatible GPU. -->
+For the processing of the images, a CUDA-compatible GPU is needed.
+For the processing of the LiDAR point cloud, there is no hardware requirement.
 
 ### Installation
 
@@ -21,8 +22,8 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 - Create a Python virtual environment
 
-        $ python3 -m venv <dir_path>/[name of the virtual environment]
-        $ source <dir_path>/[name of the virtual environment]/bin/activate
+        $ python3 -m venv <dir_path>/<name of the virtual environment>
+        $ source <dir_path>/<name of the virtual environment>/bin/activate
 
 - Install dependencies
 
@@ -44,20 +45,22 @@ _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling
 ## Image segmentation
 
 
-## LiDAR classification
+## LiDAR-based classification
 
-**Data**: LiDAR point cloud with intensity values. Here, the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used.
+**Goal**: Classify the roof planes as occupied or potentially free based on their roughness and intensity.
+
+**Data**: LiDAR point cloud with intensity values. Here, the [the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) was used.
 
 **Workflow**
 
 (*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
+Run the following command lines to perform the LiDAR processing:
+
 ```
 python scripts/lidar_products/rasterize_intensity.py config/config_lidar_products.yaml
 python scripts/lidar_products/rasterize_roughness.py config/config_lidar_products.yaml
-python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
-python scripts/assess_results/assess_classif_surfaces.py config/config_lidar_products.yaml
-```
+````
 
 The command lines perform the following steps:
 1. Create an intensity raster for each LiDAR point cloud in the input directory.
@@ -65,8 +68,19 @@ The command lines perform the following steps:
 2. Create a DEM and save it in a raster. Then estimate the multi-scale roughness from the DEM.
     - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
     - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
-3. Classify the roof sections by estimating their degree of occupation according to their roughness and intensity.
-4. Compare the results to a classification performed by experts and determine the accuracy (= agreement rate).
+
+When no ground truth is available, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
+
+```
+python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
+python scripts/assess_results/assess_classif_surfaces.py config/config_lidar_products.yaml
+```
+
+When a ground truth is available, the classification can be performed and assessed with the script `random_forest.py`.
+
+```
+python scripts/lidar_products/random_forest.py config/config_lidar_products.yaml
+```
 
 The other scripts are some attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
 
