@@ -69,8 +69,8 @@ assess_results.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
-  output_dir: outputs/image_segmentation/review
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/training_v2
   detections: vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
@@ -86,8 +86,8 @@ assess_surface.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
-  output_dir: outputs/image_segmentation/review
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/training_v2
   detections: vectors/roof_segmentation.gpkg
   method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1

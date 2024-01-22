@@ -232,8 +232,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, method
             attribute_surface_dict['attribute'] = attribute
             attribute_surface_dict['value'] = val
             for var in surface_types:
-                surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].sum() if var==f'{surface_type}_area_{object_type}' \
-                    else egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, var].median()
+                surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, var].iloc[0]
                 attribute_surface_dict[var] = surface
             
             attribute_surface_df = pd.concat([attribute_surface_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
