@@ -5,7 +5,7 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  egids: ground_truth/egid/EGIDs_GT_training.csv
   output_dir: image_segmentation/tiles/review
   filters:
     building_type: all
