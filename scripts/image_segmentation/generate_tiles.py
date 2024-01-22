@@ -131,10 +131,15 @@ if __name__ == "__main__":
 
         tiles_list = [os.path.join(IMAGE_DIR, image + '.tif') for image in image_list]   
 
-        if len(tiles_list) > 1:
-            # Mosaic images if the rooftop shape is spread over several tiles 
-            raster_to_mosaic = [rasterio.open(tilepath) for tilepath in tiles_list]
+        raster_to_mosaic = []   
+        for tilepath in tiles_list:
+            raster = rasterio.open(tilepath)
 
+            # Mosaic images if rooftops shape is spread over several tiles 
+            if len(tiles_list) > 1:  
+                raster_to_mosaic.append(raster)
+
+        if len(tiles_list) > 1:
             mosaic, output = merge(raster_to_mosaic)
 
             output_meta = raster.meta.copy()
@@ -150,9 +155,9 @@ if __name__ == "__main__":
                 dst_mosaic.write(mosaic)
 
             raster = rasterio.open(mosaic_path)
+            tile = mosaic_path
 
-        else:
-            raster = rasterio.open(tiles_list[0])
+        image = raster
 
         if MASK:
             egid_shape = roofs.loc[roofs['EGID'] == egid, 'geometry'].buffer(BUFFER, join_style=2)                
