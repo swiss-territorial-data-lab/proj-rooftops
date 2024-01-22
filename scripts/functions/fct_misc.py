@@ -123,7 +123,6 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         gdf: geodataframes dissolved according to the provided gdf attribute
     """
 
-    # if 'blob': # os.path.exists(desired_file):
     if os.path.exists(desired_file):
         logger.info(f"File {name}_{attribute}.shp already exists")
         gdf = gpd.read_file(desired_file)
@@ -140,10 +139,10 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(0.01, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps        
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
-        attribute_count = gdf_considered_sections.EGID.value_counts()
-        dissolved_gdf = dissolved_gdf.join(attribute_count, on=attribute)
-        dissolved_gdf.rename(columns={'count': 'nb_element'}, inplace=True)
-        dissolved_gdf = dissolved_gdf[~dissolved_gdf.nb_element.isna()].reset_index()
+        attribute_count_gdf = gdf_considered_sections.EGID.value_counts() \
+            .reset_index().rename(columns={'count': 'nbr_elem'})
+        dissolved_gdf = dissolved_gdf.merge(attribute_count_gdf, on=attribute)
+        dissolved_gdf = dissolved_gdf[~dissolved_gdf.nbr_elem.isna()].reset_index()
 
         dissolved_gdf.to_file(desired_file)
         logger.info(f"...done. A file was written: {desired_file}")
@@ -185,10 +184,9 @@ def distance_shape(geom1, geom2):
 
 def drop_duplicates(gdf, subset=None):
     """Delete duplicate rows based on the values in a subset column.
-
     Args:
         gdf : geodataframe
-
+        subset: columns to check for duplicates. Defaults to None.
     Returns:
         out_gdf (gdf): clean geodataframe
     """
@@ -224,6 +222,53 @@ def geohash(row):
         sys.exit()
 
     return out
+
+
+def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detections):
+
+    # Get the EGIDS of interest
+    egids = pd.read_csv(path_egids)
+    array_egids = egids.EGID.to_numpy()
+    logger.info(f'- {egids.shape[0]} selected EGIDs.')
+
+
+    if ('EGID' in path_roofs) | ('egid' in path_roofs):
+        roofs_gdf = gpd.read_file(path_roofs)
+    else:
+        # Get the rooftops shapes
+        _, ROOFS_NAME = os.path.split(path_roofs)
+        attribute = 'EGID'
+        original_file_path = path_roofs
+        desired_file_path = os.path.join(os.path.dirname(path_roofs), ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+
+        roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+
+    roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    logger.info(f'- {roofs_gdf.shape[0]} roofs')
+
+    if isinstance(labels, str):
+        labels_gdf = gpd.read_file(labels)
+    elif isinstance(labels, gpd.GeoDataFrame):
+        labels_gdf = labels.copy()
+    else:
+        labels_gdf = gpd.GeoDataFrame()
+
+    if not labels_gdf.empty:
+        labels_gdf = format_labels(labels_gdf, roofs_gdf, array_egids)
+
+
+    # Read the shapefile for detections
+    if isinstance(detections, str):
+        detections_gdf = gpd.read_file(detections)
+    elif isinstance(detections, gpd.GeoDataFrame):
+        detections_gdf = detections.copy()
+    else:
+        logger.critical(f'Unrecognized variable type for the detections: {type(detections)}.')
+        sys.exit(1)
+
+    detections_gdf = format_detections(detections_gdf)
+
+    return egids, roofs_gdf, labels_gdf, detections_gdf
 
 
 def ensure_dir_exists(dirpath):
@@ -273,6 +318,54 @@ def ensure_file_exists(filepath):
         sys.exit()
     else:
         pass
+
+
+def format_detections(detections_gdf):
+
+    if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
+    detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
+    if 'det_id' in detections_gdf.columns:
+        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+    else:
+        detections_gdf['ID_DET'] = detections_gdf.index
+    detections_gdf=detections_gdf.explode(index_parts=False).reset_index(drop=True)
+    logger.info(f"    - {len(detections_gdf)} detections")
+
+    return detections_gdf
+
+
+def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
+
+    if labels_gdf.EGID.dtype != 'int64':
+        labels_gdf['EGID'] = [round(float(egid)) for egid in labels_gdf.EGID.to_numpy()]
+    if 'type' in labels_gdf.columns:
+        labels_gdf['type'] = labels_gdf['type'].astype(int)
+        labels_gdf = labels_gdf.rename(columns={'type':'obj_class'})
+        # Type 12 corresponds to free surfaces, other classes are objects
+        labels_gdf.loc[labels_gdf['obj_class'] == 4, 'descr'] = 'Aero'
+        labels_gdf = labels_gdf[(labels_gdf['obj_class'] != 12) & (labels_gdf.EGID.isin(selected_egids_arr))].copy()
+    else:
+        labels_gdf = labels_gdf[labels_gdf.EGID.isin(selected_egids_arr)].copy()
+        
+    # Clip labels to the corresponding roof
+    for egid in selected_egids_arr:
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+
+        tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
+        labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
+
+    labels_gdf['label_id'] = labels_gdf.id
+    labels_gdf['area'] = round(labels_gdf.area, 4)
+
+    labels_gdf.drop(columns=['fid', 'type', 'layer', 'path'], inplace=True, errors='ignore')
+    labels_gdf=labels_gdf.explode(ignore_index=True).reset_index(drop=True)
+
+    nbr_labels=labels_gdf.shape[0]
+    logger.info(f"    - {nbr_labels} labels")
+
+    return labels_gdf
 
 
 def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
@@ -347,16 +440,15 @@ def test_crs(crs1, crs2="EPSG:2056"):
 logger = format_logger(logger)
 
 
-
-
 def fillit(row):
     """A function to fill holes below an area threshold in a polygon"""
-    newgeom=None
+    
+    newgeom = None
     rings = [i for i in row["geometry"].interiors] # List all interior rings
-    if len(rings)>0: # If there are any rings
+    if len(rings) > 0: # If there are any rings
         to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
-        if len(to_fill)>0: # If there are any to fill
-            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) # Union the original geometry with all holes
+        if len(to_fill) > 0: # If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]] + to_fill) # Union the original geometry with all holes
     if newgeom:
         return newgeom
     else:

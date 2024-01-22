@@ -5,8 +5,8 @@ generate_tiles.py:
   tiles: ground_truth/tiles/Tuiles.shp
   # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
-  output_dir: image_segmentation/tiles/review
+  egids: ground_truth/egid/EGIDs_GT_training.csv
+  output_dir: image_segmentation/tiles/test_merge
   filters:
     building_type: all
     roof_inclination: all
@@ -69,26 +69,27 @@ assess_results.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
-  output_dir: outputs/image_segmentation/review
-  detections: vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/test_merge
+  detections: outputs/image_segmentation/test_merge/vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
   threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
+  buffer: 0.1              
   object_attributes:
     parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 
-# 5 - Estimate the free surface
-assess_surface.py:
+# 5 - Estimate the free area
+assess_area.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
-  output_dir: outputs/image_segmentation/review
-  detections: vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/test_merge
+  detections: outputs/image_segmentation/test_merge/vectors/roof_segmentation.gpkg
   method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   threshold: 0.1
   bins: [0, 25, 50, 75, 100] 
@@ -110,6 +111,7 @@ optimize_hyperparameters.py:
   additional_metrics: False
   visualisation: True
   threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
+  buffer: 0.1               
   object_attributes:
     parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 

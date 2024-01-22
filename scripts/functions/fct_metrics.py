@@ -9,8 +9,120 @@ import pandas as pd
 
 import networkx as nx
 from fractions import Fraction
+from shapely import unary_union
 from shapely.geometry import GeometryCollection
+
+sys.path.insert(1, '.')
+import functions.fct_misc as misc
     
+
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
+
+    if surface_type == 'occupied':
+        surface_type = 'occup'
+    elif surface_type != 'free':
+        logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
+        sys.exit(1)
+
+
+    # Determine relative results
+
+    # by EGID
+    egid_surfaces_df[f'{surface_type}_rel_error'] = misc.relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
+    # total
+    surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
+         / surfaces_df[f'{surface_type}_area_labels']
+    # by attriubte
+    attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
+        / attribute_surface_df[f'{surface_type}_area_labels']
+        
+    return egid_surfaces_df, surfaces_df, attribute_surface_df
+
+
+def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surface_df=None):
+
+    if surface_type == 'occupied':
+        surface_type = 'occup'
+    elif surface_type != 'free':
+        logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
+        sys.exit(1)
+
+    if object_type == 'detections':
+        object_type = 'dets'
+    elif object_type != 'labels':
+        logger.critical('The object type is not valid. Please pass "detections" or "labels".')
+        sys.exit(1)
+
+    egid_surfaces_df[f'{surface_type}_area_{object_type}'] = [
+        objects_df.loc[objects_df.EGID==egid, f'{surface_type}_area'].iloc[0]
+        if egid in objects_df.EGID.unique() else 0
+        for egid in egid_surfaces_df.EGID.unique() 
+    ]
+
+    # Warn in case of negative values in surface computation
+    nbr_tmp = egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0].shape[0]
+    if nbr_tmp > 0:
+        logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
+        egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
+
+    # Attribute bin to surface area
+    bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+
+    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
+    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(
+        egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels
+    )
+
+    # Get the global surface
+    if not isinstance(surfaces_df, pd.DataFrame):
+        surfaces_df=pd.DataFrame()
+    surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
+    surfaces_df['total_area'] = egid_surfaces_df['total_area'].sum()
+    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
+
+    # Compute surface by roof attributes
+    tmp_df = pd.DataFrame()
+    surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
+    attribute_surface_dict = {'attribute': [], 'value': []}
+
+    for attribute in roof_attributes:
+        for val in egid_surfaces_df[attribute].unique():
+            attribute_surface_dict['attribute'] = attribute
+            attribute_surface_dict['value'] = val
+            for var in surface_types:
+                total_area = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, f'total_area'].sum()
+                sum_surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, f'{surface_type}_area_{object_type}'].sum() if var!='total_area'\
+                    else total_area
+                attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
+                    else sum_surface / total_area
+
+            tmp_df = pd.concat([tmp_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
+
+    if not isinstance(attribute_surface_df, pd.DataFrame):
+        attribute_surface_df = tmp_df.copy()
+    else:
+        tmp_df.drop(columns=['total_area'], inplace=True)
+        attribute_surface_df = attribute_surface_df.merge(tmp_df, on=['value', 'attribute'])
+
+    return egid_surfaces_df, surfaces_df, attribute_surface_df
+
+
+def intersection_over_union(polygon1_shape, polygon2_shape):
+    """Determine the intersection area over union area (IOU) of two polygons
+
+    Args:
+        polygon1_shape (geometry): first polygon
+        polygon2_shape (geometry): second polygon
+
+    Returns:
+        int: Unrounded ratio between the intersection and union area
+    """
+
+    # Calculate intersection and union, and the IOU
+    polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
+    polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
+    return polygon_intersection / polygon_union
+
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
     """Determine the intersection area over union area (IoU) of two polygons
@@ -29,13 +141,13 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
     return polygon_intersection / polygon_union
 
 
-def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
+def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can correspond to several labels.
 
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
-        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.
+        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.1
 
     Returns:
         geodataframes: geodataframes of the true positive and of the flase positives intersecting labels.
@@ -61,13 +173,13 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0):
     return tp_gdf, fp_gdf_temp
 
 
-def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0):
+def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
     Each detection can only correspond to one label.
 
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
-        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.
+        threshold (int, optional): threshold to apply on the IoU. Defaults to 0.1
 
     Returns:
         geodataframes: geodataframes of the true positive and of the flase positives intersecting labels.
@@ -117,14 +229,14 @@ def get_count(tagged_gt, tagged_dets=pd.DataFrame({'TP_charge':[], 'FP_charge':[
 
     try:
         assert _TP == TP, f"{_TP} != {TP}"
-    except AssertionError:
-        logger.error(f"{_TP} != {TP}")
+    except AssertionError as e:
+        logger.critical(f"Difference in the count of TP between the labels and the detections: {str(e)}")
         sys.exit()
 
     return TP, FP, FN
 
 
-def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', threshold=0.1):
+def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', iou_threshold=0.1):
     """Separate the predictions and labels between TP, FP and FN based on their overlap and the passed IoU score.
     One prediction can either correspond to one (one-to-one) or several (one-to-many) labels.
 
@@ -133,7 +245,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
         labels_gdf (geodataframe): threshold to apply on the IoU to determine TP and FP
         method (str, optional): string with the possible values 'one-to-one' or 'one-to-many' indicating if a prediction can or not correspond to several labels. 
                 Defaults to 'one-to-one'.
-        threshold (float, optional): threshold to apply on the IoU to determine the tags. Defaults to 0.1.
+        iou_threshold (float, optional): threshold to apply on the IoU to determine the tags. Defaults to 0.1.
 
     Raises:
         Exception: CRS mismatch
@@ -158,7 +270,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
     detections_gdf['detection_geometry'] = detections_gdf.geometry
 
     # TRUE POSITIVES
-    left_join = gpd.sjoin(detections_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
+    left_join = gpd.sjoin(detections_gdf, labels_gdf, how='left', predicate='intersects', lsuffix='_det', rsuffix='_label')
     tp_gdf_temp = left_join[left_join.label_geometry.notnull()].copy()
 
     # IoU computation between label geometry and detection geometry
@@ -170,9 +282,9 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
     tp_gdf_temp['IoU'] = iou
 
     if method == 'one-to-many':
-        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, threshold)
+        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_many(tp_gdf_temp, iou_threshold)
     else:
-        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, threshold)
+        tp_gdf, fp_gdf_temp = apply_iou_threshold_one_to_one(tp_gdf_temp, iou_threshold)
 
 
     # FALSE POSITIVES -> potentially object not referenced in ground truth or mistakes
@@ -182,7 +294,7 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
 
 
     # FALSE NEGATIVES -> objects that have been missed by the detection algorithm
-    right_join = gpd.sjoin(labels_gdf, detections_gdf, how='left', predicate='intersects', lsuffix='label', rsuffix='det')
+    right_join = gpd.sjoin(labels_gdf, detections_gdf, how='left', predicate='intersects', lsuffix='_label', rsuffix='_det')
     
     id_label_tp = tp_gdf['label_id'].unique().tolist()
     suppressed_tp = tp_gdf_temp[~tp_gdf_temp['label_id'].isin(id_label_tp)]
@@ -202,50 +314,38 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', thresho
     return tp_gdf, fp_gdf, fn_gdf
 
 
-def get_free_surface(labels_gdf, detections_gdf, roofs_gdf, attribute='EGID'):
+def get_free_area(objects_gdf, roofs_gdf, attribute='EGID'):
     """Compute the occupied and free surface area of all the labels and detection by roof (EGID)
 
     Args:
-        detections_gdf (geodataframe): geodataframe of the detections
-        labels_gdf (geodataframe): geodataframe of the ground truth
+        objects_gdf (geodataframe): geodataframe of the detections or the ground truth
         roofs_gdf (geodataframe): geodataframe of the roofs
         attribute (string): attribute to dissolve by. Defaults to 'EGID'.
 
     Returns:
         labels_free_gdf: geodataframes of all the labels merged by roof with the occupied and free surface area by roof
-        detections_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
+        objects_free_gdf: geodataframes of all the detections merged by roof with the occupied and free surface area by roof
     """
 
-    detections_by_attribute_gdf = detections_gdf.dissolve(by=attribute, as_index=False) 
-    labels_by_attribute_gdf = labels_gdf.dissolve(by=attribute, as_index=False) 
+    
     roofs_by_attribute_gdf = roofs_gdf.dissolve(by=attribute, as_index=False)
     roofs_by_attribute_gdf['roof_area'] = roofs_by_attribute_gdf.area
 
-    # Add value to empty gdf
-    if detections_by_attribute_gdf['geometry'].empty:
-        keys_list = detections_by_attribute_gdf.to_dict()
+    objects_by_attribute_gdf = objects_gdf.dissolve(by=attribute, as_index=False) 
+    # Add values to empty gdf
+    if objects_by_attribute_gdf['geometry'].empty:
+        keys_list = objects_by_attribute_gdf.to_dict()
         dic = dict.fromkeys(keys_list, 0)
-        detections_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        detections_by_attribute_gdf['occupied_surface'] = 0
-        detections_by_attribute_gdf['EGID'] = labels_by_attribute_gdf['EGID']
+        objects_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
+        objects_by_attribute_gdf['occup_area'] = 0
+        objects_by_attribute_gdf['EGID'] = roofs_by_attribute_gdf['EGID']
     else:
-        detections_by_attribute_gdf['occupied_surface'] = detections_by_attribute_gdf.area
+        objects_by_attribute_gdf['occup_area'] = objects_by_attribute_gdf.area
 
-    if labels_by_attribute_gdf['geometry'].empty:
-        keys_list = labels_by_attribute_gdf.to_dict()
-        dic = dict.fromkeys(keys_list, 0)
-        labels_by_attribute_gdf = pd.DataFrame.from_dict(dic, orient='index').T
-        labels_by_attribute_gdf['occupied_surface'] = 0
-    else:
-        labels_by_attribute_gdf['occupied_surface'] = labels_by_attribute_gdf.area
+    objects_with_area_gdf=pd.merge(objects_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
+    objects_with_area_gdf['free_area'] = objects_with_area_gdf.roof_area - objects_with_area_gdf.occup_area
 
-    detections_with_area_gdf = pd.merge(detections_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    detections_with_area_gdf['free_surface'] = detections_with_area_gdf.roof_area - detections_with_area_gdf.occupied_surface
-
-    labels_with_area_gdf = pd.merge(labels_by_attribute_gdf, roofs_by_attribute_gdf[['EGID', 'roof_area']], on='EGID')
-    labels_with_area_gdf['free_surface'] = labels_with_area_gdf.roof_area - labels_with_area_gdf.occupied_surface
-
-    return labels_with_area_gdf, detections_with_area_gdf
+    return objects_with_area_gdf
 
 
 def get_jaccard_index(labels_gdf, detections_gdf, attribute='EGID'):
@@ -300,7 +400,6 @@ def get_metrics(TP, FP, FN):
     return metrics_dict
 
 
-# def tag(gt, dets, buffer, gt_prefix, dets_prefix, threshold, method):
 def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix='dt_', group_attribute=None):
     """Tag labels and detections with "charges". 
     This method reserves the label and detection numbers by not duplicating or omitting to count a label or detection.
@@ -332,7 +431,7 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
 
         g = nx.Graph()
         for row in l_join[l_join.geohash_gt.notnull()].itertuples():
-            g.add_edge(row.geohash_dt, row.geohash_gt)
+            g.add_edge(row.geohash_det, row.geohash_gt)
 
         groups = list(nx.connected_components(g))
 
@@ -409,12 +508,12 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
     assert 'geohash' in gt.columns.tolist()
     assert 'geohash' in dets.columns.tolist()
 
-    # prepare data: apply negative buffer and remove empty geometries
+    # prepare data: apply negative buffer to avoid the intersection of touching shapes and remove empty geometries
     _gt = gt.copy()
-    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style='mitre')
+    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
     _gt = _gt[~_gt.is_empty].copy()
     _dets = dets.copy()
-    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style='mitre')
+    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
     _dets = _dets[~_dets.is_empty].copy()
 
     charges_dict = {}
@@ -424,21 +523,21 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
     r_join = gpd.sjoin(_dets, _gt, how='right', predicate='intersects', lsuffix='dt', rsuffix='gt')
     if group_attribute:
         l_join.loc[l_join[group_attribute + '_dt'] != l_join[group_attribute + '_gt'], 'geohash_gt'] = np.nan
-        r_join.loc[r_join[group_attribute + '_dt'] != r_join[group_attribute + '_gt'], 'geohash_dt'] = np.nan
+        r_join.loc[r_join[group_attribute + '_dt'] != r_join[group_attribute + '_gt'], 'geohash_det'] = np.nan
 
     # trivial False Positives
     trivial_FPs = l_join[l_join.geohash_gt.isna()].copy()
     for tup in trivial_FPs.itertuples():
         charges_dict = {
             **charges_dict,
-            tup.geohash_dt: {
+            tup.geohash_det: {
                 'FP_charge': Fraction(1, 1),
                 'TP_charge': Fraction(0, 1)
             }
         }
 
     # trivial False Negatives
-    trivial_FNs = r_join[r_join.geohash_dt.isna()].copy()
+    trivial_FNs = r_join[r_join.geohash_det.isna()].copy()
     for tup in trivial_FNs.itertuples():
         charges_dict = {
             **charges_dict,
@@ -466,8 +565,10 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         dissolved_gt_gdf = gt_gdf.dissolve()
         geom_gt = dissolved_gt_gdf.geometry.values
 
-        for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
-            # for geom_gt in dissolved_geoms_gt:
+        # !!!To test
+        # geom_gt = unary_union(all_geoms_gt)
+
+        for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
             polygon_gt_shape = geom_gt
             polygon_det_shape = geom_det
             if polygon_gt_shape.intersects(polygon_det_shape):
@@ -476,38 +577,26 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
                 continue
             # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
             if intersection / polygon_det_shape.area >= threshold:
-                keep_geohashes_dets.append(geohash_dt)
-
-        # Previous version of the metrics computation 
-        # for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
-        #     for geom_gt in all_geoms_gt:
-        #         polygon_gt_shape = geom_gt
-        #         polygon_det_shape = geom_det
-        #         if polygon_gt_shape.intersects(polygon_det_shape):
-        #             intersection = polygon_gt_shape.intersection(polygon_det_shape).area
-        #         else:
-        #             continue
-        #         # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-        #         if intersection / polygon_det_shape.area >= threshold:
-        #             keep_geohashes_dets.append(geohash_dt)
+                keep_geohashes_dets.append(geohash_det)
 
         for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
-            for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
+            for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
                 polygon_gt_shape = geom_gt
                 polygon_det_shape = geom_det
                 if polygon_gt_shape.intersects(polygon_det_shape):
                     intersection = polygon_gt_shape.intersection(polygon_det_shape).area
                 else:
                     continue
-                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
-                if intersection / polygon_det_shape.area >= threshold or ((geohash_dt in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.5)):
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD or the detection
+                # is already a TP
+                if intersection / polygon_det_shape.area >= threshold or ((geohash_det in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.5)):
                     keep_geohashes_gt.append(geohash_gt)
 
         # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
         remove_geohashes_gt = [x for x in all_geohashes_gt if x not in np.unique(keep_geohashes_gt).astype(str)]
         remove_geohashes_dets = [x for x in all_geohashes_dets if x not in np.unique(keep_geohashes_dets).astype(str)]
         
-        # remove elements from the labels and detections list and attribute TP, FP and FN charges 
+        # remove elements from the label and detection lists without enough overlap and attribute TP, FP and FN charges 
         for i in remove_geohashes_gt:
             group.remove(i)
             charges_dict = {
@@ -558,8 +647,8 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style='mitre')
-    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style='mitre')
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)

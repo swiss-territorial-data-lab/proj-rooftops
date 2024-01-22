@@ -77,10 +77,9 @@ def objective(trial):
          VISU, CUSTOM_SAM, SAM_parameters
          )
     filter_merge_detections.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
-    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS,
+    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                              method=METHOD, threshold=THRESHOLD,
-                                             roofs=ROOFS,
-                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES,
+                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER
                                              additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
 
     print('')

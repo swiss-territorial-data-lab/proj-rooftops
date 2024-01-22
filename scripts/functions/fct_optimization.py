@@ -21,16 +21,9 @@ def plot_optimization_results(study, targets={0: 'f1 score'}, output_path='.'):
         list: path of the written files from the working directory.
     """
 
-    written_files=[]
+    written_files = []
 
     for target in targets.keys():
-
-
-        # fig_contour = optuna.visualization.plot_contour(study, target=lambda t: t.values[target], target_name=targets[target])
-        # feature_path = os.path.join(output_path, f'contour_{targets[target]}.jpeg')
-        # fig_contour.write_html(feature_path.replace('jpeg', 'html'))
-        # # fig_contour.write_image(feature_path)
-        # written_files.append(feature_path)
 
         fig_edf = optuna.visualization.plot_edf(study, target=lambda t: t.values[target], target_name=targets[target])
         feature_path = os.path.join(output_path, f'edf_{targets[target]}.jpeg')
