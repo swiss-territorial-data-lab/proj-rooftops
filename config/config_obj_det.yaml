@@ -47,7 +47,7 @@ generate_tilesets.py:
   tile_size: 256 # per side, in pixels
   overwrite: False
   n_jobs: 10
-  # seed: 2
+  seed: 22
   COCO_metadata:
     year: 2019
     version: x
@@ -85,7 +85,7 @@ make_detections.py:
     tst: COCO_tst.json
   detectron2_config_file: ../../config/detectron2_config.yaml # path relative to the working_folder
   model_weights:
-    pth_file: logs/model_0000499.pth
+    pth_file: logs/model_0001499.pth
   image_metadata_json: img_metadata.json
   rdp_simplification: # rdp = Ramer-Douglas-Peucker
     enabled: False
