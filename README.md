@@ -76,7 +76,7 @@ python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_pitched_ro
 Then, the results for the pitched roofs and the general results are merged. Their geometry is also simplified with a buffer and copping operation, as well as with the Visvalingam-Wyatt algorithm. The different obstacles are merged together to form the occupied surfaces.
 
 ```
-python scripts/pcd_segmentation/post_processings.py config/config_pcdseg_all_roofs.yaml
+python scripts/pcd_segmentation/post_processing.py config/config_pcdseg_all_roofs.yaml
 ```
 
 Finally, the results are assessed
@@ -90,7 +90,7 @@ More in details, the scripts used above perform the following steps:
 1. `prepare_data.py`: read and filter the 3D point cloud data to keep the roofs of the selected EGIDs,
 2. `pcd_segmentation.py`: segment in planes and clusters the point cloud data,
 3. `vectorization.py`: create 2D polygons from the segmented point cloud data,
-7. `post_processings.py`: merge the results for the pitched and general roofs together and simplify the geometry of the detections.
+7. `post_processing.py`: merge the results for the pitched and general roofs together and simplify the geometry of the detections.
 5. `assess_results.py`: Evaluate the results based on the ground truth,
 6. `assess_area.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
 
