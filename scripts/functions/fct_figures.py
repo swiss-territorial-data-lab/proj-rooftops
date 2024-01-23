@@ -1,8 +1,9 @@
 import os
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 
 
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
@@ -14,7 +15,7 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
     df2 = df2.fillna(0)
 
     for i in attribute:
-        bins=np.histogram(np.hstack((df1[i],df2[i])), bins=10)[1]
+        bins = np.histogram(np.hstack((df1[i], df2[i])), bins=10)[1]
         df1[i].plot.hist(bins=bins, alpha=0.5, label='GT')
         df2[i].plot.hist(bins=bins, alpha=0.5, label='Detections')
 
@@ -86,7 +87,7 @@ def plot_groups(dir_plots, df, attribute, xlabel):
 
     for c in ax.containers:
         labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
 
     # plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
     plt.title(f'Counts by {attribute.replace("_", " ")}')
@@ -97,6 +98,42 @@ def plot_groups(dir_plots, df, attribute, xlabel):
     plt.close(fig)
     
     return plot_path
+
+
+def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
+
+    fig, ax = plt.subplots(figsize=(12,8))
+ 
+    df = df[df['attribute'] == attribute]  
+    if df['FP'].isnull().values.any():
+        color_list = ['limegreen', 'tomato']  
+        counts_list = ['TP', 'FN']  
+    else:
+        color_list = ['limegreen', 'orange', 'tomato']  
+        counts_list = ['TP', 'FP', 'FN']  
+
+    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
+
+    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
+
+    for c in ax.containers:
+        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
+
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel(xlabel, fontweight='bold')
+
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    plt.title(f'Counts by {attribute.replace("_", " ")}')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+    
+    return plot_path
+
 
 
 def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
@@ -121,23 +158,9 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
         else:
             df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'], label=variables['legend'])
 
-    # fig, ax = plt.subplots(figsize=(12,8))
-
-    # color_list = ['limegreen', 'orange', 'tomato']  
-    # counts_list = ['TP', 'FP', 'FN']    
-
-    # df = df[df['attribute'] == attribute]  
-    # df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-    # df['sum'] = df.sum(axis=1)
-
-    # for count in counts_list:
-    #     df[count] =  df[count] / df['sum']
-    
-    # df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0, width = 0.5)
-
     for c in ax.containers:
         labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
 
     plt.ylim(0, 1)
     plt.gca().set_yticks(plt.gca().get_yticks().tolist())
@@ -170,7 +193,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     
     for metric in metrics_list:
         if not df[metric].isnull().values.any():
-            plt.scatter(df['value'], df[metric], label=metric, s=150)
+            plt.scatter(df['value'], df[metric], label=metric.replace("_", " "), s=150)
 
     plt.ylim(-0.05, 1.05)
     if attribute == 'object_class':
@@ -190,24 +213,21 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
 
 def plot_surface_bin(dir_plots, df, bins):
 
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=(12,8))
 
-    bins = list(set(bins).intersection(df.columns))
-    bins.sort()
+    bins = list(set(bins).intersection(df.keys()))
 
     values = df[bins].iloc[0]
 
     df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    df.plot.bar(x='bins', y='val', rot=0, color='limegreen', figsize=(8, 6))
+    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
 
-    plt.setp(ax.get_xticklabels(), rotation=33)
     plt.xlabel('Free surface area (%)', fontweight='bold')
     plt.ylabel('Accurate detection (%)', fontweight='bold')
     plt.legend('', frameon=False)
-    plt.title('EGID')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
+    plot_path = os.path.join(dir_plots, f'surface_accuracy.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 

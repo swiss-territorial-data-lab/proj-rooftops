@@ -77,9 +77,12 @@ def objective(trial):
                                                     alpha_shape=ALPHA_SHAPE,
                                                     **dict_parameters_vect
     )
-    f1, median_iou, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
+    metrics_df, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                     LABELS, all_occupation_gdf,
                                                     EGIDS, ROOFS, method=METHOD)
+
+    f1 = metrics_df.loc[metrics_df.attribute=='EGID', 'f1'].iloc[0]
+    median_iou = metrics_df.loc[metrics_df.attribute=='EGID', 'IoU_median'].iloc[0]
 
     return f1, median_iou
 

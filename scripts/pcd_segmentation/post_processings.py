@@ -15,10 +15,8 @@ from yaml import load, FullLoader
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from shapely.geometry import mapping, Polygon
-from shapely.validation import make_valid
+from shapely.geometry import mapping
 
-from rdp import rdp
 import visvalingamwyatt as vw
 
 sys.path.insert(1, 'scripts')
@@ -88,10 +86,6 @@ if BUFFER:
     buffered_dets_gdf['geometry'] = buffered_dets_gdf.buffer(BUFFER_SIZE)
     buffered_dets_gdf['geometry'] = buffered_dets_gdf.buffer(-BUFFER_SIZE)
 
-    filepath = os.path.join(OUTPUT_DIR, 'simplified_detections_buffer.gpkg')
-    buffered_dets_gdf.to_file(filepath)
-    written_files.append(filepath)
-
     detections_gdf = buffered_dets_gdf.copy()
 
 
@@ -122,10 +116,12 @@ if VW:
     simplified_dets_gdf = gpd.GeoDataFrame.from_features(mapped_objects, crs='EPSG:2056')
     logger.info(f'{failed_transform} polygons on {simplified_dets_gdf.shape[0]} failed to be simplified.')
 
-    simplified_dets_gdf = misc.test_valid_geom(simplified_dets_gdf, correct=True, gdf_obj_name='simplified detections')
+    simplified_dets_gdf = misc.check_validity(simplified_dets_gdf, correct=True)
 
-    filepath = os.path.join(OUTPUT_DIR, 'simplified_detections_VW.gpkg')
-    simplified_dets_gdf.to_file(filepath)
+
+if BUFFER or VW:
+    filepath = os.path.join(OUTPUT_DIR, f'simplified_detections{"_buffer" if BUFFER else ""}{"_VW" if VW else ""}.gpkg')
+    buffered_dets_gdf.to_file(filepath)
     written_files.append(filepath)
 
 

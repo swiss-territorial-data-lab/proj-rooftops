@@ -1,8 +1,13 @@
+#!/bin/python
+# -*- coding: utf-8 -*-
+
+#  proj-rooftops
+
+import argparse
 import os
+import time
 import sys
-from argparse import ArgumentParser
 from loguru import logger
-from time import time
 from yaml import load, FullLoader
 
 import geopandas as gpd
@@ -27,7 +32,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         DETECTIONS (path): file of the detections
         ROOFS (path): file of the roof border and main elements
         EGIDS (list): EGIDs of interest
-        method (string): method used for the assessment of the results, either one-to-one, one-to-many or many-to-many.
+        BINS (list): list with the limits for the bins as list.
+        METHOD (string): method used for the assessment of the results, either one-to-one, one-to-many or many-to-many.
         visualisation (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:
@@ -154,11 +160,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
 if __name__ == "__main__":
     # Start chronometer
-    tic = time()
+    tic = time.time()
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -188,7 +194,7 @@ if __name__ == "__main__":
         logger.success(f'  file: {path}{"" if written_files[path] == "" else f", layer: {written_files[path]}"}')
 
     # Stop chronometer  
-    toc = time()
+    toc = time.time()
     logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
     sys.stderr.flush()
