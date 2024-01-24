@@ -102,7 +102,7 @@ logger.info(f'{egids.shape[0]} egids will be processed.')
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
-rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID')
+rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 
 # Produce light files of the selected EGIDs with the essential per-EGID information for the workflow
 rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    

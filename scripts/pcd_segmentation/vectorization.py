@@ -214,7 +214,7 @@ def main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, SHP_EGID_ROOFS, epsg=205
         if not cluster_vec_gdf.empty:
             # Drop clusters smaller than 1 pixel or inside another culster
             cluster_vec_gdf = cluster_vec_gdf[cluster_vec_gdf.area > 0.01].copy()
-            cluster_vec_gdf = delete_overlapping_clusters(cluster_vec_gdf)
+            # cluster_vec_gdf = delete_overlapping_clusters(cluster_vec_gdf)
             cluster_vec_gdf.set_geometry('geometry', inplace=True)
 
             # Free polygon = Plane polygon(s) - Object polygon(s)

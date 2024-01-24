@@ -141,7 +141,7 @@ def crop(source, size, output):
         return file_path
 
 
-def dissolve_by_attribute(desired_file, original_file, name, attribute):
+def dissolve_by_attribute(desired_file, original_file, name, attribute, buffer=0.01):
     """Dissolve shape according to a given attribute in the gdf
 
     Args:
@@ -149,6 +149,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
         original_file (str): path to the original geodataframe on which dissolution is perfomed
         name (str): root name of the file
         attribute (key): column key on which the operation is performed
+        buffer (float): size of the buffer to remove thin space due to gaps between polygons
 
     Returns:
         gdf: geodataframes dissolved according to the provided gdf attribute
@@ -166,8 +167,8 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute):
 
         logger.info(f"Dissolved shapes by {attribute}")
         gdf.geometry = gdf.apply(lambda row: make_valid(row.geometry) if not row.geometry.is_valid else row.geometry, axis=1)
+        gdf['geometry'] = gdf['geometry'].buffer(buffer, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygon gaps 
         dissolved_gdf = gdf.dissolve(attribute, as_index=False)
-        gdf['geometry'] = gdf['geometry'].buffer(0.05, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygons gaps 
         
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
@@ -310,6 +311,7 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+    roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
     logger.info(f'    - {roofs_gdf.shape[0]} roofs')
 
     if isinstance(labels, str):
@@ -360,9 +362,9 @@ def format_detections(detections_gdf):
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
     if 'det_id' in detections_gdf.columns:
-        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+        detections_gdf['detection_id'] = detections_gdf.det_id.astype(int)
     else:
-        detections_gdf['ID_DET'] = detections_gdf.index
+        detections_gdf['detection_id'] = detections_gdf.index
     detections_gdf=detections_gdf.explode(ignore_index=True)
     logger.info(f"    - {len(detections_gdf)} detections")
 
