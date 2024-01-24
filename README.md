@@ -66,10 +66,10 @@ First, the segmentation is performed with different parameters on buildings with
 
 ```
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_all_roofs.yaml
-python scripts/pcd_segmentation/pcd_segmentation.config/config_pcdseg_all_roofs.yaml
+python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_pitched_roofs.yaml
-python scripts/pcd_segmentation/pcd_segmentation.config/config_pcdseg_pitched_roofs.yaml
+python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_pitched_roofs.yaml
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_pitched_roofs.yaml
 ```
 
@@ -82,7 +82,7 @@ python scripts/pcd_segmentation/post_processing.py config/config_pcdseg_all_roof
 Finally, the results are assessed
 
 ```
-python scripts/pcd_segmentation/assess_results.py config/config_pcdseg_all_roofs.yaml
+python scripts/assessment/assess_results.py config/config_pcdseg_all_roofs.yaml
 python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
 
