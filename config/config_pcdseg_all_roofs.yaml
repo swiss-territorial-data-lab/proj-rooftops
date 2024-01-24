@@ -54,7 +54,7 @@ vectorization.py:
 
 
 # 3bis - Post-process the results to improve them
-post_processings.py:
+post_processing.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation
   output_dir: post_processed_results
   merge_files: True
@@ -82,7 +82,7 @@ assess_results.py:
   detections: processed/PCD_segmentation/post_processed_results/simplified_detections_buffer_VW.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/all_roofs/completed_egids.csv
-  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  roofs: processed/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: True
@@ -100,7 +100,7 @@ assess_area.py:
   detections: processed/PCD_segmentation/post_processed_results/simplified_detections_buffer_VW.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/all_roofs/completed_egids.csv
-  roofs: processed/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  roofs: processed/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100] 
   method: fusion
   visualisation: True
