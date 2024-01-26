@@ -18,11 +18,7 @@ import numpy as np
 import open3d as o3d
 import pandas as pd
 
-try:
-    import whitebox
-except:
-    whitebox.download_wbt(linux_musl=True, reset=True)        # in case of issues with the GLIBC library on Linux
-    import whitebox
+import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
@@ -149,8 +145,14 @@ for egid in tqdm(egids.EGID.to_numpy()):
         clip_path = os.path.join(per_egid_dir, file_name + '_' + tile.fme_basena + PCD_EXT)
         wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
 
-        with laspy.open(clip_path) as src:
-            nbr_points = len(src.read().points)
+        try:
+            with laspy.open(clip_path) as src:
+                nbr_points = len(src.read().points)
+        except FileNotFoundError:
+            whitebox.download_wbt(linux_musl=True, reset=True)              # in case of issues with the GLIBC library on Linux
+            wbt.clip_lidar_to_polygon(pcd_path, shape_path, clip_path)  
+            with laspy.open(clip_path) as src:
+                nbr_points = len(src.read().points)
 
         if nbr_points > 10:
             clipped_inputs = clipped_inputs + ', ' + clip_path
