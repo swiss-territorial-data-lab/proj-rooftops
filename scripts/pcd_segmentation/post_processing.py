@@ -42,16 +42,34 @@ with open(args.config_file) as fp:
 # Load input parameters
 WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
+ROOFS = cfg['roofs']
 
 MERGE_FILES = cfg['merge_files']
 BUFFER = cfg['buffer'] if 'buffer' in cfg.keys() else None
 VW = cfg['vw'] if 'vw' in cfg.keys() else None
+MERGE_DETECTIONS = cfg['merge_detections']
 
 
 os.chdir(WORKING_DIR)
 _ = misc.ensure_dir_exists(OUTPUT_DIR)
 
 written_files = []
+
+logger.info('Read file for roofs')
+
+if ('EGID' in ROOFS) | ('egid' in ROOFS):
+    roofs_gdf = gpd.read_file(ROOFS)
+else:
+    # Get the rooftops shapes
+    _, ROOFS_NAME = os.path.split(ROOFS)
+    attribute = 'EGID'
+    original_file_path = ROOFS
+    desired_file_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+
+    roofs_gdf = misc.dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
+
+roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
+logger.info(f'    - {roofs_gdf.shape[0]} roofs')
 
 if MERGE_FILES:
     logger.info('Merge the different files for detections.')
@@ -118,12 +136,35 @@ if VW:
 
     simplified_dets_gdf = misc.check_validity(simplified_dets_gdf, correct=True)
 
+    detections_gdf = simplified_dets_gdf.copy()
 
-if BUFFER or VW:
-    filepath = os.path.join(OUTPUT_DIR, f'simplified_detections{"_buffer" if BUFFER else ""}{"_VW" if VW else ""}.gpkg')
-    buffered_dets_gdf.to_file(filepath)
+if MERGE_DETECTIONS:
+    logger.info('Merge surfaces by type over EGID')
+    dissolved_obstacles_gdf = detections_gdf[['EGID', 'occupation', 'geometry']].dissolve(['EGID', 'occupation']).explode(index_parts=False).reset_index()
+    dissolved_obstacles_gdf['area'] = dissolved_obstacles_gdf.area
+    dissolved_obstacles_gdf['det_id'] = dissolved_obstacles_gdf.index
+
+    detections_gdf = dissolved_obstacles_gdf.copy()
+
+if BUFFER or VW or MERGE_DETECTIONS:
+    filepath = os.path.join(OUTPUT_DIR, f'{"merged" if MERGE_DETECTIONS else "simplified"}_detections{"_buffer" if BUFFER else ""}{"_VW" if VW else ""}.gpkg')
+    detections_gdf.to_file(filepath)
     written_files.append(filepath)
 
+
+logger.info('Deduce the free area from the roof extend')
+detections_gdf['occupation'] = detections_gdf['occupation'].astype(int)
+occupied_surface_gdf = detections_gdf[detections_gdf.occupation==1].copy()
+available_surface_gdf = gpd.overlay(roofs_gdf[['EGID', 'geometry']], occupied_surface_gdf[['det_id','geometry']], how='difference', keep_geom_type=True)
+available_surface_gdf['area'] = available_surface_gdf.area
+
+surface_partition_gdf = pd.concat([occupied_surface_gdf, available_surface_gdf], ignore_index=True)
+surface_partition_gdf['surface_id'] = surface_partition_gdf.index
+surface_partition_gdf.loc[surface_partition_gdf.occupation.isna(), 'occupation'] = 0
+
+filepath = os.path.join(OUTPUT_DIR, 'roof_partition.gpkg')
+surface_partition_gdf.to_file(filepath)
+written_files.append(filepath)
 
 print()
 logger.success("The following files were written. Let's check them out!")

@@ -57,9 +57,11 @@ vectorization.py:
 post_processing.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation
   output_dir: post_processed_results
+  roofs: all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   merge_files: True
   buffer: True
   vw: True
+  merge_detections: True
   buffer_size: 1
   vw_threshold: 0.1
   detections: post_processed_results/detections.gpkg
@@ -67,13 +69,7 @@ post_processing.py:
     all_detections: all_roofs/all_EGID_occupation.gpkg
     residential_pitched: pitched_roofs/all_EGID_occupation.gpkg
     # administrative: 8_100_iter_admin_fnp/all_EGID_occupation_27.gpkg
-
-
-# 3bisbis - Merge the obstacles that are overlapping
-partition_to_obstacles.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation
-  output_dir: post_processing_tests/dissolving/after_simplification
-  partition: improved_results/simplified_detections_VW.gpkg
+    
 
 # 4 - Evaluate the results
 assess_results.py: 
