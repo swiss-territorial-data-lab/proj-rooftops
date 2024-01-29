@@ -446,6 +446,23 @@ def relative_error_df(df, target, measure):
     return re
 
 
+def roundness(gdf):
+    """Compute the roundness [0,1] of a polygon https://en.wikipedia.org/wiki/Roundness#Roundness_error_definitions 
+
+    Args:
+        gdf: geodataframe
+
+    Return:
+        gdf: geodataframe + new column for the computed paramters
+    """
+
+    area = gdf.area
+    perimeter = gdf.length
+    gdf['roundness'] = (4 * np.pi * area) / perimeter**2.0
+
+    return gdf
+
+    
 def test_crs(crs1, crs2="EPSG:2056"):
     """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
 
