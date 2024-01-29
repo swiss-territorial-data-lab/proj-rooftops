@@ -33,7 +33,7 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
     return written_file
 
 
-def plot_surface(dir_plots, df, attribute, xlabel):
+def plot_area(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(1, 2, sharey= True, figsize=(16,8))
 
@@ -68,7 +68,7 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     return plot_path
 
 
-def plot_surface_bin(dir_plots, df, bins):
+def plot_area_bin(dir_plots, df, bins):
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
     # df = df[df['attribute'] == attribute] 
@@ -80,13 +80,13 @@ def plot_surface_bin(dir_plots, df, bins):
     df = pd.DataFrame({'bins':bins, 'val':values * 100})
     df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
 
-    plt.xlabel('Free surface area (%)', fontweight='bold')
+    plt.xlabel('Free area (%)', fontweight='bold')
     plt.ylabel('Accurate detection (%)', fontweight='bold')
     plt.legend('', frameon=False)
     plt.title('EGID')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
+    plot_path = os.path.join(dir_plots, f'area_accuracy_EGID.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 

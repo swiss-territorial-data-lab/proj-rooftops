@@ -121,10 +121,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
             xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
             bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
-            _ = figures.plot_surface_bin(output_dir, surfaces_df, bins=bin_labels)
+            _ = figures.plot_area_bin(output_dir, surfaces_df, bins=bin_labels)
             for attr in attribute_surface_df.attribute.unique():
                 if attr in xlabel_dict.keys():
-                    filepath = figures.plot_surface(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
+                    filepath = figures.plot_area(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
                     written_files[filepath] = ''
 
 
