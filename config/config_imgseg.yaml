@@ -152,6 +152,21 @@ optimize_hyperparameters.py:
 
 ## Additional scripts - sandbox
 
+# Plot figures relative to the GT characteristics
+GT_characteristics.py:  
+  working_dir: .
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids_test: inputs/ground_truth/egid/EGIDs_GT_training.csv
+  egids_training: inputs/ground_truth/egid/EGIDs_GT_test.csv
+  output_dir: inputs/ground_truth/plots
+  visualisation: True
+  object_attributes:
+    parameters: [area, nearest_distance_border, roundness] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
+
 # Evaluate the results: test on synthetic examples for development
 assess_synthetic_examples.py:  
   working_dir: .
