@@ -63,11 +63,15 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
   
         ranges_dict = {object_parameters[i]: ranges[i] for i in range(len(object_parameters))}
 
-        ## Nearest distance between polygons
+        ## Get nearest distance between polygons
         labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_label', rsuffix='_roof')
         labels_gdf = misc.nearest_distance(labels_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_label', rsuffix='_roof')
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_centroid', lsuffix='_detection', rsuffix='_roof')
         detections_gdf = misc.nearest_distance(detections_gdf, roofs_gdf, join_key='EGID', parameter='nearest_distance_border', lsuffix='_detection', rsuffix='_roof')
+
+        ## Get roundness of polygons
+        labels_gdf = misc.roundness(labels_gdf)   
+        detections_gdf = misc.roundness(detections_gdf)
 
     # Detections count
     logger.info(f"Method used for detections counting:")
@@ -172,14 +176,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                         FP = float(filter_dets_gdf['FP_charge'].sum()) 
                         FN = float(filter_gt_gdf['FN_charge'].sum())
 
-                        # metrics_results = metrics.get_metrics(TP, FP, FN)
-                        # rem_list = ['FP', 'precision', 'f1']
-                        # [metrics_results.pop(key) for key in rem_list]
-                        # tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
-                        # metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
-
-
                         metrics_results = metrics.get_metrics(TP, FP, FN)
+                        tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': f"{lim_inf}-{lim_sup}", **metrics_results}])
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': f"{lim_inf}-{lim_sup}", **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -245,9 +243,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
                 FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
                 FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
+                FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
-                rem_list = ['FP', 'precision', 'f1']
                 [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
@@ -264,7 +262,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                         FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
-                        rem_list = ['FP', 'precision', 'f1']
                         [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
@@ -362,16 +359,25 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
         if labels_diff > 0:
             tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
+        if labels_diff > 0:
+            tagged_labels = tp_gdf['label_id'].unique().tolist() + fn_gdf['label_id'].unique().tolist()
 
             untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
             untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
+            untagged_labels_gdf = labels_gdf[~labels_gdf['label_id'].isin(tagged_labels)]
+            untagged_labels_gdf.drop(columns=['label_geometry'], inplace=True)
 
+            layer_name = 'missing_label_tags'
+            untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
             layer_name = 'missing_label_tags'
             untagged_labels_gdf.to_file(filename, layer=layer_name, index=False)
 
         elif labels_diff < 0 :
             all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
 
+            duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+            duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
             duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
             duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
@@ -387,7 +393,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
         xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)'} 
+                    'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
+
 
         # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_df.attribute.unique():
@@ -434,9 +441,10 @@ if __name__ == "__main__":
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges']
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges']
+    ROUND_RANGES = cfg['object_attributes']['round_ranges']
     VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
 
-    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
+    RANGES = [AREA_RANGES] + [DISTANCE_RANGES] + [ROUND_RANGES] 
 
     metrics_df, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                             method=METHOD, threshold=THRESHOLD, 
