@@ -114,7 +114,7 @@ def plot_groups(dir_plots, df, attribute, xlabel):
 
     for c in ax.containers:
         labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
 
     # plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
     plt.title(f'Counts by {attribute.replace("_", " ")}')
@@ -200,7 +200,7 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     for c in ax.containers:
         labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "white", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
 
     plt.ylim(0, 1)
     plt.gca().set_yticks(plt.gca().get_yticks().tolist())
