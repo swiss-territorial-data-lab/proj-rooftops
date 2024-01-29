@@ -73,6 +73,7 @@ def plot_area_bin(dir_plots, df, bins):
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
  
     bins = list(set(bins).intersection(df.keys()))
+    bins.sort()
 
     values = df[bins].iloc[0]
 
@@ -99,14 +100,19 @@ def plot_groups(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
-    color_list = ['limegreen', 'orange', 'tomato']  
-    counts_list = ['TP', 'FP', 'FN']    
+    df = df[df['attribute'] == attribute]  
+    if df['FP'].isnull().values.any():
+        color_list = ['#00D800', '#21D4DA']  
+        counts_list = ['TP', 'FN']  
+    else:
+        color_list = ['#00D800', '#EF9015', '#21D4DA']  
+        counts_list = ['TP', 'FP', 'FN']  
 
     df = df[df['attribute'] == attribute].copy()
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
 
     if attribute == 'object_class':
-        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, stacked=True)
+        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.7, stacked=True)
         plt.xticks(rotation=40, ha='right')
     else:
         df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.7)
@@ -133,10 +139,10 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
  
     df = df[df['attribute'] == attribute]  
     if df['FP'].isnull().values.any():
-        color_list = ['limegreen', 'tomato']  
+        color_list = ['#00D800', '#21D4DA']  
         counts_list = ['TP', 'FN']  
     else:
-        color_list = ['limegreen', 'orange', 'tomato']  
+        color_list = ['#00D800', '#EF9015', '#21D4DA']  
         counts_list = ['TP', 'FP', 'FN']  
 
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
@@ -155,7 +161,7 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}_stacked.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
     
@@ -166,13 +172,13 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
 
-    format_plot = {'gt': {'color_list': ['limegreen', 'tomato'], 'count_list': ['TP', 'FN'], 'position': -0.05, 'legend': ['TP', 'FN']},
-                   'dt': {'color_list': ['limegreen', 'orange'], 'count_list': ['TP', 'FP'], 'position': 1.05, 'legend': ['', 'FP']}}
+    format_plot = {'gt': {'color_list': ['#00D800', '#21D4DA'], 'count_list': ['TP', 'FN'], 'position': -0.05, 'legend': ['TP', 'FN']},
+                   'dt': {'color_list': ['#00D800', '#EF9015'], 'count_list': ['TP', 'FP'], 'position': 1.05, 'legend': ['', 'FP']}}
 
     df = df[df['attribute'] == attribute] 
     for variables in format_plot.values():
 
-        df_subset = df[variables['count_list']+['value']].set_index('value')
+        df_subset = df[variables['count_list'] + ['value']].set_index('value')
         df_subset['sum'] = df_subset.sum(axis=1)
 
         for count in variables['count_list']:
@@ -183,20 +189,6 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
             break
         else:
             df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'], label=variables['legend'])
-
-    # fig, ax = plt.subplots(figsize=(12,8))
-
-    # color_list = ['limegreen', 'orange', 'tomato']  
-    # counts_list = ['TP', 'FP', 'FN']    
-
-    # df = df[df['attribute'] == attribute]  
-    # df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-    # df['sum'] = df.sum(axis=1)
-
-    # for count in counts_list:
-    #     df[count] =  df[count] / df['sum']
-    
-    # df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0, width = 0.5)
 
     for c in ax.containers:
         labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
@@ -212,7 +204,10 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
         plt.xlim(old_xlim[0], old_xlim[1] + 0.3)
     plt.xlabel(xlabel, fontweight='bold')
 
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)  
+    handles, labels = ax.get_legend_handles_labels()
+    unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+    ax.legend(*zip(*unique))  
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 

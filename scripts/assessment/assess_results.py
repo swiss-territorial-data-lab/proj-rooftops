@@ -389,11 +389,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)'} 
 
-        # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_df.attribute.unique():
             if attr in xlabel_dict.keys():
                 _ = figures.plot_groups(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
-                # _ = figures.plot_stacked_grouped(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
+                _ = figures.plot_stacked_grouped(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
                 _ = figures.plot_stacked_grouped_percent(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
                 _ = figures.plot_metrics(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
 
