@@ -431,7 +431,7 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
 
         g = nx.Graph()
         for row in l_join[l_join.geohash_gt.notnull()].itertuples():
-            g.add_edge(row.geohash_det, row.geohash_gt)
+            g.add_edge(row.geohash_dt, row.geohash_gt)
 
         groups = list(nx.connected_components(g))
 
@@ -508,12 +508,12 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
     assert 'geohash' in gt.columns.tolist()
     assert 'geohash' in dets.columns.tolist()
 
-    # prepare data: apply negative buffer to avoid the intersection of touching shapes and remove empty geometries
+    # prepare data: apply negative buffer and remove empty geometries
     _gt = gt.copy()
-    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style='mitre')
     _gt = _gt[~_gt.is_empty].copy()
     _dets = dets.copy()
-    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style='mitre')
     _dets = _dets[~_dets.is_empty].copy()
 
     charges_dict = {}
@@ -523,21 +523,21 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
     r_join = gpd.sjoin(_dets, _gt, how='right', predicate='intersects', lsuffix='dt', rsuffix='gt')
     if group_attribute:
         l_join.loc[l_join[group_attribute + '_dt'] != l_join[group_attribute + '_gt'], 'geohash_gt'] = np.nan
-        r_join.loc[r_join[group_attribute + '_dt'] != r_join[group_attribute + '_gt'], 'geohash_det'] = np.nan
+        r_join.loc[r_join[group_attribute + '_dt'] != r_join[group_attribute + '_gt'], 'geohash_dt'] = np.nan
 
     # trivial False Positives
     trivial_FPs = l_join[l_join.geohash_gt.isna()].copy()
     for tup in trivial_FPs.itertuples():
         charges_dict = {
             **charges_dict,
-            tup.geohash_det: {
+            tup.geohash_dt: {
                 'FP_charge': Fraction(1, 1),
                 'TP_charge': Fraction(0, 1)
             }
         }
 
     # trivial False Negatives
-    trivial_FNs = r_join[r_join.geohash_det.isna()].copy()
+    trivial_FNs = r_join[r_join.geohash_dt.isna()].copy()
     for tup in trivial_FNs.itertuples():
         charges_dict = {
             **charges_dict,
@@ -561,14 +561,9 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         keep_geohashes_dets = [] 
 
         # Potential new version of metrics computation: computation of the intersection between all overlaped detection and overlaped gt shape area  
-        gt_gdf = gpd.GeoDataFrame({'geometry': all_geoms_gt}) 
-        dissolved_gt_gdf = gt_gdf.dissolve()
-        geom_gt = dissolved_gt_gdf.geometry.values
+        geom_gt = unary_union(all_geoms_gt)
 
-        # !!!To test
-        # geom_gt = unary_union(all_geoms_gt)
-
-        for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+        for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
             polygon_gt_shape = geom_gt
             polygon_det_shape = geom_det
             if polygon_gt_shape.intersects(polygon_det_shape):
@@ -577,26 +572,25 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
                 continue
             # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
             if intersection / polygon_det_shape.area >= threshold:
-                keep_geohashes_dets.append(geohash_det)
+                keep_geohashes_dets.append(geohash_dt)
 
         for (geom_gt, geohash_gt) in zip(all_geoms_gt, all_geohashes_gt):
-            for (geom_det, geohash_det) in zip(all_geoms_dets, all_geohashes_dets):
+            for (geom_det, geohash_dt) in zip(all_geoms_dets, all_geohashes_dets):
                 polygon_gt_shape = geom_gt
                 polygon_det_shape = geom_det
                 if polygon_gt_shape.intersects(polygon_det_shape):
                     intersection = polygon_gt_shape.intersection(polygon_det_shape).area
                 else:
                     continue
-                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD or the detection
-                # is already a TP
-                if intersection / polygon_det_shape.area >= threshold or ((geohash_det in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.5)):
+                # keep element if intersection overlap % of GT and detection shape relative to the detection area is >= THD
+                if intersection / polygon_det_shape.area >= threshold or ((geohash_dt in keep_geohashes_dets) and (intersection / polygon_gt_shape.area >= 0.5)):
                     keep_geohashes_gt.append(geohash_gt)
 
         # list of elements to be deleted that do not meet the threshold conditions for the intersection zone 
         remove_geohashes_gt = [x for x in all_geohashes_gt if x not in np.unique(keep_geohashes_gt).astype(str)]
         remove_geohashes_dets = [x for x in all_geohashes_dets if x not in np.unique(keep_geohashes_dets).astype(str)]
         
-        # remove elements from the label and detection lists without enough overlap and attribute TP, FP and FN charges 
+        # remove elements from the labels and detections list and attribute TP, FP and FN charges 
         for i in remove_geohashes_gt:
             group.remove(i)
             charges_dict = {
@@ -657,11 +651,11 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
     _dets = _dets.apply(lambda row: assign_charges(row), axis=1)
 
     if method == 'fusion':
-        unique_dets_gdf = _dets[_dets['group_id'].isna()] 
-        dissolved_dets_gdf = _dets.dissolve(by='group_id', as_index=False)
-        fused_dets_gdf = pd.concat([unique_dets_gdf, dissolved_dets_gdf]).reset_index(drop=True)
+        unique_detections_gdf = _dets[_dets['group_id'].isna()] 
+        dissolved_detections_gdf = _dets.dissolve(by='group_id', as_index=False)
+        fused_detections_gdf = pd.concat([unique_detections_gdf, dissolved_detections_gdf]).reset_index(drop=True)
 
-        return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], fused_dets_gdf[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
+        return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], fused_detections_gdf[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
 
     else:
         return _gt[gt.columns.to_list() + ['group_id', 'TP_charge', 'FN_charge']], _dets[dets.columns.to_list() + ['group_id', 'TP_charge', 'FP_charge']]
