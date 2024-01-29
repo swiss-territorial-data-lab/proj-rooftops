@@ -71,14 +71,16 @@ def plot_area(dir_plots, df, attribute, xlabel):
 def plot_area_bin(dir_plots, df, bins):
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    # df = df[df['attribute'] == attribute] 
+ 
     bins = list(set(bins).intersection(df.keys()))
-    bins.sort()
 
     values = df[bins].iloc[0]
 
     df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
+    ax = df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
+
+    labels = list(map(lambda x: x.replace('accuracy bin ', ''), bins))
+    ax.set_xticklabels(labels)
 
     plt.xlabel('Free area (%)', fontweight='bold')
     plt.ylabel('Accurate detection (%)', fontweight='bold')
