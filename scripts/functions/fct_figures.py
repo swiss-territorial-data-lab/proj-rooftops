@@ -1,5 +1,5 @@
 import os
-
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -212,6 +212,73 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'counts_{attribute}_percent.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_histo_object(dir_plots, df, attribute, datasets):
+
+    fig, ax = plt.subplots(figsize=(16,10))
+    
+    df = df[['descr', 'dataset']]
+    df['counts'] = 1
+    ax = pd.pivot_table(data=df, index=['descr'], columns=['dataset'], values='counts', aggfunc='count').plot.bar(rot=0, log=True, stacked=True, color=['turquoise', 'gold'] , width=0.8)
+
+    for c in ax.containers:
+        labels = [int(a) if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=8)
+
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
+
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel('', fontweight='bold')
+    plt.ylabel('Count', fontweight='bold')
+    plt.ylim(1e0, 1e4)
+
+    plt.legend(title='Dataset', loc='upper left', frameon=False)    
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}_GT.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_stacked_grouped_object(dir_plots, df, param_ranges, param, attribute, label):
+
+    fig, ax = plt.subplots(figsize=(16,10))
+    df_toplot = pd.DataFrame() 
+    param_ranges = param_ranges[param] 
+    label = label[param] 
+
+    for lim_inf, lim_sup in param_ranges:
+        filter_df = df[(df[param] >= lim_inf) & (df[param] <= lim_sup)]
+        filter_df['category'] = f"{lim_inf} - {lim_sup}" 
+        df_toplot = pd.concat([df_toplot, filter_df], ignore_index=True)
+
+    df_toplot = df_toplot[['descr', 'category']] 
+    ax = df_toplot.groupby(['descr', 'category']).value_counts().unstack().plot(kind='bar', stacked=True, log=True, width=0.8)
+
+    for c in ax.containers:
+        labels = [int(a) if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=6)
+
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
+    # plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel('', fontweight='bold')
+    plt.ylabel('Count', fontweight='bold')
+    # plt.ylim(1e-1, 1e5)
+
+    plt.legend(title=label.capitalize().replace("_", " "), loc='upper left', frameon=False, ncol=math.ceil(len(param_ranges)/2))    
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'{param}_class.png')   
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
