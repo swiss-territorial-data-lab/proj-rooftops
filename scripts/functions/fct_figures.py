@@ -36,7 +36,7 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
 
 def plot_area(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(1, 2, sharey= True, figsize=(16,8))
+    fig, ax = plt.subplots(1, 2, sharey= True, figsize=(14,6))
 
     color_list = ['limegreen', 'tomato']  
 
@@ -53,7 +53,7 @@ def plot_area(dir_plots, df, attribute, xlabel):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')  
     ax[0].set_xlabel(xlabel, fontweight='bold', fontsize=12)
-    ax[0].set_ylabel('area ($m^2$)', fontweight='bold', fontsize=12)
+    ax[0].set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=12)
     ax[1].set_xlabel(xlabel, fontweight='bold', fontsize=12)
 
     ax[0].legend('', frameon=False)  
@@ -87,7 +87,7 @@ def plot_area_bin(dir_plots, df, bins):
     plt.xlabel('Free area (%)', fontweight='bold', fontsize=12)
     plt.ylabel('Accurate detection (%)', fontweight='bold', fontsize=12)
     plt.legend('', frameon=False)
-    plt.title('EGID')
+    plt.title('by EGID')
 
     plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'area_accuracy_EGID.png')  
