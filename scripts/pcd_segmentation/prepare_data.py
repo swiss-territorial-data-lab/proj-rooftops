@@ -96,7 +96,7 @@ logger.info(f'{egids.shape[0]} egids will be processed.')
 
 # Get the per-EGID rooftops shapes
 ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
-feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
+feature_path = os.path.join(OUTPUT_DIR.split('/')[0], ROOFS_NAME[:-4]  + "_EGID.shp")
 
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 

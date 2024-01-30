@@ -1,7 +1,7 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  pcd_dir: initial/LiDAR
+  pcd_dir: initial/LiDAR/2019
   inputs:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
@@ -13,7 +13,7 @@ prepare_data.py:
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True             # Remove all the point below the roof altitude
-    distance_buffer: 1.0            # m, buffer value
+    distance_buffer: 2.0            # m, buffer value
   overwrite: False
   visualisation: False
 
@@ -74,8 +74,8 @@ post_processing.py:
 # 4 - Evaluate the results
 assess_results.py: 
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  output_dir: final/PCD_results
-  detections: processed/PCD_segmentation/post_processed_results/simplified_detections_buffer_VW.gpkg
+  output_dir: final/PCD_segmentation
+  detections: processed/PCD_segmentation/post_processed_results/roof_partition.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/all_roofs/completed_egids.csv
   roofs: processed/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
@@ -92,8 +92,8 @@ assess_results.py:
 # 5 - Estimate the free surface
 assess_area.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  output_dir: final/PCD_results
-  detections: processed/PCD_segmentation/post_processed_results/simplified_detections_buffer_VW.gpkg
+  output_dir: final/PCD_segmentation
+  detections: processed/PCD_segmentation/post_processed_results/roof_partition.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: processed/PCD_segmentation/all_roofs/completed_egids.csv
   roofs: processed/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
