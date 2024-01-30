@@ -85,10 +85,9 @@ def objective(trial):
     print('')
     # To Do: Config metrics choice in config file
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]  
-    precision = metrics_df['precision'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]  
     iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
-    return f1, precision, iou
+    return f1, iou
 
 
 def callback(study, trial):
@@ -204,7 +203,7 @@ if __name__ == "__main__":
     joblib.dump(study, study_path)
     written_files.append(study_path)
 
-    targets = {0: 'f1 score', 1: 'precision', 2: 'median IoU'}
+    targets = {0: 'f1 score', 1: 'median IoU'}
 
     logger.info('Save the best hyperparameters')
     written_files.append(optimization.save_best_hyperparameters(study, targets, output_plots))
