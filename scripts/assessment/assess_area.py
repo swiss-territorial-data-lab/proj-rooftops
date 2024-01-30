@@ -120,7 +120,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
         if visualisation:
             # Plots
-            xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
+            xlabel_dict = {'EGID': '', 'roof_type': 'Building type', 'roof_inclination': 'Roof type'}
             bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
             _ = figures.plot_area_bin(output_dir, surfaces_df, bins=bin_labels)

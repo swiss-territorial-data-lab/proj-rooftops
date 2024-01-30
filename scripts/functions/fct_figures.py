@@ -3,6 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
@@ -36,32 +37,43 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
 
 def plot_area(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(1, 2, sharey= True, figsize=(14,6))
+    fig, ax = plt.subplots(1, 1, figsize=(9,6))
 
     color_list = ['limegreen', 'tomato']  
+    width = 0.4
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax[0], x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, color = color_list)
-    df.plot(ax=ax[1], x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, color = color_list)
-    for b, c in zip(ax[0].containers, ax[1].containers):
-        labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
-        labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax[0].bar_label(b, label_type='center', color = "black", labels=labels1, fontsize=8)
-        ax[1].bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=8)
+    df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color = color_list)
+    df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color = color_list)
+    
+    for b in ax.containers:
+        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
+        ax.bar_label(b, label_type='center', color = "black", labels=labels, fontsize=8)
+ 
+    ax.set_xlim((-0.5, len(df)-0.5)) 
+    ax.set_xlabel(xlabel, fontweight='bold', fontsize=12)
+    ax.set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=12)   
+    
+    # Custom tick labels 
+    locs = ax.get_xticks(minor=False)  # Get the current locations and labels.
+    major_ticks_labels = ax.get_xticklabels(minor=False)  # Get the current locations and labels.
+    minor_ticks = []  
+    minor_ticks_labels = [] 
+    for i in locs:
+        minor_ticks.extend([i - width/2, i + width/2])
+        minor_ticks_labels.extend(['labels', 'detections'])
+    ax.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
 
-    if attribute == 'object_class':
-        plt.xticks(rotation=40, ha='right')  
-    ax[0].set_xlabel(xlabel, fontweight='bold', fontsize=12)
-    ax[0].set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=12)
-    ax[1].set_xlabel(xlabel, fontweight='bold', fontsize=12)
+    if 'ALL' in df['value'].unique():
+        ax.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+    else:
+        ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontweight='bold', fontsize=12)
+        ax.tick_params(axis='x', which='major', pad=30, length=0)
 
-    ax[0].legend('', frameon=False)  
-    ax[1].legend(['Free', 'Occupied'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
-    ax[0].set_title('Labels')
-    ax[1].set_title('Detections')
+    # Custom legend 
+    ax.legend(['Free', 'Occupied'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
 
-    plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
