@@ -167,7 +167,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute, buffer=0
         logger.info(f"Dissolved shapes by {attribute}")
         gdf.geometry = gdf.apply(lambda row: make_valid(row.geometry) if not row.geometry.is_valid else row.geometry, axis=1)
         gdf['geometry'] = gdf['geometry'].buffer(buffer, join_style=2) # apply a small buffer to prevent thin spaces due to polygons gaps        
-        dissolved_gdf = gdf.dissolve(attribute, as_index=False)
+        dissolved_gdf = gdf.dissolve(attribute, aggfunc={'ALTI_MIN': np.min}, as_index=False)
         dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-buffer, join_style=2) # apply a small buffer to prevent thin spaces due to polygons gaps        
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
