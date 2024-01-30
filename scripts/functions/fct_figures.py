@@ -58,8 +58,8 @@ def plot_area(dir_plots, df, attribute, xlabel):
 
     ax[0].legend('', frameon=False)  
     ax[1].legend(['Free', 'Occupied'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
-    ax[0].set_title(f'GT areas by {attribute.replace("_", " ")}')
-    ax[1].set_title(f'Detection areas by {attribute.replace("_", " ")}')
+    ax[0].set_title('Labels')
+    ax[1].set_title('Detections')
 
     plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
@@ -84,7 +84,7 @@ def plot_area_bin(dir_plots, df, bins):
     labels = list(map(lambda x: x.replace('accuracy bin ', ''), bins))
     ax.set_xticklabels(labels)
 
-    plt.xlabel('Free area (%)', fontweight='bold', fontsize=12)
+    plt.xlabel('Free surface (%)', fontweight='bold', fontsize=12)
     plt.ylabel('Accurate detection (%)', fontweight='bold', fontsize=12)
     plt.legend('', frameon=False)
     plt.title('by EGID')

@@ -65,30 +65,30 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
     logger.info('    - for detections')
     detections_free_gdf = metrics.get_free_area(detections_gdf, roofs_gdf)
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(detections_free_gdf, egid_surfaces_df, 'free', 'detections', BINS, roof_attributes)
-    egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
+    egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_estimation(detections_free_gdf, egid_surfaces_df, 'free', 'detections', BINS, roof_attributes)
+    egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_estimation(
         detections_free_gdf, egid_surfaces_df, 'occupied', 'detections', BINS, roof_attributes,
-        surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
+        surfaces_df=surfaces_df, attribute_surfaces_df=attribute_surfaces_df
     )
 
     if not labels_gdf.empty:
         logger.info('    - for labels')
         labels_free_gdf = metrics.get_free_area(labels_gdf, roofs_gdf)
-        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
+        egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_estimation(
             labels_free_gdf, egid_surfaces_df, 'free', 'labels', BINS, roof_attributes,
-            surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
+            surfaces_df=surfaces_df, attribute_surfaces_df=attribute_surfaces_df
         )
-        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_estimations(
+        egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_estimation(
             labels_free_gdf, egid_surfaces_df, 'occupied', 'labels', BINS, roof_attributes,
-            surfaces_df=surfaces_df, attribute_surface_df=attribute_surface_df
+            surfaces_df=surfaces_df, attribute_surfaces_df=attribute_surfaces_df
         )
 
         logger.info('Get the difference between labels and detections...')
-        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'free')
-        egid_surfaces_df, surfaces_df, attribute_surface_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, 'occupied')
+        egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, 'free')
+        egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, 'occupied')
 
         # Error of the occupied area relative to the total area
-        for df in [egid_surfaces_df, surfaces_df, attribute_surface_df]:
+        for df in [egid_surfaces_df, surfaces_df, attribute_surfaces_df]:
             df['rel_occup_error'] = abs(df.occup_area_dets - df.occup_area_labels) / df.total_area
 
         # Assess surface bins, 0: different bin, 1: same bin -> if ok on one side (free/occupied), it should be ok on the other.
@@ -116,22 +116,25 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_diff']):.2f}")
         print()
 
+        attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])
+
         if visualisation:
             # Plots
             xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': ''}
             bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
             _ = figures.plot_area_bin(output_dir, surfaces_df, bins=bin_labels)
-            for attr in attribute_surface_df.attribute.unique():
+         
+            for attr in attribute_surfaces_df.attribute.unique():
                 if attr in xlabel_dict.keys():
-                    filepath = figures.plot_area(output_dir, attribute_surface_df, attribute=attr, xlabel=xlabel_dict[attr])
+                    filepath = figures.plot_area(output_dir, attribute_surfaces_df, attribute=attr, xlabel=xlabel_dict[attr])
                     written_files[filepath] = ''
 
 
     logger.info('Save the calculated values...')
 
     # Save the values by EGID 
-    feature_path = os.path.join(output_dir, 'EGID_surfaces.csv')
+    feature_path = os.path.join(output_dir, 'surfaces_by_EGID.csv')
     egid_surfaces_df.drop(columns=[
         'nbr_elem', 
         'bin_free_area_dets (%)', 'bin_occup_area_dets (%)', 'bin_free_area_labels (%)', 'bin_occup_area_labels (%)', 'assess_classif_bins', 
@@ -139,14 +142,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     ], errors='ignore').to_csv(feature_path, sep=',', index=False, float_format='%.3f')
     written_files[feature_path] = ''
 
-    # Save the global values
-    feature_path = os.path.join(output_dir, 'global_surfaces.csv')
-    surfaces_df.to_csv(feature_path, sep=',', index=False, float_format='%.3f')
-    written_files[feature_path] = '' 
-
     # Save the values by attribute
     feature_path = os.path.join(output_dir, 'surfaces_by_attributes.csv')
-    attribute_surface_df.to_csv(feature_path, sep=',', index=False, float_format='%.3f')
+    attribute_surfaces_df.to_csv(feature_path, sep=',', index=False, float_format='%.3f')
     written_files[feature_path] = ''
 
     return written_files

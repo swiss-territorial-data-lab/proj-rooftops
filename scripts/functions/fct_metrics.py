@@ -16,7 +16,7 @@ sys.path.insert(1, '.')
 import functions.fct_misc as misc
     
 
-def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, surface_type):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -33,13 +33,13 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
     surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
          / surfaces_df[f'{surface_type}_area_labels']
     # by attriubte
-    attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
-        / attribute_surface_df[f'{surface_type}_area_labels']
+    attribute_surfaces_df[f'{surface_type}_rel_diff'] = abs(attribute_surfaces_df[f'{surface_type}_area_dets'] - attribute_surfaces_df[f'{surface_type}_area_labels']) \
+        / attribute_surfaces_df[f'{surface_type}_area_labels']
         
-    return egid_surfaces_df, surfaces_df, attribute_surface_df
+    return egid_surfaces_df, surfaces_df, attribute_surfaces_df
 
 
-def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surface_df=None):
+def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surfaces_df=None):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -73,14 +73,14 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
         egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels
     )
 
-    # Get the global surface
-    if not isinstance(surfaces_df, pd.DataFrame):
-        surfaces_df=pd.DataFrame()
+    # Get the global area
+    if not isinstance(attribute_surfaces_df, pd.DataFrame):
+        surfaces_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL'}])
     surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
     surfaces_df['total_area'] = egid_surfaces_df['total_area'].sum()
     surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
 
-    # Compute surface by roof attributes
+    # Compute area by roof attributes
     tmp_df = pd.DataFrame()
     surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
     attribute_surface_dict = {'attribute': [], 'value': []}
@@ -98,13 +98,13 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
 
             tmp_df = pd.concat([tmp_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
 
-    if not isinstance(attribute_surface_df, pd.DataFrame):
-        attribute_surface_df = tmp_df.copy()
+    if not isinstance(attribute_surfaces_df, pd.DataFrame):
+        attribute_surfaces_df = tmp_df.copy()
     else:
         tmp_df.drop(columns=['total_area'], inplace=True)
-        attribute_surface_df = attribute_surface_df.merge(tmp_df, on=['value', 'attribute'])
+        attribute_surfaces_df = attribute_surfaces_df.merge(tmp_df, on=['value', 'attribute'])
 
-    return egid_surfaces_df, surfaces_df, attribute_surface_df
+    return egid_surfaces_df, surfaces_df, attribute_surfaces_df
 
 
 def intersection_over_union(polygon1_shape, polygon2_shape):
