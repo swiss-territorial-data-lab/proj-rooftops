@@ -152,7 +152,7 @@ if BUFFER or VW or MERGE_DETECTIONS:
     written_files.append(filepath)
 
 
-logger.info('Deduce the free area from the roof extend')
+logger.info('Deduce the free surface from the roof extend')
 detections_gdf['occupation'] = detections_gdf['occupation'].astype(int)
 occupied_surface_gdf = detections_gdf[detections_gdf.occupation==1].copy()
 available_surface_gdf = gpd.overlay(roofs_gdf[['EGID', 'geometry']], occupied_surface_gdf[['det_id','geometry']], how='difference', keep_geom_type=True)

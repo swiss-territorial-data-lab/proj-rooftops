@@ -100,8 +100,7 @@ feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID.shp")
 
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 
-# Produce light files of the selected EGIDs with the essential per-EGID information for the workflow
-rooftops.drop(['OBJECTID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], axis=1, inplace=True)    
+# Produce light files of the selected EGIDs with the essential per-EGID information for the workflow 
 completed_egids = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
 
 subset_rooftops = rooftops[rooftops.EGID.isin(completed_egids.EGID.tolist())]
