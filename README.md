@@ -45,7 +45,7 @@ _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling
 ## Image segmentation
 
 
-## LiDAR-based classification
+## Classification of occupation
 
 **Goal**: Classify the roof planes as occupied or potentially free based on their roughness and intensity.
 
@@ -60,6 +60,7 @@ Run the following command lines to perform the LiDAR processing:
 ```
 python scripts/lidar_products/rasterize_intensity.py config/config_lidar_products.yaml
 python scripts/lidar_products/rasterize_roughness.py config/config_lidar_products.yaml
+python scripts/lidar_products/get_zonal_stats.py config/config_lidar_products.yaml
 ````
 
 The command lines perform the following steps:
@@ -68,15 +69,17 @@ The command lines perform the following steps:
 2. Create a DEM and save it in a raster. Then estimate the multi-scale roughness from the DEM.
     - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
     - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
+3. Get zonal stats of intensity and roughness for roof planes.
+    - Only roof planes larger than 2 m<sup>2</sup> are classified as occupied, because they a.
 
-When no ground truth is available, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
+When *no ground truth is available*, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
 
 ```
 python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
 python scripts/assess_results/assess_classif_surfaces.py config/config_lidar_products.yaml
 ```
 
-When a ground truth is available, the classification can be performed and assessed with the script `random_forest.py`.
+When *a ground truth is available*, the classification can be performed and assessed with the script `random_forest.py`.
 
 ```
 python scripts/lidar_products/random_forest.py config/config_lidar_products.yaml
