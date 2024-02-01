@@ -58,9 +58,9 @@ _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling
 Run the following command lines to perform the LiDAR processing:
 
 ```
-python scripts/lidar_products/rasterize_intensity.py config/config_lidar_products.yaml
-python scripts/lidar_products/rasterize_roughness.py config/config_lidar_products.yaml
-python scripts/lidar_products/get_zonal_stats.py config/config_lidar_products.yaml
+python scripts/occupation_classification/rasterize_intensity.py config/config_occupation_classification.yaml
+python scripts/occupation_classification/rasterize_roughness.py config/config_occupation_classification.yaml
+python scripts/occupation_classification/get_zonal_stats.py config/config_occupation_classification.yaml
 ````
 
 The command lines perform the following steps:
@@ -76,14 +76,14 @@ The command lines perform the following steps:
 When *no ground truth is available*, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
 
 ```
-python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
-python scripts/assessment/assess_classif_surfaces.py config/config_lidar_products.yaml
+python scripts/occupation_classification/manual_thresholds.py config/config_occupation_classification.yaml
+python scripts/assessment/assess_classif_surfaces.py config/config_occupation_classification.yaml
 ```
 
 When *a ground truth is available*, the classification can be performed and assessed with the script `random_forest.py`.
 
 ```
-python scripts/lidar_products/random_forest.py config/config_lidar_products.yaml
+python scripts/occupation_classification/random_forest.py config/config_occupation_classification.yaml
 ```
 
 The other scripts are some attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
