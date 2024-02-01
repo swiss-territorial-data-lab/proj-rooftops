@@ -1,18 +1,12 @@
-mask_for_buildings.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  roofs: processed/CAD_BATIMENT_HORSOL_TOIT_SP_merge/CAD_BAT_HORSOL_TOIT_SP_merge.gpkg
-  image_folder: initial/images/true_ortho_2019
-  transparency: True
-
 
 get_lidar_infos.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  input_dir: initial/LiDAR/2019
   overwrite: False
 
 rasterize_intensity.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  input_dir: initial/LiDAR/2019
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
@@ -22,8 +16,8 @@ rasterize_intensity.py:
 
 
 rasterize_roughness.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir: initial/LiDAR
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  input_dir: initial/LiDAR/2019
   overwrite: False
   make_dem: True
   parameters_dem: 
@@ -39,20 +33,65 @@ rasterize_roughness.py:
     step: 1           # Step size (int > 1)
 
 
-filter_surfaces_by_attributes.py:
-  debug_mode: False
-  check_tiles: False
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir_images: processed/lidar/rasterized_lidar
+get_zonal_stats.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: processed/occupation_roof_planes
+  input_dir_images: processed/lidar/2019/rasterized_lidar
   lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  debug_mode: False
+  check_tiles: False
+  tile_id: fme_basena
 
 
+manual_thresholds.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: final/manual_classification
+  roof_file: processed/occupation_roof_planes/roofs.gpkg
+  roof_layer: roof_stats
+
+
+assess_classif_surfaces.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: final/manual_classification
+  gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
+  layer_ocen: ocen_classification
+  layer_ocan: ocan_classification
+  predictions_file: final/manual_classification/roofs.gpkg
+  predictions_layer: manually_filtered_roofs
+
+
+random_forest.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: final/random_forest
+  gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
+  layer_ocen: ocen_classification
+  layer_ocan: ocan_classification
+  roof_file: processed/occupation_roof_planes/roofs.gpkg
+  roof_layer: roof_stats
+  train: False
+  model_ocan: final/random_forest/model_RF_OCAN.pkl
+  model_ocen: final/random_forest/model_RF_OCEN.pkl
+
+
+# Script tested but not implemented
+segment_objects.py:
+  debug_mode: True
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  input_dir_images: processed/lidar/rasterized_lidar/2019/intensity
+  lidar_tiles: initial/LiDAR//2019_LIDAR_GRILLE.shp
+  roofs: processed/roofs/roofs.gpkg
+  roofs_layer: roof_occupation
+  method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  save_normalized_intensity: True
+
+
+# Script tested but not implemented
 filter_for_objects.py:
   debug_mode: False
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir_images: processed/lidar/rasterized_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  input_dir_images: processed/lidar/2019/rasterized_lidar/intensity
+  lidar_tiles: initial/LiDAR//2019_LIDAR_GRILLE.shp
   roofs: processed/roofs/roofs.gpkg
   roofs_layer: roof_occupation
   kernel: False
@@ -60,33 +99,4 @@ filter_for_objects.py:
     procedure: ds  # possible values: sd or ds
     rdp: True
 
-
-random_forest.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
-  layer_ocen: ocen_classification
-  layer_ocan: ocan_classification
-  predictions_file: processed/roofs/roofs.gpkg
-  predictions_layer: roof_occupation_for_RF
-  train: True
-
-
-segment_objects.py:
-  debug_mode: True
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  input_dir_images: processed/lidar/rasterized_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: processed/roofs/roofs.gpkg
-  roofs_layer: roof_occupation
-  method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
-  save_normalized_intensity: True
-
-
-assess_classif_surfaces.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
-  gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
-  layer_ocen: ocen_classification
-  layer_ocan: ocan_classification
-  predictions_file: processed/roofs/roofs_test.gpkg
-  predictions_layer: roof_occupation
   
