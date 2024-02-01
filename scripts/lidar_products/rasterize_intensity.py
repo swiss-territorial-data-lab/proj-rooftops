@@ -1,12 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 # 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
+#  proj-rooftops
 
 
 import argparse
@@ -36,7 +31,9 @@ with open(args.config_file) as fp:
 
 
 WORKING_DIR = cfg['working_dir']
-INPUT_DIR = cfg['input_dir']
+# WBT needs absolute paths
+OUTPUT_DIR = os.path.join(WORKING_DIR, cfg['output_dir'])
+INPUT_DIR = os.path.join(WORKING_DIR, cfg['input_dir'])
 
 OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
@@ -46,7 +43,7 @@ RES = PARAMETERS['resolution']
 RADIUS = PARAMETERS['radius']
 RETURNS = PARAMETERS['returns']
 
-OUTPUT_DIR_TIF = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/rasterized_lidar/intensity'))
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
@@ -54,7 +51,7 @@ lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 logger.info('Processing files...')
 for file in lidar_files:
 
-    output_path_tif = os.path.join(OUTPUT_DIR_TIF, 
+    output_path_tif = os.path.join(OUTPUT_DIR, 
                                  os.path.basename(file.rstrip('.las')) + f'_{METHOD}_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}_{RETURNS}.tif')
     
     if (not os.path.isfile(output_path_tif)) | OVERWRITE:
@@ -81,4 +78,4 @@ for file in lidar_files:
         else:
             logger.error('This method of interpolation is not supported. Please, pass "idw" or "nnb" as parameter.')
 
-logger.success(f'The files were saved in the folder "{OUTPUT_DIR_TIF}".')
+logger.success(f'The files were saved in the folder "{OUTPUT_DIR}".')

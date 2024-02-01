@@ -70,7 +70,8 @@ The command lines perform the following steps:
     - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
     - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
 3. Get zonal stats of intensity and roughness for roof planes.
-    - Only roof planes larger than 2 m<sup>2</sup> are classified as occupied, because they a.
+    - Roof planes smaller than 2 m<sup>2</sup> are classified as occupied and no zonal stats are calculated. They are too small for a solar or vegetated installation.
+    - Roof planes under which the LiDAR point cloud is not classified as building are classified as undefined. The existence of a roof should be controlled.
 
 When *no ground truth is available*, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
 

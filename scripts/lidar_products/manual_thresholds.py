@@ -103,7 +103,7 @@ logger.info(f'{roofs_gdf[roofs_gdf.status.isna()].shape[0]} roof planes do not e
 logger.info('They have been classified as "potentially free" surfaces.')
 
 logger.info('Save file...')
-filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
+filepath = os.path.join(OUTPUT_DIR, 'classified_roofs.gpkg')
 layername = 'manually_filtered_roofs'
 roofs_gdf.to_file(filepath, layer=layername)
 

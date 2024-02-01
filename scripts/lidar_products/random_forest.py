@@ -225,7 +225,7 @@ if __name__ == '__main__':
         if ('model_ocan' in cfg.keys()) or ('model_ocen' in cfg.keys()):
             all_features_gdf = pd.concat([features_gdf, ignored_features_gdf], ignore_index=True)
 
-            filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
+            filepath = os.path.join(OUTPUT_DIR, 'classified_roofs.gpkg')
             all_features_gdf.to_file(filepath, layer='roof_occupation_by_RF')
             written_files.append(filepath)
         else:

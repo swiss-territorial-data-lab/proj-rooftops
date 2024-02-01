@@ -1,13 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 # 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-
+#  proj-rooftops
 
 import argparse
 import os
@@ -21,9 +15,9 @@ import whitebox
 wbt = whitebox.WhiteboxTools()
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as misc
+from functions.fct_misc import format_logger
 
-logger = misc.format_logger(logger)
+logger = format_logger(logger)
 
 # Argument and parameter specification
 parser = argparse.ArgumentParser(description="The script gets the info of the LiDAR point clouds.")
@@ -36,14 +30,16 @@ with open(args.config_file) as fp:
 
 
 WORKING_DIR = cfg['working_dir']
-INPUT_DIR = cfg['input_dir']
+# WBT needs absolute paths
+OUTPUT_DIR = os.path.join(WORKING_DIR, cfg['output_dir'])
+INPUT_DIR = os.path.join(WORKING_DIR, cfg['input_dir'])
 
 OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
-OUTPUT_DIR_HTML = misc.ensure_dir_exists(os.path.join(WORKING_DIR,'processed/lidar/lidar_info'))
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 logger.info('Getting the list of files...')
-lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
+lidar_files = glob(os.path.join(INPUT_DIR, '*.las'))
 
 logger.info('Processing files...')
 for file in lidar_files:
@@ -53,7 +49,7 @@ for file in lidar_files:
     else:
         filename = file.split('/')[-1].rstrip('.las')
 
-    output_path_html = os.path.join(OUTPUT_DIR_HTML, filename + '.html')
+    output_path_html = os.path.join(OUTPUT_DIR, filename + '.html')
 
     if (not os.path.isfile(output_path_html)) | OVERWRITE:
         wbt.lidar_info(
@@ -64,4 +60,4 @@ for file in lidar_files:
             geokeys=True,
         )
 
-logger.success(f'The files were saved in the folder "{OUTPUT_DIR_HTML}".')
+logger.success(f'The files were saved in the folder "{OUTPUT_DIR}".')

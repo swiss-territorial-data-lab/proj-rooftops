@@ -36,7 +36,9 @@ with open(args.config_file) as fp:
 
 
 WORKING_DIR = cfg['working_dir']
-INPUT_DIR = cfg['input_dir']
+# WBT needs absolute paths
+OUTPUT_DIR = os.path.join(WORKING_DIR, cfg['output_dir'])
+INPUT_DIR = os.path.join(WORKING_DIR, cfg['input_dir'])
 
 OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
@@ -56,9 +58,9 @@ if MAKE_RGH:
     MAX_SCALE = PARAMETERS_RGH['max_scale']
     STEP = PARAMETERS_RGH['step']
 
-OUTPUT_DIR_DEM = misc.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/DEM'))
-OUTPUT_DIR_RGH = misc.ensure_dir_exists(os.path.join(WORKING_DIR, 'processed/lidar/rasterized_lidar/roughness'))
-OUTPUT_DIR_RGH_SCALE = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR_RGH, 'scale_roughness'))
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+OUTPUT_DIR_DEM = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'DEM'))
+OUTPUT_DIR_SCALE = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'scale_roughness'))
 
 logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
@@ -87,11 +89,11 @@ for file in lidar_files:
 
     if MAKE_RGH:
 
-        output_path_mag=os.path.join(OUTPUT_DIR_RGH, 
+        output_path_mag=os.path.join(OUTPUT_DIR, 
                                     filename + f'_{MIN_SCALE}_{MAX_SCALE}_{STEP}.tif')
         
         if (not os.path.isfile(output_path_mag)) | OVERWRITE:
-            output_path_scale = os.path.join(OUTPUT_DIR_RGH_SCALE, 
+            output_path_scale = os.path.join(OUTPUT_DIR_SCALE, 
                                     'scale_' + filename + f'_{MIN_SCALE}_{MAX_SCALE}_{STEP}.tif')
             wbt.multiscale_roughness(
                 output_path_dem, 
@@ -106,4 +108,4 @@ if MAKE_DEM:
     logger.success(f'The DEM files were saved in the folder "{OUTPUT_DIR_DEM}".')
     
 if MAKE_RGH:
-    logger.success(f'The roughness files were saved in the folder "{OUTPUT_DIR_RGH}".')
+    logger.success(f'The roughness files were saved in the folder "{OUTPUT_DIR}".')

@@ -41,7 +41,7 @@ CHECK_TILES = cfg['check_tiles']
 
 WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
-INPUT_DIR_IMAGES = cfg['input_dir_images']
+INPUT_DIR_IMAGES = cfg['input_dir_rasters']
 
 LIDAR_TILES = cfg['lidar_tiles']
 ROOFS = cfg['roofs']
