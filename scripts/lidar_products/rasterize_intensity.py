@@ -42,6 +42,7 @@ METHOD = PARAMETERS['method'].lower()
 RES = PARAMETERS['resolution']
 RADIUS = PARAMETERS['radius']
 RETURNS = PARAMETERS['returns']
+EXCLUDED_CLASSES = PARAMETERS['excluded_classes']
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -61,7 +62,7 @@ for file in lidar_files:
                 output=output_path_tif, 
                 parameter="intensity", 
                 returns=RETURNS,
-                exclude_cls='1,2,3,5,7,9,13,15,16,19',
+                exclude_cls=EXCLUDED_CLASSES,
                 radius=RADIUS,
                 resolution=RES,
             )
@@ -71,7 +72,7 @@ for file in lidar_files:
                 output=output_path_tif, 
                 parameter="intensity", 
                 returns=RETURNS,
-                exclude_cls='1,2,3,5,7,9,13,15,16,19',
+                exclude_cls=EXCLUDED_CLASSES,
                 radius=RADIUS,
                 resolution=RES,
             )

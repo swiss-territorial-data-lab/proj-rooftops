@@ -61,9 +61,9 @@ logger.info('Read the files and getting the tile paths...')
 im_list_intensity = glob(os.path.join(INPUT_DIR_IMAGES, 'intensity', '*.tif'))
 im_list_roughness = glob(os.path.join(INPUT_DIR_IMAGES, 'roughness', '*.tif'))
 lidar_tiles = gpd.read_file(LIDAR_TILES)
+lidar_tiles = lidar_tiles[[TILE_ID, 'geometry']].copy()
 roofs = gpd.read_file(ROOFS)
-
-roofs.drop(columns=['ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN'], inplace=True)
+roofs = roofs[['OBJECTID', 'ALTI_MIN', 'geometry']].copy()
 
 logger.info('Filter roofs below threshold area...')
 condition = roofs.area < PROJECTED_AREA
@@ -216,7 +216,7 @@ roof_stats_cleaned_df = pd.DataFrame(roof_stats_cleaned_df.drop(columns=['geomet
 roof_stats_cleaned_gdf = gpd.GeoDataFrame(roof_stats_cleaned_df.merge(roofs[['OBJECTID', 'geometry']], on='OBJECTID', how='left'), crs='EPSG:2056')
 roof_stats_cleaned_gdf = roof_stats_cleaned_gdf.round(3)
 roof_stats_cleaned_gdf.drop(
-    columns=['tile_id', 'joined_area', 'EGID'],
+    columns=['tile_id', 'joined_area'],
     inplace=True
 )
 
