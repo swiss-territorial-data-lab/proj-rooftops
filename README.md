@@ -76,7 +76,7 @@ When *no ground truth is available*, the classification can be performed with th
 
 ```
 python scripts/lidar_products/filter_surfaces_by_attributes.py config/config_lidar_products.yaml
-python scripts/assess_results/assess_classif_surfaces.py config/config_lidar_products.yaml
+python scripts/assessment/assess_classif_surfaces.py config/config_lidar_products.yaml
 ```
 
 When *a ground truth is available*, the classification can be performed and assessed with the script `random_forest.py`.

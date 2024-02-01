@@ -15,9 +15,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as misc
+from functions.fct_misc import format_logger
 
-logger = misc.format_logger(logger)
+logger = format_logger(logger)
 
 # Argument and parameter specification
 parser = argparse.ArgumentParser(description="The script compares the occupation classification based on LiDAR products with that of the experts.")
@@ -31,6 +31,7 @@ with open(args.config_file) as fp:
 # Define constants ----------------------------------
 
 WORKING_DIR = cfg['working_dir']
+OUTPUT_DIR = cfg['output_dir']
 
 GT_PATH = cfg['gt_file']
 OCEN_LAYER = cfg['layer_ocen']
@@ -40,7 +41,7 @@ PREDICTIONS_PATH = cfg['predictions_file']
 PREDICTIONS_LAYER = cfg['predictions_layer']
 
 os.chdir(WORKING_DIR)
-OUTPUT_DIR = misc.ensure_dir_exists('final/expert_control')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Data processing --------------------------------------
 
