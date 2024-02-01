@@ -15,14 +15,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, cross_validate, cross_val_predict, cross_val_score, validation_curve
+from sklearn.model_selection import train_test_split, validation_curve
 
 import pickle
 
 sys.path.insert(1, 'scripts')
-import functions.fct_misc as misc
+from functions.fct_misc import format_logger
 
-logger = misc.format_logger(logger)
+logger = format_logger(logger)
 
 
 # Define fuctions ----------------------------------
@@ -142,20 +142,21 @@ if __name__ == '__main__':
     # Define constants ----------------------------------
 
     WORKING_DIR = cfg['working_dir']
+    OUTPUT_DIR = cfg['output_dir']
 
     GT_PATH = cfg['gt_file']
     OCEN_LAYER = cfg['layer_ocen']
     OCAN_LAYER = cfg['layer_ocan']
 
-    PREDICTIONS_PATH = cfg['predictions_file']
-    PREDICTIONS_LAYER = cfg['predictions_layer']
+    ROOF_PATH = cfg['roof_file']
+    ROOF_LAYER = cfg['roof_layer']
 
     TRAIN = cfg['train']
 
     written_files = []
 
     os.chdir(WORKING_DIR)
-    OUTPUT_DIR = misc.ensure_dir_exists('processed/roofs')
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # Data processing --------------------------------------
 
@@ -166,17 +167,20 @@ if __name__ == '__main__':
     ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
 
     logger.info('Format the data')
-    all_features_gdf = gpd.read_file(PREDICTIONS_PATH, layer=PREDICTIONS_LAYER)
-    features_gdf = all_features_gdf[
+    all_features_gdf = gpd.read_file(ROOF_PATH, layer=ROOF_LAYER)
+
+    consideration_condition = (
         (all_features_gdf.area>2) 
         # & (~all_features_gdf.median_r.isna())
         & (all_features_gdf.status!='undefined')
-    ].copy()
+    )
+    features_gdf = all_features_gdf[consideration_condition].copy()
     features_gdf['area'] = features_gdf.area
-    features_df = features_gdf.drop(columns=['tile_id', 'joined_area', 'EGID', 'ALTI_MAX', 'DATE_LEVE', 'SHAPE_AREA', 'SHAPE_LEN', 'tilepath_intensity', 'tilepath_roughness',
+    features_df = features_gdf.drop(columns=[
                             'count_i', 'count_r',
                             #  'nodata_overlap', 'min_i', 'max_r', 'max_i', 'ALTI_MIN', 'mean_i', 'median_i',
-                            'status', 'reason', 'geometry'])
+                            'status', 'reason', 'geometry'
+    ])
 
     if TRAIN:
         logger.info('Train and test a random forest for the OCEN')
@@ -195,23 +199,37 @@ if __name__ == '__main__':
         written_files.append(filepath)
 
     else:
-        _, features_array = prepare_features(features_df)
+        ignored_features_gdf = all_features_gdf[~consideration_condition].copy()
+        _, features_array, _ = prepare_features(features_df)
 
-        logger.info('Classifiy the roof planes for the OCAN')
-        rf_model_ocan = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCAN.pkl'), 'rb'))
-        predictions_ocan = rf_model_ocan.predict(features_array)
+        if 'model_ocan' in cfg.keys():
+            MODEL_OCAN = cfg['model_ocan']
 
-        features_gdf['pred_status_ocan'] = predictions_ocan
+            logger.info('Classifiy roof planes for the OCAN')
+            rf_model_ocan = pickle.load(open(MODEL_OCAN, 'rb'))
+            predictions_ocan = rf_model_ocan.predict(features_array)
 
-        logger.info('Classifiy the roof planes for the OCEN')
-        rf_model_ocen = pickle.load(open(os.path.join(OUTPUT_DIR, 'model_RF_OCEN.pkl'), 'rb'))
-        predictions_ocen = rf_model_ocen.predict(features_array)
+            features_gdf['pred_status_ocan'] = predictions_ocan
+            ignored_features_gdf['pred_status_ocan'] = ignored_features_gdf.status
 
-        features_gdf['pred_status_ocen'] = predictions_ocen
+        if 'model_ocen' in cfg.keys():
+            MODEL_OCEN = cfg['model_ocen']
 
-        filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
-        features_gdf.to_file(filepath, layer='roof_occupation_by_RF')
-        written_files.append(filepath)
+            logger.info('Classifiy roof planes for the OCEN')
+            rf_model_ocen = pickle.load(open(MODEL_OCEN, 'rb'))
+            predictions_ocen = rf_model_ocen.predict(features_array)
+
+            features_gdf['pred_status_ocen'] = predictions_ocen
+            ignored_features_gdf['pred_status_ocen'] = ignored_features_gdf.status
+
+        if ('model_ocan' in cfg.keys()) or ('model_ocen' in cfg.keys()):
+            all_features_gdf = pd.concat([features_gdf, ignored_features_gdf], ignore_index=True)
+
+            filepath = os.path.join(OUTPUT_DIR, 'roofs.gpkg')
+            all_features_gdf.to_file(filepath, layer='roof_occupation_by_RF')
+            written_files.append(filepath)
+        else:
+            logger.warning('No model was passed to make detections with.')
 
 
     print()
