@@ -52,7 +52,7 @@ get_zonal_stats.py:
 manual_thresholds.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: outputs/2019/roof_classification
-  roof_file: processed/occupation_roof_planes/roofs.gpkg
+  roof_file: outputs/2019/roof_classification/roofs.gpkg
   roof_layer: roof_stats
 
 

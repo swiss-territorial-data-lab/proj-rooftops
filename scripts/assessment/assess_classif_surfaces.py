@@ -51,6 +51,8 @@ ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
 ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
 
 predictions = gpd.read_file(PREDICTIONS_PATH, layer=PREDICTIONS_LAYER)
+predictions = predictions[predictions['status']!='undefined']
+logger.warning('The roofs classified as undefined are not considered.')
 
 logger.info('Calculate the satisfaction rate...')
 

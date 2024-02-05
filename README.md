@@ -73,7 +73,7 @@ The command lines perform the following steps:
     - Roof planes smaller than 2 m<sup>2</sup> are classified as occupied and no zonal stats are calculated. They are too small for a solar or vegetated installation.
     - Roof planes under which the LiDAR point cloud is not classified as building are classified as undefined. The existence of a roof should be controlled.
 
-When *no ground truth is available*, the classification can be performed with the script `filter_surfaces_by_attributes.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
+When *no ground truth is available*, the classification can be performed with the script `manual_thresholds.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
 
 ```
 python scripts/occupation_classification/manual_thresholds.py config/config_occupation_classification.yaml

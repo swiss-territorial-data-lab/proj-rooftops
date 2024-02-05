@@ -90,16 +90,17 @@ dupes_index = [roof_index for roof_index in index_over_lim if roof_index in seen
 index_over_lim = list(dict.fromkeys(index_over_lim))
 
 # Get roofs with one stat over the limit.
+logger.info(f'{roofs_gdf[roofs_gdf.index.isin(index_over_lim) & roofs_gdf.status.isna()].shape[0]} roof planes exceed at least one statistical threshold values')
+
 roofs_gdf = cause_occupation(roofs_gdf, roofs_gdf.index.isin(dupes_index) & roofs_gdf.status.isna(), 'Several parameters are over thresholds.')
 roofs_gdf = cause_occupation(roofs_gdf, (roofs_gdf['MOE_i'] > LIM_MOE) & roofs_gdf.status.isna(), f'The margin of error of the mean for the intensity is over {LIM_MOE}.')
 roofs_gdf = cause_occupation(roofs_gdf, (roofs_gdf['std_i'] > LIM_STD) & roofs_gdf.status.isna(), f'The standard deviation for the intensity is over {LIM_STD}.')
 roofs_gdf = cause_occupation(roofs_gdf, (roofs_gdf['median_r'] > LIM_ROUGHNESS) & roofs_gdf.status.isna(), f'The median of the roughness is over {LIM_ROUGHNESS}.')
 
-logger.info(f'{roofs_gdf[roofs_gdf.index.isin(index_over_lim) & roofs_gdf.status.isna()].shape[0]} roof planes exceed at least one statistical threshold values')
 logger.info('They have been classified as "occupied" surfaces.')
 
-roofs_gdf.loc[roofs_gdf.status.isna(), 'status'] = 'potentially free'
 logger.info(f'{roofs_gdf[roofs_gdf.status.isna()].shape[0]} roof planes do not exceed any threshold values')
+roofs_gdf.loc[roofs_gdf.status.isna(), 'status'] = 'potentially free'
 logger.info('They have been classified as "potentially free" surfaces.')
 
 logger.info('Save file...')
