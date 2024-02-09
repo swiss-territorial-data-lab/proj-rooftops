@@ -124,8 +124,8 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
 
 def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
-    Each detection can correspond to several labels.
-
+    Each detection can only correspond correspond to one label.
+    
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
         threshold (int, optional): threshold to apply on the IoU. Defaults to 0.1.
@@ -156,7 +156,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
 
 def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
-    Each detection can only correspond to one label.
+    Each detection can correspond to several labels.
 
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
