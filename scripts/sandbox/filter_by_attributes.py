@@ -1,19 +1,6 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
-#  Estimate roof suitability for solar and vegetated installations based on experts' critiera of slope and area.
-
-
 import os
 import sys
-import argparse
+from argparse import ArgumentParser
 from loguru import logger
 from yaml import load, FullLoader
 
@@ -27,7 +14,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser()
+parser = ArgumentParser()
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 
@@ -137,6 +124,7 @@ def set_heritage_status(roofs_gdf, condition):
 # Define constants --------------------------
 
 WORKING_DIRECTORY = cfg['working_directory']
+OUTPUT_DIRECTORY = cfg['output_directory']
 INPUT_FILES = cfg['input_files']
 PARAMETERS = cfg['parameters']
 
@@ -162,7 +150,7 @@ SUITABILITY_MESSAGES = {'ok': 'suitable for vegetation and solar panels', 'no ve
                       'nothing': 'not suitable for valorization', 'uncertain': 'unsure'}
 
 os.chdir(WORKING_DIRECTORY)
-FILEPATH = os.path.join(misc.ensure_dir_exists('processed/roofs'), 'roofs.gpkg')
+FILEPATH = os.path.join(misc.ensure_dir_exists(OUTPUT_DIRECTORY), 'classified_roofs.gpkg')
 
 logger.info('Read input files...')
 
@@ -172,11 +160,10 @@ heritage_ensemble = gpd.read_file(HERITAGE_ENSEMBLE)
 heritage_classement = gpd.read_file(HERITAGE_CLASSEMENT)
 industrial_zones = gpd.read_file(INDUSTRIAL_ZONES)
 
-roofs = misc.test_valid_geom(roofs[['OBJECTID', 'geometry', 'EGID']], correct=True, gdf_obj_name='DIT roofs')
-solar_surfaces = misc.test_valid_geom(
+roofs = misc.check_validity(roofs[['OBJECTID', 'geometry', 'EGID']], correct=True)
+solar_surfaces = misc.check_validity(
     solar_surfaces[['OBJECTID', 'EGID', 'TYPE_SURFA', 'ID_SURFACE', 'ORIENTATIO', 'PENTE_MOYE', 'IRR_MOYENN', 'SURFACE_TO', 'geometry']], 
-    correct=True,
-    gdf_obj_name='solar surfaces'
+    correct=True
 )
 
 logger.info('Merge the roofs as defined by the DIT and the OCEN...')
@@ -320,12 +307,12 @@ logger.info(f'With a limit set at {FLAT_VS_PITCHED_HOUSES}° for houses and "sky
             f'{len(common_egid)} buildings are in the two classes')
 logger.info(f'Buildings with both flat and pitched roof segments are classified in the class with the greatest number of roof planes.')
 
-egid_occurences = pd.concat([flat_occurences_egid, pitched_occurences_egid], axis=1)
+egid_occurences = pd.concat([flat_occurences_egid.rename('flat'), pitched_occurences_egid.rename('pitched')], axis=1)
 egid_occurences[egid_occurences.isna()] = 0
 egid_occurences.reset_index(inplace=True)
 
-flat_egids_list = egid_occurences.loc[egid_occurences[0] >= egid_occurences[1], 'EGID'].tolist()
-pitched_egids_list = egid_occurences.loc[egid_occurences[0] < egid_occurences[1], 'EGID'].tolist()
+flat_egids_list = egid_occurences.loc[egid_occurences.flat >= egid_occurences.pitched, 'EGID'].tolist()
+pitched_egids_list = egid_occurences.loc[egid_occurences.flat < egid_occurences.pitched, 'EGID'].tolist()
 
 roofs_by_zone['EGID_type'] = None
 roofs_by_zone.loc[roofs_by_zone.EGID.isin(flat_egids_list), 'EGID_type'] = 'flat'

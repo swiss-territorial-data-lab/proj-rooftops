@@ -1,19 +1,6 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
-#  Assess the experts' feedback for the classification of occupation and suitability of the roofs.
-
-
 import os
 import sys
-import argparse
+from argparse import ArgumentParser
 from glob import glob
 from loguru import logger
 from yaml import load, FullLoader
@@ -28,7 +15,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser()
+parser = ArgumentParser()
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 

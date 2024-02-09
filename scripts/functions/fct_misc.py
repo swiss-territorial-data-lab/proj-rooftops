@@ -6,6 +6,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 from shapely.affinity import scale
+from shapely.validation import make_valid
 
 
 def format_logger(logger):
@@ -28,7 +29,35 @@ def format_logger(logger):
     return logger
 
 
-logger = format_logger(logger)
+def check_validity(poly_gdf, correct=False):
+    '''
+    Test if all the geometry of a dataset are valid. When it is not the case, correct the geometries with a buffer of 0 m
+    if correct != False and stop with an error otherwise.
+
+    - poly_gdf: dataframe of geometries to check
+    - correct: boolean indicating if the invalid geometries should be corrected with a buffer of 0 m
+
+    return: a dataframe with valid geometries.
+    '''
+
+    invalid_condition = ~poly_gdf.is_valid
+
+    try:
+        assert(poly_gdf[invalid_condition].shape[0]==0), \
+            f"{poly_gdf[invalid_condition].shape[0]} geometries are invalid on" + \
+                    f" {poly_gdf.shape[0]} polygons."
+    except Exception as e:
+        print(e)
+        if correct:
+            print("Correction of the invalid geometries with the shapely function 'make_valid'...")
+            invalid_poly = poly_gdf.loc[invalid_condition, 'geometry']
+            poly_gdf.loc[invalid_condition, 'geometry'] = [
+                make_valid(poly) for poly in invalid_poly
+                ]
+        else:
+            sys.exit(1)
+
+    return poly_gdf
 
 
 def ensure_dir_exists(dirpath):
@@ -118,33 +147,5 @@ def test_crs(crs1, crs2="EPSG:2056"):
         sys.exit(1)
 
 
-def test_valid_geom(poly_gdf, correct=False, gdf_obj_name=None):
-    '''
-    Test if all the geometry of a dataset are valid. When it is not the case, correct the geometries with a buffer of 0 m
-    if correct != False and stop with an error otherwise.
 
-    - poly_gdf: dataframe of geometries to check
-    - correct: boolean indicating if the invalid geometries should be corrected with a buffer of 0 m
-    - gdf_boj_name: name of the dataframe of the object in it to print with the error message
-
-    return: a dataframe with only valid geometries.
-    '''
-
-    try:
-        assert(poly_gdf[poly_gdf.is_valid==False].shape[0]==0), \
-            f"{poly_gdf[poly_gdf.is_valid==False].shape[0]} geometries are invalid{f' among the {gdf_obj_name}' if gdf_obj_name else ''}."
-    except Exception as e:
-        logger.error(e)
-        if correct:
-            logger.warning("Correction of the invalid geometries with a buffer of 0 m...")
-            corrected_poly = poly_gdf.copy()
-            corrected_poly.loc[corrected_poly.is_valid==False,'geometry'] = \
-                            corrected_poly[corrected_poly.is_valid==False]['geometry'].buffer(0)
-
-            return corrected_poly
-        else:
-            sys.exit(1)
-
-    logger.info(f"There aren't any invalid geometries{f' among the {gdf_obj_name}' if gdf_obj_name else ''}.")
-
-    return poly_gdf
+logger = format_logger(logger)

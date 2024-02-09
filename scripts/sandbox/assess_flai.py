@@ -1,19 +1,6 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
-#  Assess flai's vectorized classification of the roof objects
-
-
 import os
 import sys
-import argparse
+from argparse import ArgumentParser
 from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
@@ -28,7 +15,7 @@ import functions.fct_misc as misc
 logger = misc.format_logger(logger)
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser()
+parser = ArgumentParser()
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 
@@ -98,7 +85,10 @@ for threshold in tqdm([i / 100 for i in range(10, 100, 5)], desc='Search for the
     tp_gdf_loop, fp_gdf_loop, fn_gdf_loop = metrics.get_fractional_sets(gdf_detec, gdf_gt, iou_threshold=threshold, method=METHOD)
 
     # Compute metrics
-    precision, recall, f1 = metrics.get_metrics(tp_gdf_loop, fp_gdf_loop, fn_gdf_loop)
+    TP = len(tp_gdf_loop)
+    FP = len(fp_gdf_loop)
+    FN = len(fn_gdf_loop)
+    precision, recall, f1 = metrics.get_metrics(TP, FP, FN)
 
     if f1 > best_f1 or threshold == 0:
         tp_gdf = tp_gdf_loop
