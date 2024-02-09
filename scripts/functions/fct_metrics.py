@@ -622,8 +622,8 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
-    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
