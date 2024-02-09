@@ -1,0 +1,209 @@
+# 1 - Tiles generation
+generate_tiles.py:
+  working_dir: inputs
+  image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
+  tiles: ground_truth/tiles/Tuiles.shp
+  # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  egids: ground_truth/egid/EGIDs_GT_test.csv
+  output_dir: image_segmentation/tiles/test_merge
+  filters:
+    building_type: all
+    roof_inclination: all
+  buffer: 1                  # m, Distance buffer around the rooftop shape (prevent to "cut" the rooftop border)
+  mask: False                # Choose if a mask (by EGID) is applied to image to only keep the building visible
+
+# 2 - Segment Anything Method
+segment_images.py:
+  working_dir: .
+  image_dir:  inputs/image_segmentation/tiles/test_merge
+  output_dir: outputs/image_segmentation/test_merge
+  vector_extension: gpkg      # 'gpkg' or 'shp'
+  image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
+    enable: False
+    size: [0, 1026, 0, 1026]  # Crop image to perform test 
+  SAM:
+    dl_checkpoints: False     # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
+    checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    large_tile:
+      method: batch           # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
+      thd_size: 5500000       # pixels
+      tile_size: 512          # pixels (square). Will be ignored if method=resample
+      resample: 0.2           # m, pixel size. Will be ignore if method=batch
+    foreground: True          # if True, save only foreground masks, no background mask 
+    unique: True              # attribute unique ID to mask 
+    mask_multiplier: 255
+    custom_SAM:               # customize the parameters for Segment Anything (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
+      enable: True
+      custom_parameters: {
+        "points_per_side": 64,
+        "points_per_batch": 64,
+        "pred_iou_thresh": 0.85,
+        "stability_score_thresh": 0.8,
+        "stability_score_offset": 3.0,
+        "box_nms_thresh":  0.5,
+        "crop_n_layers": 0,
+        "crop_nms_thresh": 0.3,
+        "crop_overlap_ratio": 0.7,
+        "crop_n_points_downscale_factor": 9,
+        # "point_grids": None,
+        "min_mask_region_area": 200,
+        # "output_mode": str = "binary_mask",
+        }
+    visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
+
+# 3 - Create an image mask keeping buildings
+filter_merge_detections.py:
+  working_dir: .
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: outputs/image_segmentation/test_merge
+  vector_extension: gpkg        # 'gpkg' or 'shp'
+  crs: "EPSG:2056"              # Projection of the input file
+
+
+# 4 - Evaluate the results
+assess_results.py:  
+  working_dir: .
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: outputs/image_segmentation/test_merge
+  detections: outputs/image_segmentation/test_merge/vectors/roof_segmentation.gpkg
+  method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  additional_metrics: True
+  visualisation: True
+  threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
+  buffer: 0.1              
+  object_attributes:
+    parameters: [area, nearest_distance_border, roundness] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
+
+# 5 - Estimate the free area
+assess_area.py:
+  working_dir: .
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: outputs/image_segmentation/test_merge
+  detections: outputs/image_segmentation/test_merge/vectors/roof_segmentation.gpkg
+  method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  threshold: 0.1
+  bins: [0, 25, 50, 75, 100] 
+  visualisation: True
+
+# 6 - Hyperparamters optimization
+optimize_hyperparameters.py:
+  working_dir: .
+  image_dir: inputs/image_segmentation/tiles/review
+  # roofs: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_v2.csv
+  output_dir: outputs/image_segmentation/optimize_treview
+  detections: vectors/roof_segmentation.gpkg
+  vector_extension: gpkg          # 'gpkg' or 'shp'
+  crs: EPSG:2056                  # Projection of the input file 
+  method: fusion                  # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
+  additional_metrics: False
+  visualisation: True
+  threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
+  buffer: 0.1               
+  object_attributes:
+    parameters: ['area', 'nearest_distance_border']  # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+  image_crop:                     # Activate the option to crop the input image according to pixel coordinates
+    enable: false
+    size: [0, 1026, 0, 1026] 
+  SAM:
+    dl_checkpoints: False         # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
+    checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
+    batch:
+      method: batch               # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
+      thd_size: 5500000           # pixels
+      tile_size: 512              # pixels (square)
+      resample: 0.2               # m, pixel size. Will be ignore if method=batch
+    foreground: True
+    unique: True
+    mask_multiplier: 255
+    custom_SAM: True
+    visualisation_masks: False 
+  optimization:
+    n_trials: 50                  # Maximum number of performed trials to find the optimized hyperparamters. Can be less if all the combinations of parameters have been explored.
+    sampler: TPESampler           # Choices: 1:TPESampler; 2:GridSampler 
+    param_grid:                   # Define explicit hyperameter values to test: valid only for the GridSampler method. Values will be ignored using the TPESampler method.
+      points_per_side: [160, 160]
+      points_per_batch: [64, 64]
+      pred_iou_thresh: [0.9, 0.9]
+      stability_score_thresh: [0.95,0.95]
+      stability_score_offset: [8.0,8.0]
+      box_nms_thresh: [0.1, 1.0, 5.0]             
+      crop_n_layers: [0, 2, 5]
+      crop_nms_thresh: [5.0,5.0]
+      crop_overlap_ratio: [0, 1]
+      crop_n_points_downscale_factor: [0,0]
+      min_mask_region_area: [50, 50]
+
+
+## Additional scripts - sandbox
+
+# !!! Evaluate the results: test on synthetic examples for development
+assess_synthetic_examples.py:  
+  working_dir: .
+  ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
+  output_dir: outputs/metrics_charge
+  detections: data/GT/synthetic_examples/detection_synthetic.gpkg
+  egids: inputs/image_segmentation/ground_truth/EGIDs_full_GT.csv
+  roofs: inputs/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  method: many-to-many
+  threshold: 0.1                  # Threshold value to consider that a detection overlaps a label
+
+# Create an image mask keeping the buildings visible
+mask_for_buildings.py:
+  transparency: true
+  working_dir: data/
+  image_dir: ../inputs/tiles/
+  roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+
+# Prepare the tile geometry according to the AOI and zoom level
+prepare_data.py: 
+  srs: "EPSG:2056"                 # Projection of the input file
+  datasets:
+    labels_shapefile: data/AOI.shp
+  output_folder: outputs/SAM/
+  zoom_level: 18                   # z, keep between 15 and 18  
+
+# Request tiles according to the provided AOI and tiles parameters
+generate_tilesets.py:
+  debug_mode: False               # reduced amount of tiles
+  datasets:
+    aoi_tiles_geojson: outputs/SAM/tiles.geojson
+    orthophotos_web_service:
+      type: XYZ                   # supported values: 1. MIL = Map Image Layer 2. WMS 3. XYZ
+      url: https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/2021/3857/{z}/{x}/{y}.jpeg
+      # url: https://wms.geo.admin.ch/service
+      # layers: ch.swisstopo.swissimage
+      # srs: "EPSG:2056"
+  output_folder: outputs/SAM/
+  tile_size: 512 # per side, in pixels
+  overwrite: True
+  n_jobs: 10
+  COCO_metadata:
+    year: 2021
+    version: 1.0
+    description: Swiss Image Hinterground w/
+    contributor: swisstopo
+    url: https://swisstopo.ch
+    license:
+      name: Unknown
+      url:
+    category:
+        name: "Roof"
+        supercategory: "Land usage"

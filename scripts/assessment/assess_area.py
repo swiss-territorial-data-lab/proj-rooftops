@@ -1,13 +1,8 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
-import argparse
 import os
-import time
 import sys
+from argparse import ArgumentParser
 from loguru import logger
+from time import time
 from yaml import load, FullLoader
 
 import geopandas as gpd
@@ -160,11 +155,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
 if __name__ == "__main__":
     # Start chronometer
-    tic = time.time()
+    tic = time()
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
+    parser = ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 
@@ -194,7 +189,7 @@ if __name__ == "__main__":
         logger.success(f'  file: {path}{"" if written_files[path] == "" else f", layer: {written_files[path]}"}')
 
     # Stop chronometer  
-    toc = time.time()
+    toc = time()
     logger.info(f"Nothing left to be done: exiting. Elapsed time: {(toc-tic):.2f} seconds")
 
     sys.stderr.flush()

@@ -139,8 +139,8 @@ def crop(source, size, output):
             dst.write(src.read(window=window))  
 
         return file_path
-
-
+    
+    
 def dissolve_by_attribute(desired_file, original_file, name, attribute, buffer=0.01):
     """Dissolve shape according to a given attribute in the gdf
 
@@ -164,12 +164,12 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute, buffer=0
         logger.info(f"File {name}_{attribute}.shp does not exist")
         logger.info(f"Create it")
         gdf = gpd.read_file(original_file)
-
+        
         logger.info(f"Dissolved shapes by {attribute}")
         gdf.geometry = gdf.apply(lambda row: make_valid(row.geometry) if not row.geometry.is_valid else row.geometry, axis=1)
-        gdf['geometry'] = gdf['geometry'].buffer(buffer, join_style='mitre') # apply a small buffer to prevent thin spaces due to polygon gaps 
+        gdf['geometry'] = gdf['geometry'].buffer(buffer, join_style=2) # apply a small buffer to prevent thin spaces due to polygons gaps        
         dissolved_gdf = gdf.dissolve(attribute, aggfunc={'ALTI_MIN': np.min}, as_index=False)
-        
+        dissolved_gdf['geometry'] = dissolved_gdf['geometry'].buffer(-buffer, join_style=2) # apply a small buffer to prevent thin spaces due to polygons gaps        
 
         gdf_considered_sections = gdf[gdf.area > 2].copy()
         attribute_count_gdf = gdf_considered_sections.EGID.value_counts() \
@@ -298,7 +298,6 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
     array_egids = egids.EGID.to_numpy()
     logger.info(f'    - {egids.shape[0]} selected EGIDs.')
 
-
     if ('EGID' in path_roofs) | ('egid' in path_roofs):
         roofs_gdf = gpd.read_file(path_roofs)
     else:
@@ -306,7 +305,7 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
         _, ROOFS_NAME = os.path.split(path_roofs)
         attribute = 'EGID'
         original_file_path = path_roofs
-        desired_file_path = os.path.join(output_dir, ROOFS_NAME[:-4] + "_" + attribute + ".shp")
+        desired_file_path = os.path.join(os.path.dirname(path_roofs), ROOFS_NAME[:-4] + "_" + attribute + ".shp")
 
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
@@ -365,7 +364,7 @@ def format_detections(detections_gdf):
         detections_gdf['detection_id'] = detections_gdf.det_id.astype(int)
     else:
         detections_gdf['detection_id'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(ignore_index=True)
+    detections_gdf = detections_gdf.explode(ignore_index=True)
     logger.info(f"    - {len(detections_gdf)} detections")
 
     return detections_gdf
@@ -448,6 +447,23 @@ def relative_error_df(df, target, measure):
     re.replace([np.inf], 1.0, inplace=True)
 
     return re
+
+
+def roundness(gdf):
+    """Compute the roundness [0,1] of a polygon https://en.wikipedia.org/wiki/Roundness#Roundness_error_definitions 
+
+    Args:
+        gdf: geodataframe
+
+    Return:
+        gdf: geodataframe + new column for the computed paramters
+    """
+
+    area = gdf.area
+    perimeter = gdf.length
+    gdf['roundness'] = (4 * np.pi * area) / perimeter**2.0
+
+    return gdf
 
 
 def test_crs(crs1, crs2="EPSG:2056"):

@@ -1,12 +1,14 @@
-# Folders/Files
-tests/
-output/
-data/
-model/
-WBT/
-input/
-scripts/plots.py
+# Files
 **/*/test*.ipynb
+
+# Folders
+data/
+output*/
+input*/
+model*/
+tests/
+.vscode/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

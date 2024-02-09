@@ -15,15 +15,13 @@ from shapely.geometry import GeometryCollection
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
-
 def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
 
-    if surface_type=='occupied':
-        surface_type='occup'
-    elif surface_type!='free':
+    if surface_type == 'occupied':
+        surface_type = 'occup'
+    elif surface_type != 'free':
         logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
         sys.exit(1)
-
 
     # Determine relative results
 
@@ -35,8 +33,6 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
     # by attriubte
     attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
         / attribute_surface_df[f'{surface_type}_area_labels']
-    
-    
     
     return egid_surfaces_df, surfaces_df, attribute_surface_df
 
@@ -176,15 +172,15 @@ def apply_iou_threshold_one_to_many(tp_gdf_ini, threshold=0.1):
     true_detections_index = true_detections_gdf['detection_id'].unique().tolist()
 
     # Check that the label is at least 25% under the prediction.
-    tp_gdf_ini['label_in_pred']=round(tp_gdf_ini['label_geometry'].intersection(tp_gdf_ini['detection_geometry']).area/tp_gdf_ini['label_geometry'].area, 3)
+    tp_gdf_ini['label_in_pred'] = round(tp_gdf_ini['label_geometry'].intersection(tp_gdf_ini['detection_geometry']).area/tp_gdf_ini['label_geometry'].area, 3)
     tp_gdf_temp = tp_gdf_ini[(tp_gdf_ini['detection_id'].isin(true_detections_index)) & (tp_gdf_ini['label_in_pred'] > 0.25)]
 
     # For each label, only keep the pred with the best IoU.
     sorted_tp_gdf_temp = tp_gdf_temp.sort_values(by='IoU')
-    tp_gdf=sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
+    tp_gdf = sorted_tp_gdf_temp.drop_duplicates(['label_id'], keep='last', ignore_index=True)
     detection_id_tp = tp_gdf['detection_id'].unique().tolist()
 
-    fp_gdf_temp=tp_gdf_ini[~tp_gdf_ini['detection_id'].isin(detection_id_tp)]
+    fp_gdf_temp = tp_gdf_ini[~tp_gdf_ini['detection_id'].isin(detection_id_tp)]
     fp_gdf_temp = fp_gdf_temp.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IoU == g.IoU.max()])
 
     return tp_gdf, fp_gdf_temp
@@ -276,7 +272,6 @@ def get_fractional_sets(detections_gdf, labels_gdf, method='one-to-one', iou_thr
     fp_gdf = left_join[left_join.label_id.isna()].copy()
     fp_gdf = pd.concat([fp_gdf, fp_gdf_temp])
     assert(len(fp_gdf[fp_gdf.duplicated()]) == 0)
-
 
     # FALSE NEGATIVES -> objects that have been missed by the detection algorithm
     right_join = gpd.sjoin(labels_gdf, detections_gdf, how='left', predicate='intersects', lsuffix='_label', rsuffix='_det')

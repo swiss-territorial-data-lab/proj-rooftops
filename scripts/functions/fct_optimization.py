@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 
 import optuna
 
+
 def plot_optimization_results(study, targets={0: 'f1 score'}, output_path='.'):
     """Plot the parameter importance, the contour, the EDF, the history and the slice for the optimization.
 
@@ -20,7 +21,7 @@ def plot_optimization_results(study, targets={0: 'f1 score'}, output_path='.'):
         list: path of the written files from the working directory.
     """
 
-    written_files=[]
+    written_files = []
 
     for target in targets.keys():
 
@@ -48,6 +49,7 @@ def plot_optimization_results(study, targets={0: 'f1 score'}, output_path='.'):
 
     return written_files
 
+
 def save_best_hyperparameters(study, targets={0: 'f1 score'}, output_dir='.'):
     """Save the best hyperparameters into a txt file.
 
@@ -70,7 +72,7 @@ def save_best_hyperparameters(study, targets={0: 'f1 score'}, output_dir='.'):
         for key in best_params.keys():
             best_hyperparam_dict[key] = best_params[key]
 
-        best_hyperparam_df=pd.DataFrame(best_hyperparam_dict, index=[0])
+        best_hyperparam_df = pd.DataFrame(best_hyperparam_dict, index=[0])
 
     except RuntimeError as e:
         if 'A single best trial cannot be retrieved from a multi-objective study.' in str(e):

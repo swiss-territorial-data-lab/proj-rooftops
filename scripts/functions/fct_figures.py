@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 
-
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
 
     written_file = []
@@ -53,20 +52,46 @@ def plot_surface(dir_plots, df, attribute, xlabel):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')  
     ax[0].set_xlabel(xlabel, fontweight='bold')
-    ax[0].set_ylabel('Surface ($m^2$)', fontweight='bold')
+    ax[0].set_ylabel('area ($m^2$)', fontweight='bold')
     ax[1].set_xlabel(xlabel, fontweight='bold')
 
     ax[0].legend('', frameon=False)  
     ax[1].legend(['Free', 'Occupied'], bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    ax[0].set_title(f'GT surfaces by {attribute.replace("_", " ")}')
-    ax[1].set_title(f'Detection surfaces by {attribute.replace("_", " ")}')
+    ax[0].set_title(f'GT areas by {attribute.replace("_", " ")}')
+    ax[1].set_title(f'Detection areas by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_{attribute}.png')  
+    plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
     return plot_path
+
+
+def plot_surface_bin(dir_plots, df, bins):
+
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    # df = df[df['attribute'] == attribute] 
+    bins = list(set(bins).intersection(df.keys()))
+    bins.sort()
+
+    values = df[bins].iloc[0]
+
+    df = pd.DataFrame({'bins':bins, 'val':values * 100})
+    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
+
+    plt.xlabel('Free surface area (%)', fontweight='bold')
+    plt.ylabel('Accurate detection (%)', fontweight='bold')
+    plt.legend('', frameon=False)
+    plt.title('EGID')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
 
 def plot_groups(dir_plots, df, attribute, xlabel):
 
@@ -135,7 +160,6 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     return plot_path
 
 
-
 def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(12,8))
@@ -160,7 +184,7 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     for c in ax.containers:
         labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=10)
 
     plt.ylim(0, 1)
     plt.gca().set_yticks(plt.gca().get_yticks().tolist())
@@ -176,7 +200,72 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
     plt.title(f'Counts by {attribute.replace("_", " ")}')
 
     plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'counts_{attribute}_percent.png')  
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_histo_object(dir_plots, df, attribute):
+
+    fig, ax = plt.subplots(figsize=(12,8))
+
+    df['descr'].value_counts(sort=False).plot.bar(rot=0, log=True, width=0.8)
+
+    for c in ax.containers:
+        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color="white", labels=labels, fontsize=10)
+
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
+
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel('', fontweight='bold')
+    plt.ylabel('Count', fontweight='bold')
+    plt.ylim(1e0,1e4)
+
+    plt.legend(title='Roundness', bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    # plt.title(f'Counts by {attribute.replace("_", " ")}')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'counts_{attribute}_GT.png')  
+    plt.savefig(plot_path, bbox_inches='tight')
+    plt.close(fig)
+
+    return plot_path
+
+
+def plot_stacked_grouped_object(dir_plots, df, param_ranges, attribute):
+
+    fig, ax = plt.subplots(figsize=(12,8))
+    df_toplot = pd.DataFrame() 
+
+    for lim_inf, lim_sup in param_ranges:
+        filter_df = df[(df['roundness'] >= lim_inf) & (df['roundness'] <= lim_sup)]
+        filter_df['round_cat'] = f"{lim_inf} - {lim_sup}" 
+        df_toplot = pd.concat([df_toplot, filter_df], ignore_index=True)
+
+    df_toplot = df_toplot[['descr', 'round_cat']] 
+    df_toplot.groupby(['descr', 'round_cat']).value_counts().unstack().plot(kind='bar', stacked=True, log='True')
+
+    # for c in ax.containers:
+    #     labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
+    #     ax.bar_label(c, label_type='center', color="white", labels=labels, fontsize=10)
+
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
+    # plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
+    if attribute == 'object_class':
+        plt.xticks(rotation=40, ha='right')
+    plt.xlabel('', fontweight='bold')
+    plt.ylabel('Count', fontweight='bold')
+    plt.ylim(1e-1,1e4)
+
+    plt.legend(title='Roundness', bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
+    # plt.title(f'Counts by {attribute.replace("_", " ")}')
+
+    plt.tight_layout() 
+    plot_path = os.path.join(dir_plots, f'roundness_class.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -205,29 +294,6 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
  
     plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
-    plt.savefig(plot_path, bbox_inches='tight')
-    plt.close(fig)
-
-    return plot_path
-
-
-def plot_surface_bin(dir_plots, df, bins):
-
-    fig, ax = plt.subplots(1, 1, figsize=(12,8))
-
-    bins = list(set(bins).intersection(df.keys()))
-
-    values = df[bins].iloc[0]
-
-    df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
-
-    plt.xlabel('Free surface area (%)', fontweight='bold')
-    plt.ylabel('Accurate detection (%)', fontweight='bold')
-    plt.legend('', frameon=False)
-
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_accuracy.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
