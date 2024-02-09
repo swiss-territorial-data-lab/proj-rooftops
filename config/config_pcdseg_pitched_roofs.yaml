@@ -47,8 +47,8 @@ vectorization.py:
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 91        # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
-    max: 210       # m2, maximum area of the segmented objects, above the vectorized object in will be classified as plane
+    min: 11        # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
+    max: 240       # m2, maximum area of the segmented objects, above the vectorized object in will be classified as plane
   alpha_shape: 2.4          # Alpha parameter used in the alpha shape algorithm to define a bounding polygon around a group of points 
   visualisation: False
 

@@ -12,6 +12,7 @@ optuna
 pygeohash
 pyyaml
 rasterio
+rasterstats
 scikit-learn
 visvalingamwyatt
 whitebox

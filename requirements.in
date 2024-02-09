@@ -15,6 +15,7 @@ optuna
 pygeohash
 pyyaml
 rasterio
+rasterstats
 requests
 scikit-learn
 segment-geospatial
