@@ -1,14 +1,10 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import re
 import sys
 import time
 import yaml
+
 from glob import glob
 from loguru import logger
 from tqdm import tqdm
@@ -16,7 +12,6 @@ from tqdm import tqdm
 import geopandas as gpd
 import pandas as pd
 
-# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
@@ -34,18 +29,18 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     written_files = []
 
-    # Get the EGIDS of interest
+    # Get the buildings of interest
     logger.info("- List of selected EGID")
     egids = pd.read_csv(EGIDS)
 
-    # Get the rooftop shapes
-    logger.info("- Roof shapes")
+    # Get the roof shapes
+    logger.info("    - Roof shapes")
     ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
     desired_file_path = ROOFS[:-4]  + "_EGID.shp"
     roofs = misc.dissolve_by_attribute(desired_file_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.01)
     roofs['EGID'] = roofs['EGID'].astype(int)
     roofs_gdf = roofs[roofs.EGID.isin(egids.EGID.to_numpy())].copy()
-    logger.info(f"  Number of buildings to process: {len(roofs_gdf)}")
+    logger.info(f"Number of buildings to process: {len(roofs_gdf)}")
 
     # Read all the shapefiles produced, filter them and merge them into a single layer  
     logger.info(f"Read the name of the shapefiles")
@@ -54,7 +49,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
     for tile in tqdm(tiles, desc='Read detection shapefiles', total=len(tiles)):
 
-        # Prepare objects shp 
+        # Prepare object shapes 
         objects = gpd.read_file(tile)
         objects_shp = objects.copy()
         objects_shp.crs = CRS
@@ -63,7 +58,7 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         objects_shp['geometry_noholes_shp'] = objects_shp.apply(misc.fillit, axis=1)
         objects_shp['area_noholes_shp'] = objects_shp.geometry_noholes_shp.area 
 
-        # Prepare roofs shp
+        # Prepare roof shapes
         egid = float(re.sub('[^0-9]','', os.path.basename(tile)))
         egid_shp = roofs_gdf[roofs_gdf['EGID'] == egid].copy()
         egid_shp['area_roof'] = egid_shp.area
@@ -73,19 +68,19 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
 
         misc.test_crs(objects_shp, egid_shp)
 
-        # Filter vectorised objects. Threshold values have been set
+        # Filter vectorized objects with threshold values
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
         objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
-                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes with an area close to the roof area 
-                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes intersecting the roof extension only partially
+                                            (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes displaying an area close to the roof area 
+                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes partially intersecting the roof extension
 
         objects_filtered['area'] = objects_filtered.area 
 
         objects_filtered = objects_filtered.drop(['geometry_shp', 'geometry_noholes_shp', 'geometry_roof', 'index_right'], axis=1)
         objects_clip = gpd.clip(objects_filtered, egid_shp.geometry.buffer(-buffer))
         
-        # Concatenate the results into one geodataframe.
+        # Concatenate the results into a single geodataframe.
         vector_layer = gpd.pd.concat([vector_layer, objects_clip], ignore_index=True)
 
     # Save the vector layer in a gpkg 
@@ -106,6 +101,7 @@ if __name__ == "__main__":
 
     # Start chronometer
     tic = time.time()
+    logger.info('Filter and merge vectors')
     logger.info('Starting...')
 
     # Argument and parameter specification
@@ -120,9 +116,9 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
+    OUTPUT_DIR = cfg['output_dir']
     EGIDS = cfg['egids']
     ROOFS = cfg['roofs']
-    OUTPUT_DIR = cfg['output_dir']
     SHP_EXT = cfg['vector_extension']
     CRS = cfg['crs']
 
