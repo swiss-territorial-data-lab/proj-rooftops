@@ -1,28 +1,27 @@
-# 1 - Combination of pcd and
-combine_results.py:  
+# 1 - Results combination of pcd segmentation and img segmentation
+combine_results_seg.py:  
   working_dir: .
+  output_dir: outputs/results_combination/training/config2
   img_seg: outputs/image_segmentation/training_equal_precision_recall/vectors/roof_segmentation.gpkg
   pcd_seg: outputs/pcd_segmentation/outputs/final_detections_pcd_seg.gpkg
   layer_pcd: detections_pcd_seg 
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_full.csv
-  output_dir: outputs/results_combination/training/config2
-
 
 # 2 - Evaluate the results
 assess_results.py:  
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
+  output_dir: outputs/results_combination/training/config2
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: outputs/results_combination/training/config2
   detections: roof_segmentation.gpkg
-  method: fusion # Method choices 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
-  additional_metrics: True
-  visualisation: True
-  threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
+  method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
+  additional_metrics: True      # compute metrics for given attributes (building type, roof type, object class, object attributes)
+  threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   object_attributes:
-    parameters: ['area', 'nearest_distance_border'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: [area, nearest_distance_border, roundness] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
+  visualisation: True           # show plots
