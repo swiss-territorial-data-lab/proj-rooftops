@@ -39,7 +39,7 @@ All the dependencies required for the project are listed in `requirements.in` an
 
     - Requirements for the LiDAR workflow only
 
-            $ pip install -r requirements/requirements_LiDAR.txt
+            $ pip install -r requirements/requirements_lidar.txt
 
 
 _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:

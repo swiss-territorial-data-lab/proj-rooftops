@@ -126,7 +126,7 @@ def main (WORKING_DIR, OUTPUT_DIR,
             # Add segmented planes to a dataframe
             plane = np.asarray(segments[i].points)
             plane_df = pd.DataFrame({'X': plane[:, 0],'Y': plane[:, 1],'Z': plane[:, 2], 'group': i, 'type': 'plane'})
-            planes_df = pd.concat([planes_df, plane_df], ignore_index=True)
+            planes_df = pd.concat([planes_df.astype(plane_df.dtypes), plane_df], ignore_index=True)
 
             if len(remaining_pts.points) <= ransac:
                 break
