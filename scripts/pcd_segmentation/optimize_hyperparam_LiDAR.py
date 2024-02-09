@@ -79,7 +79,7 @@ def objective(trial):
     )
     metrics_df, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
                                                     LABELS, all_occupation_gdf,
-                                                    EGIDS, ROOFS, method=METHOD)
+                                                    EGIDS, ROOFS, method=METHOD, buffer=0.01)
 
     f1 = metrics_df.loc[metrics_df.attribute=='EGID', 'f1'].iloc[0]
     median_iou = metrics_df.loc[metrics_df.attribute=='EGID', 'IoU_median'].iloc[0]
