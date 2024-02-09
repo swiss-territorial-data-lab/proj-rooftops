@@ -6,7 +6,7 @@ prepare_data.py:
     pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
     egids: EGIDs_GT_training.csv
-  output_dir: processed/PCD_segmentation/pitched_roofs
+  output_dir: outputs/PCD_segmentation/pitched_roofs
   filters:
     # building_type: residential
     roof_inclination: pitched
@@ -20,7 +20,7 @@ prepare_data.py:
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/pitched_roofs
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
   output_dir: per_EGID_data
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
@@ -40,7 +40,7 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/pitched_roofs
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
   output_dir: .
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
@@ -56,11 +56,11 @@ vectorization.py:
 # 4 - Evaluate the results
 assess_results.py: 
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  output_dir: processed/PCD_segmentation/pitched_roofs
-  detections: processed/PCD_segmentation/pitched_roofs/all_EGID_occupation.gpkg
+  output_dir: outputs/PCD_segmentation/pitched_roofs
+  detections: outputs/PCD_segmentation/pitched_roofs/all_EGID_occupation.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
-  egids: processed/PCD_segmentation/pitched_roofs/completed_egids.csv
-  roofs: processed/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  egids: outputs/PCD_segmentation/pitched_roofs/completed_egids.csv
+  roofs: outputs/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
   additional_metrics: True
@@ -73,7 +73,7 @@ assess_results.py:
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/processed/PCD_segmentation/pitched_roofs
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
   output_dir: optimization
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
