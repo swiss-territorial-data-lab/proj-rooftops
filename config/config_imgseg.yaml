@@ -6,7 +6,7 @@ generate_tiles.py:
   # roofs: image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: ground_truth/egid/EGIDs_GT_test.csv
-  output_dir: image_segmentation/tiles/test_merge
+  output_dir: image_segmentation/tiles/final_test
   filters:
     building_type: all
     roof_inclination: all
@@ -16,8 +16,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/test_merge
-  output_dir: outputs/image_segmentation/test_merge
+  image_dir:  inputs/image_segmentation/tiles/final_test
+  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -39,16 +39,16 @@ segment_images.py:
       custom_parameters: {
         "points_per_side": 64,
         "points_per_batch": 64,
-        "pred_iou_thresh": 0.85,
+        "pred_iou_thresh": 0.65,
         "stability_score_thresh": 0.8,
-        "stability_score_offset": 3.0,
-        "box_nms_thresh":  0.5,
+        "stability_score_offset": 5.0,
+        "box_nms_thresh":  0.3,
         "crop_n_layers": 0,
-        "crop_nms_thresh": 0.3,
+        "crop_nms_thresh": 0.8,
         "crop_overlap_ratio": 0.7,
         "crop_n_points_downscale_factor": 9,
         # "point_grids": None,
-        "min_mask_region_area": 200,
+        "min_mask_region_area": 250,
         # "output_mode": str = "binary_mask",
         }
     visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
@@ -59,7 +59,7 @@ filter_merge_detections.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   # roofs: inputs/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/test_merge
+  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: "EPSG:2056"              # Projection of the input file
 
@@ -71,8 +71,8 @@ assess_results.py:
   # roofs: input/image_segmentation/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/test_merge
-  detections: outputs/image_segmentation/test_merge/vectors/roof_segmentation.gpkg
+  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
+  detections: outputs/image_segmentation/final_test_pre_eq_rec/vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualisation: True
