@@ -124,7 +124,7 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
 
 def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
     """Apply the IoU threshold on the TP detection to only keep the ones with sufficient intersection over union.
-    Each detection can only correspond correspond to one label.
+    Each detection can only correspond to one label.
     
     Args:
         tp_gdf_ini (geodataframe): geodataframe of the potiential true positive detection
@@ -622,8 +622,8 @@ def tag(gt, dets, threshold, method, buffer=0.001, gt_prefix='gt_', dets_prefix=
         charges_dict = {**charges_dict, **this_group_charges_dict}
 
     # remove the buffer applied before group assignement to recover original geometry 
-    _gt['geometry'] = _gt.geometry.buffer(-buffer, join_style=2)
-    _dets['geometry'] = _dets.geometry.buffer(-buffer, join_style=2)
+    _gt['geometry'] = _gt.geometry.buffer(buffer, join_style=2)
+    _dets['geometry'] = _dets.geometry.buffer(buffer, join_style=2)
 
     _gt = _gt.apply(lambda row: assign_groups(row), axis=1)
     _dets = _dets.apply(lambda row: assign_groups(row), axis=1)
