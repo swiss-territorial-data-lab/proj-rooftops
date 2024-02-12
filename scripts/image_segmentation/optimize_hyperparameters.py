@@ -1,22 +1,17 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import sys
 import time
 import yaml
+
 from loguru import logger
 
-import pandas as pd
 import joblib
+import pandas as pd
 import optuna
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
-# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 import functions.fct_optimization as optimization
@@ -28,19 +23,18 @@ import assessment.assess_results as assess_results
 logger = misc.format_logger(logger)
 
 
-## Functions
-
 # Objective function for hyperparameters optimization
 def objective(trial):
     """Define the function to be optimized by the hyperparameters
 
     Args:
-        trial (trail object): suggested hyperparametesr for the objective optimization
+        trial (trail object): suggested hyperparameters for the objective optimization
     """
 
     logger.info(f"Call objective function for hyperparameters optimization")
 
-    # Suggest value ranges to test (not taken into account for the GridSampler method)
+    # SamplerTPE: suggested ranges of values to be tested (not taken into account for the GridSampler method)
+    # To do: set value in config file
     PPS = trial.suggest_int('points_per_side', 32, 128, step=32)
     PPB = trial.suggest_int('points_per_batch', 32, 128, step=32)
     IOU_THD = trial.suggest_float('pred_iou_thresh', 0.6, 0.95, step=0.05)
@@ -53,7 +47,7 @@ def objective(trial):
     CROP_N_POINTS_DS_FACTOR = trial.suggest_int('crop_n_points_downscale_factor', 1, 10, step=1)
     MIN_MASK_REGION_AREA = trial.suggest_int('min_mask_region_area', 0, 300, step=50)
 
-    # Create a dictionnary of the tested parameters value for a given trial
+    # Creation of a dictionnary of tested parameter values for a given trial
     SAM_parameters = {
             "points_per_side": PPS,
             "points_per_batch": PPB,
@@ -67,23 +61,25 @@ def objective(trial):
             "crop_n_points_downscale_factor": CROP_N_POINTS_DS_FACTOR, 
             "min_mask_region_area": MIN_MASK_REGION_AREA
             }
-    print('')
+    print()
     logger.info(SAM_parameters)
     pd.DataFrame(SAM_parameters, index=[0]).to_csv(os.path.join(OUTPUT_DIR, 'last_parameter.csv'), index=False)
 
+    # Call functions
     segment_images.main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD_LARGE_TILES, THD_SIZE, TILE_SIZE, RESAMPLE,
          FOREGROUND, UNIQUE, MASK_MULTI, 
          VISU, CUSTOM_SAM, SAM_parameters
          )
     filter_merge_detections.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
-    metrics_df, labels_diff = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
+    metrics_df, written_files = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                              method=METHOD, threshold=THRESHOLD,
-                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER
+                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER,
                                              additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
 
-    print('')
+    print()
 
+    # Values of parameters to be optimized
     f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]   
     iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
 
@@ -97,13 +93,11 @@ def callback(study, trial):
         joblib.dump(study, study_path)
 
 
-## Main
-
 if __name__ == "__main__":
 
-# -------------------------------------
     # Start chronometer
     tic = time.time()
+    logger.info('Optimize hyperparameters for image segmentation')
     logger.info('Starting...')
 
     # Argument and parameter specification
@@ -126,14 +120,18 @@ if __name__ == "__main__":
     DETECTIONS = cfg['detections']
     SHP_EXT = cfg['vector_extension']
     CRS = cfg['crs']
+ 
     METHOD = cfg['method']
     THRESHOLD = cfg['threshold']
+    BUFFER = cfg['buffer']  if 'buffer' in cfg.keys() else 0.01
+    
     ADDITIONAL_METRICS = cfg['additional_metrics'] if 'additional_metrics' in cfg.keys() else False
     OBJECT_PARAMETERS = cfg['object_attributes']['parameters']
     AREA_RANGES = cfg['object_attributes']['area_ranges'] 
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
     VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
+    
     CROP = cfg['image_crop']['enable']
     if CROP == True:
         SIZE = cfg['image_crop']['size']
@@ -143,10 +141,12 @@ if __name__ == "__main__":
     DL_CKP = cfg['SAM']['dl_checkpoints']
     CKP_DIR = cfg['SAM']['checkpoints_dir']
     CKP = cfg['SAM']['checkpoints']
-    METHOD_LARGE_TILES = cfg['SAM']['batch']['method']
-    THD_SIZE = cfg['SAM']['batch']['thd_size']
-    TILE_SIZE = cfg['SAM']['batch']['tile_size']
-    RESAMPLE = cfg['SAM']['batch']['resample']
+
+    METHOD_LARGE_TILES = cfg['SAM']['large_tile']['method']
+    THD_SIZE = cfg['SAM']['large_tile']['thd_size']
+    TILE_SIZE = cfg['SAM']['large_tile']['tile_size']
+    RESAMPLE = cfg['SAM']['large_tile']['resample']
+
     FOREGROUND = cfg['SAM']['foreground']
     UNIQUE = cfg['SAM']['unique']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
@@ -176,13 +176,11 @@ if __name__ == "__main__":
     written_files = []
     study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
 
-    logger.info(f"Optimization of SAM hyperparemeters")
-
     # Set the parameter grid of hyperparameters to test
-    # Define optuna study for hyperparameters optimisation
+    # Define optuna study for hyperparameters optimization
     if SAMPLER == 'GridSampler':
-        logger.info(f"Set hyperparameters grid search")
-        # The explicit value provided will be used for parameter optimization
+        logger.info(f"Hyperparameter optimization by grid search")
+        # The values provided in config file will be used for parameter optimization
         search_space = {"points_per_side": PPS,
                 "points_per_batch": PPB,
                 "pred_iou_thresh": IOU_THD,
@@ -203,6 +201,7 @@ if __name__ == "__main__":
     joblib.dump(study, study_path)
     written_files.append(study_path)
 
+    # Parameters to be optimized 
     targets = {0: 'f1 score', 1: 'median IoU'}
 
     logger.info('Save the best hyperparameters')
