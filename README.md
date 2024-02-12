@@ -34,26 +34,26 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 - Create a Python virtual environment
 
-```bash
+```
 $ python3 -m venv <dir_path>/<name of the virtual environment>
 $ source <dir_path>/<name of the virtual environment>/bin/activate
 ```
 
 - Install dependencies
 
-```bash
+```
 $ pip install -r requirements.txt
 ```
 
 _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
 
-```bash
+```
 $ pip-compile requirements.in
 ```
 
 - The library `segment-geospatial` was adapted to our needs. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment execute the following commands:
 
-```bash
+```
 $ cd segment-geospatial
 $ git checkout ch/dev
 $ pip install .
@@ -61,7 +61,7 @@ $ pip install .
 
 or in editable mode:
 
-```bash
+```
 $ pip install -e .
 ```
 
@@ -125,7 +125,7 @@ The ground truth is split into the training and test set to see if the algorithm
 
 First, the segmentation is performed with different parameters on buildings with a pitched roof than on other buildings.
 
-```bash
+```
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_all_roofs.yaml
@@ -136,13 +136,13 @@ python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_pitched_ro
 
 Then, the results for the pitched roofs and the general results are merged. Their geometry is also simplified with a buffer and copping operation, as well as with the Visvalingam-Wyatt algorithm. The different obstacles are merged together to form the occupied surfaces.
 
-```bash
+```
 python scripts/pcd_segmentation/post_processing.py config/config_pcdseg_all_roofs.yaml
 ```
 
 Finally, the results are assessed
 
-```bash
+```
 python scripts/assessment/assess_results.py config/config_pcdseg_all_roofs.yaml
 python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
@@ -188,7 +188,7 @@ The image segmentation workflow uses the following input data:
 
 The workflow can be run by issuing the following list of commands:
 
-```bash
+```
 $ python scripts/image_segmentation/generate_tiles.py config/config_imgseg.yaml
 $ python scripts/image_segmentation/segment_images.py config/config_imgseg.yaml
 $ python scripts/image_segmentation/filter_merge_detections.py config/config_imgseg.yaml
@@ -198,6 +198,6 @@ $ python scripts/assessment/assess_area.py config/config_imgseg.yaml
 
 The optimization of hyperparameters can be performed as follow:
 
-```bash
+```
 $ python scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
 ```
