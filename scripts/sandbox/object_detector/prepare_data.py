@@ -46,6 +46,7 @@ GROUND_TRUTH = cfg['ground_truth']
 FILTERS=cfg['filters']
 BUILDING_TYPE = FILTERS['building_type']
 ROOF_INCLINATION = FILTERS['roof_inclination']
+CLASS = FILTERS['class']
 PREPARE_LABELS = FILTERS['prepare_labels']
 PREPARE_TILES = FILTERS['prepare_tiles']
 
@@ -93,12 +94,25 @@ if not labelled_roofs_gdf.empty:
     roof_objects_gdf = misc.format_labels(labelled_roofs_gdf, roofs_gdf, array_egids)
 
 logger.info('Format the labels')
-supercategory = {'Aero': 'Outlets', 'Antenna': 'Antenna', 'Balcony / terrace': 'Balconies and terraces', 'Chimney': 'Outlets', 'Extensive vegetation': 'Vegetation',
-                    'Intensive vegetation': 'Vegetation', 'Lawn': 'Vegetation', 'Other obstacle': 'Miscellaneous obstacles', 'Pipes': 'Pipes',
-                    'Solar PV': 'Solar installations', 'Solar Thermal': 'Solar installations', 'Solar unknown': 'Solar installations', 'Window':'Window'}
+supercategory_dict = {'Aero': 'Outlets', 'Antenna': 'Antenna', 'Balcony / terrace': 'Balconies and terraces', 'Chimney': 'Outlets',
+                      'Extensive vegetation': 'Vegetation', 'Intensive vegetation': 'Vegetation', 'Lawn': 'Vegetation',
+                      'Other obstacle': 'Miscellaneous obstacles', 'Pipes': 'Pipes',
+                      'Solar PV': 'Solar installations', 'Solar Thermal': 'Solar installations', 'Solar unknown': 'Solar installations', 'Window':'Window'}
 roof_objects_gdf.rename(columns={'descr': 'CATEGORY'}, inplace=True)
 roof_objects_gdf.drop(columns=['obj_class', 'EGID'], inplace=True)
-roof_objects_gdf['SUPERCATEGORY'] = [supercategory[category] for category in roof_objects_gdf.CATEGORY.to_numpy()]
+roof_objects_gdf['SUPERCATEGORY'] = [supercategory_dict[category] for category in roof_objects_gdf.CATEGORY.to_numpy()]
+
+if CLASS in supercategory_dict.keys():
+    logger.info(f'Working only on the category "{CLASS}"')
+    roof_objects_gdf = roof_objects_gdf[roof_objects_gdf.CATEGORY==CLASS].copy()
+elif CLASS in supercategory_dict.values():
+    logger.info(f'Working only on the supercategory "{CLASS}"')
+    roof_objects_gdf = roof_objects_gdf[roof_objects_gdf.SUPERCATEGORY==CLASS].copy()
+    roof_objects_gdf.loc[:,'CATEGORY'] = CLASS
+    roof_objects_gdf.loc[:,'SUPERCATEGORY'] = 'roof obstacle'
+else:
+    logger.info('No filter is applied on the object type.')
+
 
 filepath = os.path.join(OUTPUT_DIR, 'ground_truth_labels.gpkg')
 roof_objects_gdf.to_file(filepath)

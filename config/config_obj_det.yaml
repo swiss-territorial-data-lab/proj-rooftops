@@ -2,7 +2,7 @@
 generate_tiles.py:
   working_dir: /home/gsalamin/Documents/GitHub/proj-rooftops
   image_dir: data/true_ortho_2019
-  output_dir: outputs/OD
+  output_dir: output/OD
   tiles: data/true_ortho_2019/Tuiles.shp
   roofs: data/vectors/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: data/EGIDs_full_GT.csv
@@ -18,13 +18,14 @@ generate_tiles.py:
 # 2 - Prepare vector data
 prepare_data.py:
   working_dir: /home/gsalamin/Documents/GitHub/proj-rooftops
-  output_dir: outputs/OD
+  output_dir: output/OD
   roofs: data/vectors/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: data/EGIDs_full_GT.csv
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13.shp
   filters:
     building_type: all
     roof_inclination: all
+    class: Intensive vegetation             # possible values are a category name or a supercategory name. Other values will be ignored.
     prepare_labels: True
     prepare_tiles: True
   buffer: 1
@@ -35,7 +36,7 @@ generate_tilesets.py:
   debug_mode: 
     enable: False  # sample of tiles
     nb_tiles_max: 10
-  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/output/OD
   datasets:
     aoi_tiles: bbox.gpkg
     ground_truth_labels: ground_truth_labels.gpkg
@@ -47,7 +48,7 @@ generate_tilesets.py:
   tile_size: 256 # per side, in pixels
   overwrite: False
   n_jobs: 10
-  seed: 22
+  # seed: 22
   COCO_metadata:
     year: 2019
     version: x
@@ -62,7 +63,7 @@ generate_tilesets.py:
 # 4 - Train model
 train_model.py:
   debug_mode: False
-  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/output/OD
   log_subfolder: logs
   sample_tagged_img_subfolder: sample_training_images
   COCO_files:
@@ -76,7 +77,7 @@ train_model.py:
 
 # 5 - Apply model
 make_detections.py:
-  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/output/OD
   log_subfolder: logs
   sample_tagged_img_subfolder: sample_detection_images
   COCO_files: # relative paths, w/ respect to the working_folder
@@ -85,7 +86,7 @@ make_detections.py:
     tst: COCO_tst.json
   detectron2_config_file: ../../config/detectron2_config.yaml # path relative to the working_folder
   model_weights:
-    pth_file: logs/model_0001499.pth
+    pth_file: logs/model_0002749.pth
   image_metadata_json: img_metadata.json
   rdp_simplification: # rdp = Ramer-Douglas-Peucker
     enabled: False
@@ -95,7 +96,7 @@ make_detections.py:
 
 # 6 - Assess detections
 assess_detections.py:
-  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/outputs/OD
+  working_directory: /home/gsalamin/Documents/GitHub/proj-rooftops/output/OD
   datasets:
     ground_truth_labels: ground_truth_labels.gpkg
     # other_labels: other_labels.gpkg
