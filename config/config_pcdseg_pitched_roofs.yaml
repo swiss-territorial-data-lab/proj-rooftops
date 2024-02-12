@@ -1,14 +1,13 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
-  pcd_dir: initial/LiDAR/2019
+  working_dir: /home/username/project_path       # !!! Absolute path needed to work with WhiteBox Tools!!!
+  pcd_dir: inputs/LiDAR/2019
   inputs:
-    pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    pcd_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
+    shp_roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
     egids: EGIDs_GT_training.csv
   output_dir: outputs/PCD_segmentation/pitched_roofs
   filters:
-    # building_type: residential
     roof_inclination: pitched
     filter_class: False
     class_number: 6                 # 6: Building class
@@ -20,15 +19,14 @@ prepare_data.py:
 
 # 2 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
+  working_dir: outputs/PCD_segmentation/pitched_roofs
   output_dir: per_EGID_data
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
   segmentation:
     planes:
-      # number_planes: 5            # Number of planes to expect
       distance_threshold: 0.07      # Max distance a point can be from the plane model, and still be considered an inlier
-      ransac: 3                     # Number of initial points to be considered inliers in each iteration
+      ransac: 3                     # Number of inputs points to be considered inliers in each iteration
       iterations: 11500             # Number of iterations
       eps: 12                       # Density parameter that is used to find neighbouring points
       min_points: 550              # Minimum number of points to form a plane
@@ -40,7 +38,7 @@ pcd_segmentation.py:
 
 # 3 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
+  working_dir: outputs/PCD_segmentation/pitched_roofs
   output_dir: .
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
@@ -55,7 +53,7 @@ vectorization.py:
 
 # 4 - Evaluate the results
 assess_results.py: 
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   output_dir: outputs/PCD_segmentation/pitched_roofs
   detections: outputs/PCD_segmentation/pitched_roofs/all_EGID_occupation.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
@@ -73,7 +71,7 @@ assess_results.py:
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/pitched_roofs
+  working_dir: outputs/PCD_segmentation/pitched_roofs
   output_dir: optimization
   input_dir_pcd: per_EGID_data
   egids: completed_egids.csv
