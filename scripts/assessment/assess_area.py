@@ -172,7 +172,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     OUTPUT_DIR = cfg['output_dir']
 
-    DETECTIONS=cfg['detections']
+    DETECTIONS = cfg['detections']
     LABELS = cfg['ground_truth'] if 'ground_truth' in cfg.keys() else None
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']
