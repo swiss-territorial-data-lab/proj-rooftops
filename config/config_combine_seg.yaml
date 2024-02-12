@@ -1,9 +1,9 @@
 # 1 - Results combination of pcd segmentation and img segmentation
 combine_results_seg.py:  
   working_dir: .
-  output_dir: outputs/results_combination/training/config2
-  img_seg: outputs/image_segmentation/training_equal_precision_recall/vectors/roof_segmentation.gpkg
-  pcd_seg: outputs/pcd_segmentation/outputs/final_detections_pcd_seg.gpkg
+  output_dir: outputs/results_combination/training/
+  img_seg: outputs/image_segmentation/training/vectors/roof_segmentation.gpkg
+  pcd_seg: outputs/pcd_segmentation/training/final_detections_pcd_seg.gpkg
   layer_pcd: detections_pcd_seg 
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_full.csv
@@ -12,7 +12,7 @@ combine_results_seg.py:
 assess_results.py:  
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: outputs/results_combination/training/config2
+  output_dir: outputs/results_combination/training/
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   detections: roof_segmentation.gpkg
