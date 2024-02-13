@@ -26,6 +26,7 @@ The scripts dedicated to image segmentation were run on a 32 GiB RAM machine wit
 The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Unbuntu 20.04 OS. 
 
 - For image processing, the following specific libraries were used:
+    - pip >= 20.3
     - PyTorch version 1.10
     - CUDA version 11.3
     - segment-geospatial [0.10.2](https://github.com/opengeos/segment-geospatial/releases/tag/v0.10.2)
