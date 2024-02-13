@@ -2,38 +2,38 @@
 generate_tiles.py:
   working_dir: inputs
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  output_dir: image_segmentation/tiles/training
+  output_dir: image_segmentation/tiles/test
   tiles: ground_truth/tiles/Tuiles.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_training.csv
+  egids: ground_truth/egid/EGIDs_GT_test.csv
   filters:
     building_type: all          # 'administrative', 'industrial', 'residential', 'all'
     roof_type: all              # 'flat', 'pitched', 'mixed', 'all'
   buffer: 1                     # m, buffer distance around roof shape (avoids "cutting" the roof edges)
   mask: False                   # choose to apply or not a mask to the image to only keep the buildings visible 
 
-# 2 - Image segmentation with Segment Anything Method (SAM)
+# 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/training
-  output_dir: outputs/image_segmentation/training
-  vector_extension: gpkg        # 'gpkg' or 'shp'
-  image_crop:                   # crop the input image with the number of pixels supploed to reduce image dimension for tests purposes, for example
+  image_dir:  inputs/image_segmentation/tiles/test
+  output_dir: outputs/image_segmentation/test
+  vector_extension: gpkg      # 'gpkg' or 'shp'
+  image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
-    size: [0, 1026, 0, 1026]  
+    size: [0, 1026, 0, 1026]  # Crop image to perform test 
   SAM:
-    dl_checkpoints: False       # automatic download of the model checkpoints from online server: https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
-    checkpoints_dir: model/     # save folder
+    dl_checkpoints: False     # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+    checkpoints_dir: model/
     checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
-      method: batch             # 'batch', 'resample'. 'batch' method subdivides the image into smaller tiles (tile_size) ; 'resample' method downscales the pixels to the given size (resample).
-      thd_size: 5500000         # threshold value of pixels
-      tile_size: 512            # pixels (squared tiles), will be ignored if method == resample
-      resample: 0.2             # m, pixel size, will be ignore if method == batch
-    foreground: True            # save only foreground masks and not background masks 
-    unique: True                # attribute unique ID to masks 
+      method: batch           # choice 1:"batch", 2:"resample". Batch method subdivides the image into smaller tiles (tile_size). Resample method downscales the pixels to the given size (resample).
+      thd_size: 5500000       # pixels
+      tile_size: 512          # pixels (square). Will be ignored if method=resample
+      resample: 0.2           # m, pixel size. Will be ignore if method=batch
+    foreground: True          # if True, save only foreground masks, no background mask 
+    unique: True              # attribute unique ID to mask 
     mask_multiplier: 255
-    custom_SAM:                 # custom parameters for Segment Anything Model (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
+    custom_SAM:               # customize the parameters for Segment Anything (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
       enable: True
       custom_parameters: {
         "points_per_side": 64,
@@ -50,14 +50,14 @@ segment_images.py:
         "min_mask_region_area": 200,
         # "output_mode": str = "binary_mask",
         }
-    visualisation_masks: False  # show binary and annotated masks + saves annotated masks 
+    visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Filter vector layer by roof + merge vector layer
 filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: outputs/image_segmentation/training
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/test
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: "EPSG:2056"              # projection of the input file
 
@@ -66,9 +66,9 @@ assess_results.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: outputs/image_segmentation/training
-  detections: outputs/image_segmentation/training/vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: outputs/image_segmentation/test
+  detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   additional_metrics: True      # compute metrics for given attributes (building type, roof type, object class, object attributes)
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
@@ -86,8 +86,8 @@ assess_area.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: outputs/image_segmentation/training
-  detections: outputs/image_segmentation/training/vectors/roof_segmentation.gpkg
+  output_dir: outputs/image_segmentation/test
+  detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
   visualisation: True           # show plots
@@ -98,7 +98,7 @@ optimize_hyperparameters.py:
   image_dir: inputs/image_segmentation/tiles/selection/
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
   output_dir: outputs/image_segmentation/optimization_training
   detections: outputs/image_segmentation/optimization_training/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'

@@ -170,7 +170,7 @@ The image segmentation workflow uses the following input data:
 - Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG. Saved locally for the STDL in /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TUILES_TRUEORTHO/Tuiles.shp
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT.shp](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing roof planes by EGID. 
 - Ground truth objects: vector shapefile of the ground truth labels: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-11-13.shp
-- EGIDs lists: list of buildings (EGID) selected for this project and saved in /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/. The buildings are split into different datasets:
+- EGIDs lists: list of buildings (EGID) selected for this project and saved in /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/imgseg/. The buildings are split into different datasets:
     - EGIDs_GT_full.csv: list of 122 EGIDs selected to established the labels vectorization
     - EGIDs_GT_test.csv: list of 17 EGIDs selected to control the performance of the algorithm on a test dataset.
     - EGIDs_GT_training.csv: list of 105 EGIDs selected to perform hyperparameter optimization of algorithms on a training dataset. 
