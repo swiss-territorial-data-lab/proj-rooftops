@@ -234,11 +234,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             logger.info("    - Metrics per object class")
             for object_class in sorted(labels_gdf.descr.unique()):
                 
-                filter_gt_gdf = tagged_dets_gdf[tagged_dets_gdf['descr']==object_class].copy()
+                filter_gt_gdf = tagged_dets_gdf[tagged_dets_gdf['descr'] == object_class].copy()
                 
-                TP = len(filter_gt_gdf[filter_gt_gdf['tag']=='TP'])
-                FN = len(filter_gt_gdf[filter_gt_gdf['tag']=='FN'])
-                FP = len(filter_gt_gdf[filter_gt_gdf['tag']=='FP'])
+                TP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'TP'])
+                FN = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FN'])
+                FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
@@ -251,8 +251,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                     for val in param_ranges:
                         filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])].copy()
                             
-                        TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='TP'].shape[0])
-                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='FN'].shape[0])
+                        TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag == 'TP'].shape[0])
+                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag == 'FN'].shape[0])
                         FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
@@ -268,7 +268,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         metrics_egid_df['EGID'] = labels_by_attr_gdf.EGID
 
     metrics_egid_df['IoU_EGID'] = [
-        labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID==egid, 'IoU_EGID'].iloc[0]
+        labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID == egid, 'IoU_EGID'].iloc[0]
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
     ]

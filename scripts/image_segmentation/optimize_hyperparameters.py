@@ -72,7 +72,7 @@ def objective(trial):
          VISU, CUSTOM_SAM, SAM_parameters
          )
     filter_merge_detections.main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS)
-    metrics_df, written_files = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
+    metrics_df, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                              method=METHOD, threshold=THRESHOLD,
                                              object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER,
                                              additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     study_path = os.path.join(OUTPUT_DIR, 'study.pkl')
 
     # Set the parameter grid of hyperparameters to test
-    # Define optuna study for hyperparameters optimization
+    # Define optuna study for hyperparameter optimization
     if SAMPLER == 'GridSampler':
         logger.info(f"Hyperparameter optimization by grid search")
         # The values provided in config file will be used for parameter optimization

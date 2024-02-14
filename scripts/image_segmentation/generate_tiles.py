@@ -114,8 +114,8 @@ if __name__ == "__main__":
     bbox_list.to_file(feature_path)
     written_files.append(feature_path)  
 
-    # Identify the images intersecting roof shape
-    logger.info("Find the number of image tile(s) intersecting the roof shape")
+    # Identify the images intersecting the roof shape
+    logger.info("Find the number of image tiles intersecting the roof shape")
     unique_egid = join_tiles_roofs["EGID"].unique() 
     
     if MASK:
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         for tilepath in tiles_list:
             raster = rasterio.open(tilepath)
 
-            # Mosaic image if roof shape is spread over several tiles 
+            # Mosaic images 
             if len(tiles_list) > 1:  
                 raster_to_mosaic.append(raster)
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         else: 
             feature_path = os.path.join(OUTPUT_DIR, f"tile_EGID_{int(egid)}.tif")
         
-        # Close reader for the image to be re-write
+        # Close the reader to overwrite the image
         del raster, image
         with rasterio.open(feature_path, "w", **out_meta) as dst:
             dst.write(out_image)
