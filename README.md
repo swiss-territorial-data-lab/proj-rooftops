@@ -26,37 +26,43 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 - Create a Python virtual environment
 
-        $ python3 -m venv <dir_path>/[name of the virtual environment]
-        $ source <dir_path>/[name of the virtual environment]/bin/activate
+        python3 -m venv <dir_path>/[name of the virtual environment]
+        source <dir_path>/[name of the virtual environment]/bin/activate
 
 - Install dependencies
 
-        $ pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements.txt
 
     - Requirements for the image workflow only
 
-            $ pip install -r requirements/requirements_images.txt
+            pip install -r requirements/requirements_images.txt
 
     - Requirements for the LiDAR workflow only
 
-            $ pip install -r requirements/requirements_lidar.txt
+            pip install -r requirements/requirements_lidar.txt
 
 
 _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
 
-        $ pip-compile requirements.in
+        pip-compile requirements.in
 
-- The library `segment-geospatial` is used in "editable" mode. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment execute the following commands:
+The library `segment-geospatial` is used in "editable" mode. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment execute the following commands:
 
-        $ cd segment-geospatial
-        $ git checkout ch/dev
-        $ pip install .
+```
+cd segment-geospatial
+git checkout ch/dev
+pip install 
+```
 
-        or in editable mode
+or  in editable mode
 
-        $ pip install -e .
+```
+pip install -e .
+```
 
 If the installation is successful the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
+
+**Disclaimer**: We do not guaranty that the scripts in the sandbox folder and outside the main proposed workflows are functional in the proposed virtual environment.
 
 ## Classification of the roof plane occupation
 
@@ -97,14 +103,20 @@ python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
 
 More in details, the scripts used above perform the following steps:
-1. `prepare_data.py`: read and filter the 3D point cloud data to keep the roofs of the selected EGIDs,
-2. `pcd_segmentation.py`: segment in planes and clusters the point cloud data,
-3. `vectorization.py`: create 2D polygons from the segmented point cloud data,
-7. `post_processing.py`: merge the results for the pitched and general roofs together and simplify the geometry of the detections.
-5. `assess_results.py`: Evaluate the results based on the ground truth,
-6. `assess_area.py`: Calculate the free and occupied surface of each EGIDs and compare it with the ground truth.
+1. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGIDs,
+2. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
+3. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
+7. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections.
+5. `assess_results.py`: evaluate the results based on the ground truth,
+6. `assess_area.py`: calculates the free and occupied surface of each EGIDs and compare it with the ground truth.
 
-The workflow described here is working with the training subset of the ground truth. The configuration file `config-pcdseg_test.yaml` works with the test subset of the ground truth.
+The workflow described here is working with the training subset of the ground truth. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth.
+
+The optimization of hyperparameters can be performed as follow:
+
+```
+python scripts/pcd_segmentation/optimize_hyperparameters.py config/config_pcdseg_all_roofs.yaml
+```
 
 ## Image segmentation
 
@@ -133,12 +145,12 @@ Shapefiles are also used as input data and listed below:
 
 The workflow can be run by issuing the following list of actions and commands:
 
-    $ python3 scripts/image_segmentation/generate_tiles.py config/config_imgseg.yaml
-    $ python3 scripts/image_segmentation/segment_images.py config/config_imgseg.yaml
-    $ python3 scripts/image_segmentation/produce_vector_layer.py config/config_imgseg.yaml
-    $ python3 scripts/assessment/assess_results.py config/config_imgseg.yaml
-    $ python3 scripts/assessment/assess_surface.py config/config_imgseg.yaml
+    python3 scripts/image_segmentation/generate_tiles.py config/config_imgseg.yaml
+    python3 scripts/image_segmentation/segment_images.py config/config_imgseg.yaml
+    python3 scripts/image_segmentation/produce_vector_layer.py config/config_imgseg.yaml
+    python3 scripts/assessment/assess_results.py config/config_imgseg.yaml
+    python3 scripts/assessment/assess_surface.py config/config_imgseg.yaml
 
 The model optimization can be performed as follow:
 
-    $ python3 scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
+    python3 scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
