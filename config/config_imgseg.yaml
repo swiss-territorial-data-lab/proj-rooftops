@@ -1,4 +1,4 @@
-# 1 - Image tiles generation
+# 1 - Image tile generation
 generate_tiles.py:
   working_dir: inputs
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
@@ -18,9 +18,9 @@ segment_images.py:
   image_dir:  inputs/image_segmentation/tiles/test
   output_dir: outputs/image_segmentation/test
   vector_extension: gpkg      # 'gpkg' or 'shp'
-  image_crop:                 # Activate the option to crop the input image according to pixel coordinates (for performing tests)
+  image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
-    size: [0, 1026, 0, 1026]  # Crop image to perform test 
+    size: [0, 1026, 0, 1026]  # crop image to perform test 
   SAM:
     dl_checkpoints: False     # True: automatic download from server, False: download manually files https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
     checkpoints_dir: model/
@@ -52,14 +52,14 @@ segment_images.py:
         }
     visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
 
-# 3 - Filter vector layer by roof + merge vector layer
+# 3 - Filters the vector layer for each roof and merges them
 filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: outputs/image_segmentation/test
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
-  crs: "EPSG:2056"              # projection of the input file
+  crs: EPSG:2056                # projection of the input file
 
 # 4 - Evaluate the results
 assess_results.py:  
@@ -74,7 +74,7 @@ assess_results.py:
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   buffer: 0.1                   # buffer applied to labels and detections to prevent adjecent polygons from being considered as overlapping
   object_attributes:
-    parameters: [area, nearest_distance_border, roundness] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: [area, nearest_distance_border, roundness] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid', 'roundness' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
     round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
@@ -109,7 +109,7 @@ optimize_hyperparameters.py:
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   buffer: 0.1                   # buffer applied to labels and detections to prevent adjecent polygons from being considered as overlapping
   object_attributes:
-    parameters: ['area', 'nearest_distance_border'] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_border'] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid', roundness 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
     round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
@@ -121,7 +121,7 @@ optimize_hyperparameters.py:
     checkpoints_dir: model/     # save folder
     checkpoints: sam_vit_h_4b8939.pth # sam_vit_h_4b8939.pth; sam_vit_l_0b3195.pth; sam_vit_b_01ec64.pth
     large_tile:
-      method: batch             # 'batch', 'resample'. 'batch' method subdivides the image into smaller tiles (tile_size) ; 'resample' method downscales the pixels to the given size (resample).
+      method: batch             # choices: 'batch', 'resample'. The 'batch' method subdivides the image into smaller tiles (tile_size) ; The 'resample' method downscales the pixels to the given size (resample).
       thd_size: 5500000         # threshold value of pixels
       tile_size: 512            # pixels (squared tiles), will be ignored if method == resample
       resample: 0.2             # m, pixel size, will be ignore if method == batch
@@ -149,7 +149,7 @@ optimize_hyperparameters.py:
 
 ## Additional scripts - sandbox
 
-# Evaluation of the results obtained on synthetic polygons (assess_results development)
+# Evaluation of results obtained on synthetic polygons (used to develop results assessment)
 assess_synthetic_examples.py:  
   working_dir: .
   ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg

@@ -80,10 +80,10 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         size = width * height
         tilepath = tile
         if size >= THD_SIZE:
-            if METHOD=="batch":
+            if METHOD == "batch":
                 logger.info(f"Image too large to be processed -> subdivided in tiles of {TILE_SIZE} px")
                 BATCH = True
-            elif METHOD=="resample":
+            elif METHOD == "resample":
                 logger.info(f"Image too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")
                 tilepath = os.path.join(resampling_dir, file)
                 gdal.Warp(tilepath, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')

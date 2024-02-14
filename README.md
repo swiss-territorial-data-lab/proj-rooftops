@@ -1,4 +1,4 @@
-# Delimitation of the free areas on rooftops
+    # Delimitation of the free areas on rooftops
 
 Goal: Determine the space available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
 
@@ -35,38 +35,38 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 - Create a Python virtual environment
 
-```
-$ python3 -m venv <dir_path>/<name of the virtual environment>
-$ source <dir_path>/<name of the virtual environment>/bin/activate
-```
+    ```
+    $ python3 -m venv <dir_path>/<name of the virtual environment>
+    $ source <dir_path>/<name of the virtual environment>/bin/activate
+    ```
 
 - Install dependencies
 
-```
-$ pip install -r requirements.txt
-```
+    ```
+    $ pip install -r requirements.txt
+    ```
 
-_requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
+- _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
 
-```
-$ pip-compile requirements.in
-```
+    ```
+    $ pip-compile requirements.in
+    ```
 
-- The library `segment-geospatial` was adapted to our needs. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment execute the following commands:
+- The library `segment-geospatial` was adapted to our needs. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment, execute the following commands:
 
-```
-$ cd segment-geospatial
-$ git checkout ch/dev
-$ pip install .
-```
+    ```
+    $ cd segment-geospatial
+    $ git checkout ch/dev
+    $ pip install .
+    ```
 
-or in editable mode:
+    or in editable mode:
 
-```
-$ pip install -e .
-```
+    ```
+    $ pip install -e .
+    ```
 
-If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
+    If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
 ## Folder structure
 

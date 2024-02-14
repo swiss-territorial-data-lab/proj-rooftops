@@ -71,9 +71,9 @@ def main(WORKING_DIR, EGIDS, ROOFS, OUTPUT_DIR, SHP_EXT, CRS):
         # Filter vectorized objects with threshold values
         objects_selection = objects_shp.sjoin(egid_shp, how='inner', predicate="within")
         objects_selection['intersection_frac'] = objects_selection['geometry_roof'].intersection(objects_selection['geometry_shp']).area / objects_selection['area_shp']
-        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise & small shapes
+        objects_filtered = objects_selection[(objects_selection['area_shp'] >= 0.2) & # Filter noise and small shapes
                                             (objects_selection['area_noholes_shp'] <= 0.9 * objects_selection['area_roof']) & # Filter shapes displaying an area close to the roof area 
-                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes partially intersecting the roof extension
+                                            (objects_selection['intersection_frac'] >= 0.5)].copy() # Filter shapes that only partially overlap the roof extension
 
         objects_filtered['area'] = objects_filtered.area 
 
