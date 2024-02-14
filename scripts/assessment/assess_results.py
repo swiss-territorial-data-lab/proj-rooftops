@@ -84,8 +84,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_objects_df = pd.DataFrame()
 
     if detections_gdf.shape[0] == 0:
-        logger.error('No detection is available, returning 0 as f1 score and IoU average.')
-        return 0, 0, []
+        logger.error('No detection is available, returning 0 as f1 score and IoU median.')
+        metrics_df = pd.DataFrame({'attribute': ['EGID'], 'f1': [0], 'IoU_median': [0]})
+
+        return metrics_df, []
     elif method == 'charges' or method == 'fusion':
 
         logger.info("Geohash the labels and detections to use them in graphs...")
