@@ -7,8 +7,8 @@ generate_tiles.py:
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   egids: ground_truth/egid/EGIDs_GT_test.csv
   filters:
-    building_type: all          # 'administrative', 'industrial', 'residential', 'all'
-    roof_type: all              # 'flat', 'pitched', 'mixed', 'all'
+    building_type: all          # choices: 'administrative', 'industrial', 'residential', 'all'
+    roof_type: all              # choices: 'flat', 'pitched', 'mixed', 'all'
   buffer: 1                     # m, buffer distance around roof shape (avoids "cutting" the roof edges)
   mask: False                   # choose to apply or not a mask to the image to only keep the buildings visible 
 
@@ -69,7 +69,7 @@ assess_results.py:
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
-  method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
+  method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   additional_metrics: True      # compute metrics for given attributes (building type, roof type, object class, object attributes)
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   buffer: 0.1                   # buffer applied to labels and detections to prevent adjecent polygons from being considered as overlapping
@@ -88,7 +88,7 @@ assess_area.py:
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
-  method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
+  method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
   visualisation: True           # show plots
 
@@ -103,7 +103,7 @@ optimize_hyperparameters.py:
   detections: outputs/image_segmentation/optimization_training/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file 
-  method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
+  method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   additional_metrics: False     # compute metrics for given attributes (building type, roof type, object class, object attributes)
   visualisation: True           # show binary and annotated masks + saves annotated masks 
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
@@ -131,7 +131,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     visualisation_masks: False 
   optimization:                 # SAM hyperparameter optimization with optuna library https://optuna.org/
-    n_trials: 5                # number of trials
+    n_trials: 50                # number of trials
     sampler: TPESampler         # choices: 'TPESampler', 'GridSampler' 
     param_grid:                 # define explicit hyperameter values to test: valid only for the 'GridSampler' method. Values will be ignored using the 'TPESampler' method.
       points_per_side: [160, 160]
