@@ -8,7 +8,7 @@ prepare_data.py:
     egids: EGIDs_GT_training.csv
   output_dir: outputs/PCD_segmentation/pitched_roofs
   filters:
-    roof_inclination: pitched
+    roof_inclination: pitched       # 'flat', 'pitched', 'mixed', 'all', if missing, defaults to all 
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True               # Remove all the point below the roof altitude
@@ -29,10 +29,10 @@ pcd_segmentation.py:
       ransac: 3                     # Number of inputs points to be considered inliers in each iteration
       iterations: 11500             # Number of iterations
       eps: 12                       # Density parameter that is used to find neighbouring points
-      min_points: 550              # Minimum number of points to form a plane
+      min_points: 550               # Minimum number of points to form a plane
     clusters:
       eps: 0.79                     # Density parameter that is used to find neighbouring points
-      min_points: 8                # Minimum number of points to form a cluster
+      min_points: 8                 # Minimum number of points to form a cluster
   visualisation: False
 
 
@@ -59,12 +59,12 @@ assess_results.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: outputs/PCD_segmentation/pitched_roofs/egid_properties.csv
   roofs: outputs/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  method: fusion
-  threshold: 0.1
-  additional_metrics: True
-  visualisation: True
+  method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
+  additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
+  visualisation: True               # Make figures with the TP, FP and FN per types and classes
   object_attributes:
-    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid']         # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 

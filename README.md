@@ -110,7 +110,7 @@ More in details, the scripts used above perform the following steps:
 5. `assess_results.py`: evaluate the results based on the ground truth,
 6. `assess_area.py`: calculates the free and occupied surface of each EGIDs and compare it with the ground truth.
 
-The workflow described here is working with the training subset of the ground truth. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth.
+The workflow described here is working with the training subset of the ground truth used for the optimization of the hyperparameters. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth, allowing to test on buildings not considered in the optimization.
 
 The optimization of hyperparameters can be performed as follow:
 

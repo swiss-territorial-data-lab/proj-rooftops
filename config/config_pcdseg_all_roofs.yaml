@@ -10,7 +10,7 @@ prepare_data.py:
   filters:
     filter_class: False
     class_number: 6                 # 6: Building class
-    filter_roof: True             # Remove all the point below the roof altitude
+    filter_roof: True               # Remove all the point below the roof altitude
     distance_buffer: 2.0            # m, buffer value
   overwrite: False
   visualisation: False
@@ -44,9 +44,9 @@ vectorization.py:
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
-    min: 91        # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
-    max: 210       # m2, maximum area of the segmented objects, above the vectorized object in will be classified as plane
-  alpha_shape: 2.4          # Alpha parameter used in the alpha shape algorithm to define a bounding polygon around a group of points 
+    min: 91                         # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
+    max: 210                        # m2, maximum area of the segmented objects, above the vectorized object in will be classified as plane
+  alpha_shape: 2.4                  # Alpha parameter used in the alpha shape algorithm to define a bounding polygon around a group of points 
   visualisation: False
 
 
@@ -55,17 +55,16 @@ post_processing.py:
   working_dir: outputs/PCD_segmentation
   output_dir: post_processed_results
   roofs: all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  merge_files: True
+  merge_files: True                 # Merge the file listed under "files" together
   buffer: True
   vw: True
-  merge_detections: True
+  merge_detections: True            # Dissolve intersecting detections
   buffer_size: 1
   vw_threshold: 0.1
-  detections: post_processed_results/detections.gpkg
+  detections: post_processed_results/detections.gpkg    # Path for the detections in case "merge_files" is false
   files:
     all_detections: all_roofs/all_EGID_occupation.gpkg
     residential_pitched: pitched_roofs/all_EGID_occupation.gpkg
-    # administrative: 8_100_iter_admin_fnp/all_EGID_occupation_27.gpkg
     
 
 # 4 - Evaluate the results
@@ -76,12 +75,12 @@ assess_results.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: outputs/PCD_segmentation/all_roofs/egid_properties.csv
   roofs: outputs/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  method: fusion
-  threshold: 0.1
-  additional_metrics: True
-  visualisation: True
+  method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
+  additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
+  visualisation: True               # Save figures with the TP, FP and FN per types and classes
   object_attributes:
-    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid']         # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
     round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
@@ -95,9 +94,9 @@ assess_area.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: outputs/PCD_segmentation/all_roofs/egid_properties.csv
   roofs: outputs/PCD_segmentation/all_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  bins: [0, 25, 50, 75, 85, 95, 100] 
-  method: fusion
-  visualisation: True
+  bins: [0, 25, 50, 75, 85, 95, 100]  # limits for the creation of bins on the percentage of free area
+  method: fusion                      # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  visualisation: True                 # Save figures with the absolute and realtive free and occupied area in the results and labels
 
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
@@ -115,8 +114,8 @@ optimize_hyperparam_LiDAR.py:
   visualisation: None
 
 
-# 4 & 5 bis
-combine_results.py: 
+# 4 & 5 bis - Test combining the results between the classification of occupancy and the LiDAR segmentation and assess the produced polygons
+combine_results_lidar.py: 
   working_dir: .
   output_dir: outputs/PCD_segmentation/improved_results
   detections: outputs/PCD_segmentation/all_optimizations/improved_results/simplified_detections_VW.gpkg
@@ -125,12 +124,13 @@ combine_results.py:
   roofs: outputs/PCD_segmentation/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   classified_roofs: outputs/roofs/roofs.gpkg
   classified_roofs_layer: roof_occupation_by_RF
+  # Parameters for the assessment
   method: fusion
   threshold: 0.1
   additional_metrics: True
   visualisation: True
   object_attributes:
-    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid'] 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
   bins: [0, 25, 50, 75, 85, 95, 100] 

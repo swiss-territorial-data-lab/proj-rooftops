@@ -90,12 +90,12 @@ assess_results.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  method: fusion
-  threshold: 0.1
-  additional_metrics: True
-  visualisation: True
+  method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
+  additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
+  visualisation: True               # Save figures with the TP, FP and FN per types and classes
   object_attributes:
-    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    parameters: ['area', 'nearest_distance_centroid'] 
     area_ranges:  [[0,0.5], [0.5, 1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
 
@@ -108,6 +108,6 @@ assess_area.py:
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
-  bins: [0, 25, 50, 75, 85, 95, 100] 
-  method: fusion
-  visualisation: True
+  bins: [0, 25, 50, 75, 85, 95, 100]  # limits for the creation of bins on the percentage of free area
+  method: fusion                      # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  visualisation: True                 # Save figures with the absolute and realtive free and occupied area in the results and labels
