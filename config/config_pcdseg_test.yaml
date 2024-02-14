@@ -23,7 +23,7 @@ pcd_segmentation.py:
   # working_dir: outputs/PCD_segmentation/test_zone/pitched
   output_dir: per_EGID_data
   input_dir_pcd: per_EGID_data
-  egids: completed_egids.csv
+  egids: egid_properties.csv
   segmentation:
     # global parameters:
     planes:
@@ -53,7 +53,7 @@ vectorization.py:
   # working_dir: outputs/PCD_segmentation/test_zone/pitched
   output_dir: .
   input_dir_pcd: per_EGID_data
-  egids: completed_egids.csv
+  egids: egid_properties.csv
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   area_threshold: 
@@ -88,7 +88,7 @@ assess_results.py:
   output_dir: final/PCD_segmentation/test_zone
   detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
-  egids: outputs/PCD_segmentation/test_zone/all/completed_egids.csv
+  egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion
   threshold: 0.1
@@ -106,7 +106,7 @@ assess_area.py:
   output_dir: final/PCD_segmentation/test_zone
   detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
   ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
-  egids: outputs/PCD_segmentation/test_zone/all/completed_egids.csv
+  egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100] 
   method: fusion

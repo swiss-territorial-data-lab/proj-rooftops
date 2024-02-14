@@ -101,15 +101,15 @@ feature_path = os.path.join(OUTPUT_DIR.split('/')[0], ROOFS_NAME[:-4]  + "_EGID.
 rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 
 # Produce light files of the selected EGIDs with the essential per-EGID information for the workflow 
-completed_egids = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
+egid_properties = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
 
-subset_rooftops = rooftops[rooftops.EGID.isin(completed_egids.EGID.tolist())]
+subset_rooftops = rooftops[rooftops.EGID.isin(egid_properties.EGID.tolist())]
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID_subset.shp")
 subset_rooftops.to_file(feature_path)
 written_files.append(feature_path)
 
-feature_path = os.path.join(output_dir, 'completed_egids.csv')
-completed_egids.to_csv(feature_path, index=False)
+feature_path = os.path.join(output_dir, 'egid_properties.csv')
+egid_properties.to_csv(feature_path, index=False)
 written_files.append(feature_path)  
 logger.info(f"...done. A file was written: {feature_path}")
 
