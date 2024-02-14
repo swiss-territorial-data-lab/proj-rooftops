@@ -161,7 +161,7 @@ The workflow described here is working with the training subset of the ground tr
 ## Image segmentation
 
 ### Overview
-The set of scripts is dedicated to segmenatation of objects in images. Tiles fitting to the extent of the selected buildings (by EGID) are produced. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework to using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data. Detection masks are converted to vectors, filtered and merged to produce a vector layer of detected objects on the roofs of selected buildings. Finally, the results are evaluated by comparing them with ground truth labels. 
+The set of scripts is dedicated to segmentation of objects in images. Tiles fitting to the extent of the selected buildings (by EGID) are produced. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework to using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data. Detection masks are converted to vectors, filtered and merged to produce a vector layer of detected objects on the roofs of the selected buildings. Finally, the results are evaluated by comparing them with ground truth labels. 
 
 ### Data
 
