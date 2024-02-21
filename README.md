@@ -1,4 +1,4 @@
-    # Delimitation of the free areas on rooftops
+# Detection of free and occupied surfaces on rooftops
 
 Goal: Determine the space available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
 
@@ -23,13 +23,7 @@ The scripts dedicated to image segmentation were run on a 32 GiB RAM machine wit
 
 ### Installation
 
-The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Unbuntu 20.04 OS. 
-
-- For image processing, the following specific libraries were used:
-    - pip >= 20.3
-    - PyTorch version 1.10
-    - CUDA version 11.3
-    - segment-geospatial [0.10.2](https://github.com/opengeos/segment-geospatial/releases/tag/v0.10.2)
+The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Unbuntu 20.04 OS.
 
 All the dependencies required for the project are listed in `requirements.in` and `requirements.txt`. To install them:
 
@@ -40,7 +34,7 @@ All the dependencies required for the project are listed in `requirements.in` an
     $ source <dir_path>/<name of the virtual environment>/bin/activate
     ```
 
-- Install dependencies
+- Install dependencies with pip >= 20.3:
 
     ```
     $ pip install -r requirements.txt
@@ -52,65 +46,28 @@ All the dependencies required for the project are listed in `requirements.in` an
     $ pip-compile requirements.in
     ```
 
-- The library `segment-geospatial` was adapted to our needs. The modified version can be clone from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. To install it in your virtual environment, execute the following commands:
+- Specific libraries were used for image processing:
+    - PyTorch version 1.10
+    - CUDA version 11.3
+    - segment-geospatial [0.10.2](https://github.com/opengeos/segment-geospatial/releases/tag/v0.10.2). <br>
+    The library was adapted to our needs and can be cloned from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. <br> To install it in your virtual environment, execute the following commands:
 
-    ```
-    $ cd segment-geospatial
-    $ git checkout ch/dev
-    $ pip install .
-    ```
+        ```
+        $ cd segment-geospatial
+        $ git checkout ch/dev
+        $ pip install .
+        ```
 
-    or in editable mode:
+        or in editable mode:
 
-    ```
-    $ pip install -e .
-    ```
+        ```
+        $ pip install -e .
+        ```
 
-    If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
+        If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
-## Folder structure
 
-<pre>.
-├── config                                         
-│   ├── config_combine_seg.yaml                 # combine img and pcd segmentation results
-│   ├── config_imgseg.yaml                      # img segmentation workflow
-│   ├── config_pcdseg_all_roofs.yaml            # pcd workflow (all roofs)
-│   └── config_pcdseg_pitched_roofs.yaml        # pcd workflow (pitched roofs)
-├── scripts 
-│   ├── assessment    
-│   │   ├── assess_area.py                      # compute occupied and free area (detections + GT)
-│   │   ├── assess_results.py                   # compute metrics
-│   │   ├── combine_results_lidar.py            # combine lidar classification and pcd segmentation vectors
-│   │   └── combine_results_seg.py              # combine img and pcd segmentation vectors
-│   ├── functions                         
-│   │   ├── fct_figures.py                          
-│   │   ├── fct_metrics.py   
-│   │   ├── fct_misc.py   
-│   │   ├── fct_optimization.py   
-│   │   └── fct_pcdseg.py   
-│   ├── image_segmentation               
-│   │   ├── filter_merge_detections.py           # filter and merge polygons obtained from segment_images.py  
-│   │   ├── generate_tiles.py                    # produce image tiles per building
-│   │   ├── optimize_hyperparameters.py          # optimize SAM hyperparameters with optuna
-│   │   └── segment_images.py                    # segment objects in images with SAM + mask vectorization
-│   ├── pcd_segmentation              
-│   │   ├── optimize_hyperparam_LIDAR.py    
-│   │   ├── pcd_segmentation.py   
-│   │   ├── post_processing.py   
-│   │   ├── prepare_data.py  
-│   │   └── vectorization.py   
-│   └── sandbox      
-│       ├── assess_synthetic_examples.py         # development of "charges" detection count with synthetic vectors
-│       ├── fuse_las_files.py   
-│       └── mask_for_buildings.py                # mask all image elements except roofs
-├── .gitignore                                      
-├── LICENSE
-├── README.md                                      
-├── requirements.in                             # list of python libraries required for the project                           
-└── requirements.txt                            # python dependencies compiled from requirements.in file                            
-</pre>
-
-## Classification of the roof plane occupation
+## Classification of the roof plane occupancy
 
 ## LiDAR segmentation
 
