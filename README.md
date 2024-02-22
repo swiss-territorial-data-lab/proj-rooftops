@@ -1,6 +1,6 @@
 # Detection of free and occupied surfaces on rooftops
 
-Goal: Determine the surface available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
+The set of provided scripts aim to evaluate the surface available on rooftops by detecting objects. 
 
 **Table of content**
 
@@ -15,10 +15,8 @@ Goal: Determine the surface available on rooftops by detecting objects. Producti
 
 ### Hardware
 
-For the processing of the *images*, a CUDA-compatible GPU is needed. <br>
-For the processing of the *LiDAR point cloud*, there is no hardware requirement.
-
-The scripts dedicated to image segmentation were run on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4)
+Image processing was run on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4) compatible with CUDA. <br>
+No hardware requirements are needed to process the LiDAR point cloud.
 
 ### Installation
 

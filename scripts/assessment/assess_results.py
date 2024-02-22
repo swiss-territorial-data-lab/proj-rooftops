@@ -83,20 +83,21 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
 
+    logger.info("Geohash the labels and detections...")
+    GT_PREFIX= 'gt_'
+    labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
+    labels_gdf = misc.drop_duplicates(labels_gdf, subset='geohash')
     nbr_labels = labels_gdf.shape[0]
+    
+    DETS_PREFIX = "dt_"
+    detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
+    detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
     if detections_gdf.shape[0] == 0:
         logger.error('No detection is available, returning 0 as f1 score and IoU average.')
         return 0, 0, []
-    elif method == 'charges' or method == 'fusion':
 
-        logger.info("Geohash the labels and detections to use them in graphs...")
-        GT_PREFIX= 'gt_'
-        labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
-        
-        DETS_PREFIX = "dt_"
-        detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
-        detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
+    elif method == 'charges' or method == 'fusion':
 
         logger.info(f"Metrics computation:")
         logger.info(f"     - Compute TP, FP and FN")
