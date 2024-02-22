@@ -1,13 +1,12 @@
 # Detection of free and occupied surfaces on rooftops
 
-Goal: Determine the space available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
+Goal: Determine the surface available on rooftops by detecting objects. Production of a binary (free/occupied) vector layer.
 
 **Table of content**
 
 - [Requirements](#requirements)
 	- [Hardware](#hardware)
     - [Installation](#installation)
-- [Floder structure](#folder-structure)
 - [Classification of occupancy](#classification-of-the-roof-plane-occupation)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
@@ -118,29 +117,30 @@ The workflow described here is working with the training subset of the ground tr
 ## Image segmentation
 
 ### Overview
-The set of scripts is dedicated to segmentation of objects in images. Tiles fitting to the extent of the selected buildings (by EGID) are produced. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework to using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data. Detection masks are converted to vectors, filtered and merged to produce a vector layer of detected objects on the roofs of the selected buildings. Finally, the results are evaluated by comparing them with ground truth labels. 
+
+The set of scripts is dedicated to the segmentation of objects in images. The segmentation is based on a deep learning method using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model). The final product is a vector layer of detected objects on the selected roofs. 
 
 ### Data
 
 The image segmentation workflow uses the following input data:
 
-- True orthophotos of the canton of Geneva: processed from aiborne acquisitions by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG. Saved locally for the STDL in /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/*.tiff
-- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG. Saved locally for the STDL in /mnt/s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TUILES_TRUEORTHO/Tuiles.shp
+- True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
+- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG. 
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT.shp](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing roof planes by EGID. 
-- Ground truth objects: vector shapefile of the ground truth labels: /mnt/s3/proj-rooftops/02_Data/ground_truth/occupation/PanData/roofs_STDL_proofed_2023-11-13.shp
-- EGIDs lists: list of buildings (EGID) selected for this project and saved in /mnt/s3/proj-rooftops/02_Data/ground_truth/PanData/occupation/Partition/imgseg/. The buildings are split into different datasets:
-    - EGIDs_GT_full.csv: list of 122 EGIDs selected to established the labels vectorization
+- Ground truth objects: vector shapefile of the ground truth labels
+- EGIDs lists: lists of selected buildings (EGID = building identifier). The buildings are split into different datasets:
+    - EGIDs_GT_full.csv: list of 122 EGIDs selected to establish the labels vectorization
     - EGIDs_GT_test.csv: list of 17 EGIDs selected to control the performance of the algorithm on a test dataset.
     - EGIDs_GT_training.csv: list of 105 EGIDs selected to perform hyperparameter optimization of algorithms on a training dataset. 
-    - EGIDs_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameters optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is proposed. 
+    - EGIDs_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameters optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
 
 ### Script description
 
-1. `generate_tiles.py`: produces customized tiles of the roof extent
-2. `segment_images.py`: produces detection masks and vectorizes them
+1. `generate_tiles.py`: generates custom tiles of the roof extent
+2. `segment_images.py`: creates detection masks and vectorize them. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework for using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data.
 3. `produce_vector_layer.py`: filters the vector layer for each building and aggregates all layers into a single one (detected objects)
-4. `assess_results.py`: evaluates results by comparing them with the ground truth, computes metrics and tags detections
-5. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1-score, median IoU, precision,...). Based on [Oputna](https://optuna.org/) framework
+4. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections
+5. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1-score, median IoU, precision, recall,...). Based on the [Oputna](https://optuna.org/) framework
 
 ### Workflow
 
