@@ -1,0 +1,114 @@
+# 1 - Prepare the lidar point cloud
+prepare_data.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  pcd_dir: initial/LiDAR/2019
+  inputs:
+    pcd_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+    shp_roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: EGIDs_GT_test.csv
+  output_dir: outputs/PCD_segmentation/test_zone/all
+  # output_dir: outputs/PCD_segmentation/test_zone/pitched
+  filters:
+    # building_type: residential
+    roof_inclination: pitched
+    filter_class: False
+    class_number: 6                 # 6: Building class
+    filter_roof: True             # Remove all the point below the roof altitude
+    distance_buffer: 2.0            #m, buffer value
+  overwrite: false
+  visualisation: false
+
+# 2 - Point Cloud plane segmentation and clustering
+pcd_segmentation.py: 
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/test_zone/all
+  # working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/test_zone/pitched
+  output_dir: per_EGID_data
+  input_dir_pcd: per_EGID_data
+  egids: completed_egids.csv
+  segmentation:
+    # global parameters:
+    planes:
+      distance_threshold: 0.0725    # Max distance a point can be from the plane model, and still be considered an inlier
+      ransac: 3                     # Number of initial points to be considered inliers in each iteration
+      iterations: 7000              # Number of iterations
+      eps: 11                       # Density parameter that is used to find neighbouring points
+      min_points: 1200              # Minimum number of points to form a plane
+    clusters:
+      eps: 0.8                      # Density parameter that is used to find neighbouring points
+      min_points: 27                # Minimum number of points to form a cluster
+    # specialized parameters for pitched roofs:
+    # planes:
+    #   distance_threshold: 0.07    # Max distance a point can be from the plane model, and still be considered an inlier
+    #   ransac: 3                     # Number of initial points to be considered inliers in each iteration
+    #   iterations: 11500              # Number of iterations
+    #   eps: 12                       # Density parameter that is used to find neighbouring points
+    #   min_points: 550              # Minimum number of points to form a plane
+    # clusters:
+    #   eps: 0.79                      # Density parameter that is used to find neighbouring points
+    #   min_points: 8                # Minimum number of points to form a cluster
+  visualisation: False
+
+# 3 - 2D vectorisation of segmented 3D point cloud 
+vectorization.py:  
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/test_zone/all
+  # working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/test_zone/pitched
+  output_dir: .
+  input_dir_pcd: per_EGID_data
+  egids: completed_egids.csv
+  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  epsg: 2056
+  area_threshold: 
+    min: 91        # m2, threshold for the area of the segmented sections. Below this value the vectorized polygon in will be classified as object and not plane
+    max: 210       # m2, threshold for the area of the segmented objects. Above this value the vectorized object in will be classified as plane and not object
+    # min: 11
+    # max: 240
+  alpha_shape: 2.4          # Alpha parameter used with the alpha shape algorithm used to define a bounding polygon around a group of points 
+  visualisation: False
+
+
+# 3bis - Post-process the results to improve them
+post_processing.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data/outputs/PCD_segmentation/test_zone/
+  output_dir: post_processed
+  roofs: all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  merge_files: True
+  buffer: True
+  vw: True
+  merge_detections: True
+  buffer_size: 1
+  vw_threshold: 0.1
+  detections: post_processed/detections_test_zone.gpkg
+  files:
+    all_detections: all/all_EGID_occupation.gpkg
+    residential_pitched: pitched/all_EGID_occupation.gpkg
+
+
+# 4 - Evaluate the results
+assess_results.py: 
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: final/PCD_segmentation/test_zone
+  detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
+  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  egids: outputs/PCD_segmentation/test_zone/all/completed_egids.csv
+  roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  method: fusion
+  threshold: 0.1
+  additional_metrics: True
+  visualisation: True
+  object_attributes:
+    parameters: ['area', 'nearest_distance_centroid'] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5, 1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+
+
+# 5 - Estimate the free surface
+assess_area.py:
+  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  output_dir: final/PCD_segmentation/test_zone
+  detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
+  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  egids: outputs/PCD_segmentation/test_zone/all/completed_egids.csv
+  roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  bins: [0, 25, 50, 75, 85, 95, 100] 
+  method: fusion
+  visualisation: True

@@ -1,12 +1,8 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import sys
 import time
+
 from loguru import logger
 from tqdm import tqdm
 from yaml import load, FullLoader
@@ -22,7 +18,7 @@ import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
-# Functions --------------------------
+
 def read_gpd(DETECTIONS):
 
     if isinstance(DETECTIONS, str):
@@ -34,9 +30,7 @@ def read_gpd(DETECTIONS):
         sys.exit(1)
 
     if 'occupation' in detections_gdf.columns:
-        print(len(detections_gdf))
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
-        print(len(detections_gdf))
 
     if 'det_id' in detections_gdf.columns:
         detections_gdf['detection_id'] = detections_gdf.det_id.astype(int)
@@ -68,8 +62,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
 
     logger.info("Get input data")
 
-
-    # Read detections shapefile 
+    # Read detection shapefile 
     DETECTIONS_PCD = os.path.join(DETECTIONS_PCD)
     _ = misc.ensure_file_exists(DETECTIONS_PCD)
     pcd_gdf = gpd.read_file(DETECTIONS_PCD, layer=LAYER_PCD)
@@ -83,7 +76,7 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
 
     pcd_gdf = pcd_gdf.drop(['ID_DET', 'geohash', 'group_id', 'TP_charge', 'FP_charge', 'nearest_distance_centroid', 'nearest_distance_border'], axis=1)
  
-    # retain img_geometry  
+    # Filter img segmentation polygons with pcd segmentation polygons  
     pcd_gdf.geometry = pcd_gdf.geometry.buffer(-0.01, join_style='mitre')
     left_join = gpd.sjoin(img_gdf, pcd_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     left_join = left_join[left_join['det_id'].notnull()] 
@@ -93,24 +86,14 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
     feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
     left_join.to_file(feature_path, driver="GPKG") 
 
-    # layer_clip = gpd.clip(img_gdf, pcd_gdf)
-    # print(layer_clip.keys())  
-    # layer_clip.geometry = layer_clip.geometry.buffer(0.001, join_style='mitre')
-    # layer_clip = layer_clip.unary_union
-    # layer_clip = layer_clip.explode(ignore_index=True)
-    # res_union = gpd.overlay(df1, df2, how='union')
-    # feature_path = os.path.join(output_dir, "test_clip.gpkg")
-    # layer_clip.to_file(feature_path, driver="GPKG") 
-
     return written_files
 
-# ------------------------------------------
 
 if __name__ == "__main__":
 
     # Start chronometer
     tic = time.time()
-    logger.info("Results assessment")
+    logger.info("Combine results")
     logger.info('Starting...')
 
     # Argument and parameter specification

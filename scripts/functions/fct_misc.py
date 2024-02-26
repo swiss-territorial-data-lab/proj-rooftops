@@ -96,7 +96,7 @@ def check_validity(poly_gdf, correct=False):
     invalid_condition = ~poly_gdf.is_valid
 
     try:
-        assert(poly_gdf[invalid_condition].shape[0]==0), \
+        assert(poly_gdf[invalid_condition].shape[0] == 0), \
             f"{poly_gdf[invalid_condition].shape[0]} geometries are invalid on" + \
                     f" {poly_gdf.shape[0]} detections."
     except Exception as e:
@@ -112,7 +112,7 @@ def check_validity(poly_gdf, correct=False):
 
     return poly_gdf
 
-    
+
 def crop(source, size, output):
 
     with rasterio.open(source) as src:
@@ -149,6 +149,7 @@ def dissolve_by_attribute(desired_file, original_file, name, attribute, buffer=0
         original_file (str): path to the original geodataframe on which dissolution is perfomed
         name (str): root name of the file
         attribute (key): column key on which the operation is performed
+        buffer (float): size of the buffer to remove thin space due to gaps between polygons
 
     Returns:
         gdf: geodataframes dissolved according to the provided gdf attribute
@@ -216,9 +217,11 @@ def distance_shape(geom1, geom2):
 
 def drop_duplicates(gdf, subset=None):
     """Delete duplicate rows based on the values in a subset column.
+
     Args:
         gdf : geodataframe
         subset: columns to check for duplicates. Defaults to None.
+
     Returns:
         out_gdf (gdf): clean geodataframe
     """
@@ -227,6 +230,38 @@ def drop_duplicates(gdf, subset=None):
     out_gdf.drop_duplicates(subset=subset, inplace=True)
 
     return out_gdf
+
+
+def ensure_dir_notempty(dirpath):
+    """Test if a directory is empty. If it is exit the script. 
+
+    Args:
+        dirpath (str): directory path to test
+    """
+
+    if len(os.listdir(dirpath)) == 0:
+        logger.error(f"{dirpath} is empty. No detection masks found") 
+        logger.info("Nothing left to be done: exiting")
+        sys.stderr.flush()
+        sys.exit()
+    else:
+        pass
+    
+
+def ensure_file_exists(filepath):
+    """Test if a file exists. If not, exit the script.   
+
+    Args:
+        filepath (str): file path to test
+    """
+
+    if not os.path.isfile(filepath):
+        logger.error(f"{filepath} does not exist. No vector file to assess") 
+        logger.info("Nothing left to be done: exiting")
+        sys.stderr.flush()
+        sys.exit()
+    else:
+        pass
 
 
 def geohash(row):
@@ -261,8 +296,7 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
     # Get the EGIDS of interest
     egids = pd.read_csv(path_egids)
     array_egids = egids.EGID.to_numpy()
-    logger.info(f'- {egids.shape[0]} selected EGIDs.')
-
+    logger.info(f'    - {egids.shape[0]} selected EGIDs.')
 
     if ('EGID' in path_roofs) | ('egid' in path_roofs):
         roofs_gdf = gpd.read_file(path_roofs)
@@ -275,7 +309,8 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
-    logger.info(f'- {roofs_gdf.shape[0]} roofs')
+    roofs_gdf = roofs_gdf[roofs_gdf.EGID.isin(array_egids)].copy()
+    logger.info(f'    - {roofs_gdf.shape[0]} roofs')
 
     if isinstance(labels, str):
         labels_gdf = gpd.read_file(labels)
@@ -319,67 +354,16 @@ def ensure_dir_exists(dirpath):
     return dirpath
 
 
-def ensure_dir_notempty(dirpath):
-    """Test if a directory is empty. If it is exit the script. 
-
-    Args:
-        dirpath (str): directory path to test
-    """
-
-    if len(os.listdir(dirpath)) == 0:
-        logger.error(f"{dirpath} is empty. No detection masks found") 
-        logger.info("Nothing left to be done: exiting")
-        sys.stderr.flush()
-        sys.exit()
-    else:
-        pass
-    
-
-def ensure_file_exists(filepath):
-    """Test if a file exists. If not, exit the script.   
-
-    Args:
-        filepath (str): file path to test
-    """
-
-    if not os.path.isfile(filepath):
-        logger.error(f"{filepath} does not exist. No vector file to assess") 
-        logger.info("Nothing left to be done: exiting")
-        sys.stderr.flush()
-        sys.exit()
-    else:
-        pass
-
-
-def fillit(row):
-    """A function to fill holes below an area threshold in a polygon
-    
-    Args:
-        row : gdf row with geometry column
-    """
-    
-    newgeom = None
-    rings = [i for i in row["geometry"].interiors] # List all interior rings
-    if len(rings) > 0: # If there are any rings
-        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
-        if len(to_fill) > 0: # If there are any to fill
-            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]] + to_fill) # Union the original geometry with all holes
-    if newgeom:
-        return newgeom
-    else:
-        return row["geometry"]
-
-
 def format_detections(detections_gdf):
 
     if 'occupation' in detections_gdf.columns:
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
     if 'det_id' in detections_gdf.columns:
-        detections_gdf['ID_DET'] = detections_gdf.det_id.astype(int)
+        detections_gdf['detection_id'] = detections_gdf.det_id.astype(int)
     else:
-        detections_gdf['ID_DET'] = detections_gdf.index
-    detections_gdf=detections_gdf.explode(index_parts=False).reset_index(drop=True)
+        detections_gdf['detection_id'] = detections_gdf.index
+    detections_gdf = detections_gdf.explode(ignore_index=True)
     logger.info(f"    - {len(detections_gdf)} detections")
 
     return detections_gdf
@@ -400,8 +384,8 @@ def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
         
     # Clip labels to the corresponding roof
     for egid in selected_egids_arr:
-        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -498,10 +482,24 @@ def test_crs(crs1, crs2="EPSG:2056"):
         crs2 = crs2.crs
 
     try:
-        assert(crs1==crs2)
+        assert(crs1 == crs2)
     except AssertionError:
         logger.error(f"CRS mismatch between the two files ({crs1} vs {crs2}")
         sys.exit()
 
+
+def fillit(row):
+    """A function to fill holes below an area threshold in a polygon"""
+    newgeom=None
+    rings = [i for i in row["geometry"].interiors] # List all interior rings
+    if len(rings)>0: # If there are any rings
+        to_fill = [Polygon(ring) for ring in rings] # List the ones to fill
+        if len(to_fill)>0: # If there are any to fill
+            newgeom = reduce(lambda geom1, geom2: geom1.union(geom2),[row["geometry"]]+to_fill) # Union the original geometry with all holes
+    if newgeom:
+        return newgeom
+    else:
+        return row["geometry"]
+    
 
 logger = format_logger(logger)
