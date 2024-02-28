@@ -20,7 +20,7 @@ logger = misc.format_logger(logger)
 # Functions --------------------------
 
 def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-to-one', threshold=0.1, object_parameters=[], ranges=[], buffer=0.1,
-         additional_metrics=False, visualisation=False):
+         additional_metrics=False, visualization=False):
     """Assess the results by calculating the precision, recall and f1-score.
 
     Args:
@@ -36,7 +36,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         ranges (list): list of list of the bins to process by object_parameters.
         buffer (float): buffer to avoid the intersection of touching shapes.
         additional_metrics (bool): wheter or not to do the by-EGID, by-object, by-class metrics. Defaults to False.
-        visualisation (bool): wheter or not to do and save the plots. Defaults to False.
+        visualization (bool): wheter or not to do and save the plots. Defaults to False.
     
     Returns:
         tuple:
@@ -93,6 +93,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
     detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
+    rem_list = ['FP', 'precision', 'f1']
+
     if detections_gdf.shape[0] == 0:
         logger.error('No detection is available, returning 0 as f1 score and IoU average.')
         return 0, 0, []
@@ -137,7 +139,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
         metrics_results = metrics.get_metrics(TP, FP, FN)
         metrics_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
-
+        
         if additional_metrics:
             logger.info("    - Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
@@ -159,6 +161,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 FP = 0
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
+                [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -242,6 +245,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
+                [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -257,6 +261,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                         FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
+                        [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -302,7 +307,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             metrics_iou_mean_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
             metrics_iou_median_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).median()
 
-            for val in metrics_egid_df[attribute].unique():
+            for val in sorted(metrics_egid_df[attribute].unique()):
                 TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
                 FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
                 FN = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FN'].iloc[0]
@@ -370,7 +375,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         written_files[filename] = layer_name
 
 
-    if visualisation and additional_metrics:
+    if visualization and additional_metrics:
         logger.info('Save some figures...')
 
         xlabel_dict = {'EGID': '', 'building_type': '', 'roof_inclination': '',
@@ -423,14 +428,14 @@ if __name__ == "__main__":
     AREA_RANGES = cfg['object_attributes']['area_ranges']
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges']
     ROUND_RANGES = cfg['object_attributes']['round_ranges']
-    VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
+    VISU = cfg['visualization'] if 'visualization' in cfg.keys() else False
 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] + [ROUND_RANGES] 
 
     metrics_df, written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                             method=METHOD, threshold=THRESHOLD, 
                                             object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER,
-                                            additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
+                                            additional_metrics=ADDITIONAL_METRICS, visualization=VISU)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():

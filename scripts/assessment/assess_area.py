@@ -17,7 +17,7 @@ logger = misc.format_logger(logger)
 
 # Functions --------------------------
 
-def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD, visualisation=False):
+def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD, visualization=False):
     """Estimate the difference in free and occupied areas between labels and detections.
 
     Args:
@@ -29,7 +29,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         EGIDS (list): EGIDs of interest
         BINS (list): list with the limits for the bins as list.
         METHOD (string): method used for the assessment of the results, either one-to-one, one-to-many or many-to-many.
-        visualisation (bool): wheter or not to do and save the plots. Defaults to False.
+        visualization (bool): wheter or not to do and save the plots. Defaults to False.
 
     Returns:
         tuple:
@@ -119,7 +119,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
 
         attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])
 
-        if visualisation:
+        if visualization:
             # Plots
             xlabel_dict = {'EGID': '', 'roof_type': 'Building type', 'roof_inclination': 'Roof type'}
             bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
@@ -177,10 +177,10 @@ if __name__ == "__main__":
 
     BINS = cfg['bins']
     METHOD = cfg['method']
-    VISUALISATION = cfg['visualisation']
+    visualization = cfg['visualization']
 
     written_files = main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS,
-                         METHOD, visualisation=VISUALISATION)
+                         METHOD, visualization=visualization)
 
     logger.success("The following files were written. Let's check them out!")
     for path in written_files.keys():

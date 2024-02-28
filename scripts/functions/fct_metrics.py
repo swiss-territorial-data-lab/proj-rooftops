@@ -15,7 +15,8 @@ from shapely.geometry import GeometryCollection
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
-def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, surface_type):
+
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
 
     if surface_type == 'occupied':
         surface_type = 'occup'

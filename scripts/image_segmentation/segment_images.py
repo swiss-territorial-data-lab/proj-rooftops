@@ -173,7 +173,7 @@ if __name__ == "__main__":
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']['enable']
     CUSTOM_PARAMETERS = cfg['SAM']['custom_SAM']['custom_parameters']
-    VISU = cfg['SAM']['visualisation_masks']
+    VISU = cfg['SAM']['visualization_masks']
 
     main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,

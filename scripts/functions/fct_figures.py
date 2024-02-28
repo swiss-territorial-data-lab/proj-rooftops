@@ -113,7 +113,7 @@ def plot_groups(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(9,6), layout='constrained')
 
-    df = df[df['attribute'] == attribute]  
+    df = df[df['attribute'] == attribute] 
     if df['FP'].isnull().values.any():
         color_list = ['#00D800', '#21D4DA']  
         counts_list = ['TP', 'FN']  

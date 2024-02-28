@@ -17,7 +17,7 @@ generate_tiles.py:
 segment_images.py:
   working_dir: .
   image_dir:  inputs/image_segmentation/tiles/final_test
-  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
+  output_dir: outputs/image_segmentation/final_test
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -38,20 +38,20 @@ segment_images.py:
       enable: True
       custom_parameters: {
         "points_per_side": 64,
-        "points_per_batch": 64,
+        "points_per_batch": 96,
         "pred_iou_thresh": 0.65,
         "stability_score_thresh": 0.8,
         "stability_score_offset": 5.0,
         "box_nms_thresh":  0.3,
         "crop_n_layers": 0,
         "crop_nms_thresh": 0.8,
-        "crop_overlap_ratio": 0.7,
+        "crop_overlap_ratio": 0.6,
         "crop_n_points_downscale_factor": 9,
         # "point_grids": None,
         "min_mask_region_area": 250,
         # "output_mode": str = "binary_mask",
         }
-    visualisation_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
+    visualization_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Filters the vector layer for each roof and merges them
 filter_merge_detections.py:
@@ -59,7 +59,7 @@ filter_merge_detections.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   output_dir: outputs/image_segmentation/test
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
+  output_dir: outputs/image_segmentation/final_test
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file
 
@@ -69,31 +69,31 @@ assess_results.py:
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
   egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/final_test_pre_eq_rec
-  detections: outputs/image_segmentation/final_test_pre_eq_rec/vectors/roof_segmentation.gpkg
+  output_dir: outputs/image_segmentation/final_test
+  detections: outputs/image_segmentation/final_test/vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
-  visualisation: True
+  visualization: True
   threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
   buffer: 0.1              
   object_attributes:
-    parameters: [area, nearest_distance_border, roundness] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid', 'roundness' 
+    parameters: [area, nearest_distance_centroid, roundness] # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid', 'roundness' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
     round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
-  visualisation: True           # show plots
+  visualization: True           # show plots
 
 # 5 - Compute free area
 assess_area.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
-  output_dir: outputs/image_segmentation/test
-  detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  output_dir: outputs/image_segmentation/final_test
+  detections: outputs/image_segmentation/final_test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
-  visualisation: True           # show plots
+  visualization: True           # show plots
 
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
@@ -108,7 +108,7 @@ optimize_hyperparameters.py:
   crs: EPSG:2056                # projection of the input file 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   additional_metrics: False     # compute metrics for given attributes (building type, roof type, object class, object attributes)
-  visualisation: True           # show binary and annotated masks + saves annotated masks 
+  visualization: True           # show binary and annotated masks + saves annotated masks 
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   buffer: 0.1                   # buffer applied to labels and detections to prevent adjecent polygons from being considered as overlapping
   object_attributes:
@@ -132,7 +132,7 @@ optimize_hyperparameters.py:
     unique: True                # attribute unique ID to masks 
     mask_multiplier: 255
     custom_SAM: True
-    visualisation_masks: False 
+    visualization_masks: False 
   optimization:                 # SAM hyperparameter optimization with optuna library https://optuna.org/
     n_trials: 50                # number of trials
     sampler: TPESampler         # choices: 'TPESampler', 'GridSampler' 
@@ -160,7 +160,7 @@ GT_characteristics.py:
   egids_test: inputs/ground_truth/egid/EGIDs_GT_training.csv
   egids_training: inputs/ground_truth/egid/EGIDs_GT_test.csv
   output_dir: inputs/ground_truth/plots
-  visualisation: True
+  visualization: True
   object_attributes:
     parameters: [area, nearest_distance_border, roundness] # Choice between: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
