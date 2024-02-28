@@ -125,11 +125,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, EGIDS_TRAINING, EGIDS_TEST, roofs=None
     # Plots
     xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
+                    'nearest_distance_border': r'Object distance (m)', 
+                    'nearest_distance_centroid': r'Object distance (m)',
+                    'roundness': r'Roundness'} 
 
     _ = figures.plot_stacked_grouped_object(output_dir, labels_gdf, param_ranges=ranges_dict, param='roundness', attribute='object_class', label=xlabel_dict)
     _ = figures.plot_stacked_grouped_object(output_dir, labels_gdf, param_ranges=ranges_dict, param='area', attribute='object_class', label=xlabel_dict)
-    _ = figures.plot_stacked_grouped_object(output_dir, labels_gdf, param_ranges=ranges_dict, param='nearest_distance_border', attribute='object_class', label=xlabel_dict)
+    _ = figures.plot_stacked_grouped_object(output_dir, labels_gdf, param_ranges=ranges_dict, param='nearest_distance_centroid', attribute='object_class', label=xlabel_dict)
     _ = figures.plot_histo_object(output_dir, labels_gdf, attribute='object_class', datasets=['training', 'test'])
 
     return written_files

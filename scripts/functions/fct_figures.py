@@ -128,7 +128,7 @@ def plot_groups(dir_plots, df, attribute, xlabel):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     plt.xlabel(xlabel, fontweight='bold', fontsize=12)
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
 
     for c in ax.containers:
         labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
@@ -167,7 +167,7 @@ def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     plt.xlabel(xlabel, fontweight='bold', fontsize=12)
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
 
     plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
     # plt.title(f'Counts by {attribute.replace("_", " ")}')
@@ -242,7 +242,7 @@ def plot_histo_object(dir_plots, df, attribute):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     plt.xlabel('', fontweight='bold')
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
     plt.ylim(1e0, 1e4)
 
     plt.legend(title='Roundness', bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
@@ -277,7 +277,7 @@ def plot_stacked_grouped_object(dir_plots, df, param_ranges, attribute):
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     # plt.xlabel('', fontweight='bold', fontsize=12)
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
     plt.ylim(1e-1, 1e4)
 
     plt.legend(title='Roundness', bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)    
@@ -306,8 +306,8 @@ def plot_histo_object(dir_plots, df, attribute, datasets):
 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
-    # plt.xlabel('', fontweight='bold')
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    plt.xlabel('', fontweight='bold')
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
     plt.ylim(1e0, 1e4)
 
     plt.legend(title='Dataset', loc='upper left', frameon=False)    
@@ -343,7 +343,7 @@ def plot_stacked_grouped_object(dir_plots, df, param_ranges, param, attribute, l
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     # plt.xlabel('', fontweight='bold')
-    plt.ylabel('Count', fontweight='bold', fontsize=12)
+    # plt.ylabel('Count', fontweight='bold', fontsize=12)
     # plt.ylim(1e-1, 1e5)
 
     plt.legend(title=label.capitalize().replace("_", " "), loc='upper left', frameon=False, ncol=math.ceil(len(param_ranges)/2))    

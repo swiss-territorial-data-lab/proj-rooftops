@@ -378,7 +378,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualization and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'EGID': '', 'building_type': '', 'roof_inclination': '',
+        xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_inclination': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
 
