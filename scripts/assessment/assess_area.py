@@ -109,8 +109,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
                 / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)'] == area_bin])
             
         print()
-        logger.info(f"Occupied surface relative error for all EGIDs = {(surfaces_df.loc[0,'occup_rel_diff'] ):.2f}")
-        logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_diff']):.2f}")
+        logger.info(f"Occupied surface relative error for all EGIDs = {(surfaces_df.loc[0,'occup_rel_error'] ):.2f}")
+        logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_error']):.2f}")
         print()
 
         attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])

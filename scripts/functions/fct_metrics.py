@@ -16,7 +16,7 @@ sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
 
-def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, surface_type):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -24,18 +24,15 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
         logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
         sys.exit(1)
 
-    # Determine relative results
-
+    # Compute relative error
     # by EGID
     egid_surfaces_df[f'{surface_type}_rel_error'] = misc.relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     # total
-    surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
-         / surfaces_df[f'{surface_type}_area_labels']
+    surfaces_df[f'{surface_type}_rel_error'] = misc.relative_error_df(surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     # by attriubte
-    attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
-        / attribute_surface_df[f'{surface_type}_area_labels']
+    attribute_surfaces_df[f'{surface_type}_rel_error'] = misc.relative_error_df(attribute_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     
-    return egid_surfaces_df, surfaces_df, attribute_surface_df
+    return egid_surfaces_df, surfaces_df, attribute_surfaces_df
 
 
 def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surfaces_df=None):
