@@ -44,8 +44,8 @@ def plot_area(dir_plots, df, attribute, xlabel):
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color = color_list)
-    df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color = color_list)
+    df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color = color_list)
+    df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color = color_list)
     
     for b in ax.containers:
         labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
@@ -183,8 +183,8 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(9,6), layout='constrained')
 
-    format_plot = {'gt': {'color_list': ['#00D800', '#21D4DA'], 'count_list': ['TP', 'FN'], 'position': -0.05, 'legend': ['TP', 'FN']},
-                   'dt': {'color_list': ['#00D800', '#EF9015'], 'count_list': ['TP', 'FP'], 'position': 1.05, 'legend': ['', 'FP']}}
+    format_plot = {'gt': {'color_list': ['#00D800', '#21D4DA'], 'count_list': ['TP', 'FN'], 'position': 1.05, 'legend': ['TP', 'FN']},
+                   'dt': {'color_list': ['#00D800', '#EF9015'], 'count_list': ['TP', 'FP'], 'position': -0.05, 'legend': ['', 'FP']}}
 
     df = df[df['attribute'] == attribute] 
     for variables in format_plot.values():
@@ -212,7 +212,7 @@ def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
         plt.xticks(rotation=40, ha='right')
     else:
         old_xlim = plt.xlim()
-        plt.xlim(old_xlim[0], old_xlim[1] + 0.3)
+        plt.xlim(old_xlim[0] - 0.3, old_xlim[1])
     plt.xlabel(xlabel, fontweight='bold', fontsize=12)
 
     handles, labels = ax.get_legend_handles_labels()

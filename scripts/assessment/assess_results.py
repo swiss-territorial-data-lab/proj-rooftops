@@ -48,7 +48,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, method))
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', method))
     threshold_str = str(threshold).replace('.', 'dot')
 
     written_files = {}
