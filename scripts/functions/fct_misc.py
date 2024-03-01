@@ -441,7 +441,7 @@ def relative_error_df(df, target, measure):
     Returns:
         out (df): dataframe relative error computed
     """
-
+    
     re = abs(df[measure] - df[target]) / df[target]
     re.replace([np.inf], 1.0, inplace=True)
 

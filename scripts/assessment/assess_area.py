@@ -88,10 +88,6 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, 'free')
         egid_surfaces_df, surfaces_df, attribute_surfaces_df = metrics.area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, 'occupied')
 
-        # Error of the occupied area relative to the total area
-        for df in [egid_surfaces_df, surfaces_df, attribute_surfaces_df]:
-            df['rel_occup_error'] = abs(df.occup_area_dets - df.occup_area_labels) / df.total_area
-
         # Assess surface bins, 0: different bin, 1: same bin -> if ok on one side (free/occupied), it should be ok on the other.
         egid_surfaces_df[f'assess_classif_bins'] = [
             1 if bin_area_det == bin_area_label else 0
@@ -118,14 +114,12 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         print()
 
         attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])
-
         if visualization:
             # Plots
-            xlabel_dict = {'EGID': '', 'roof_type': 'Building type', 'roof_inclination': 'Roof type'}
+            xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_type': 'Roof type'}
             bin_labels = [f"accuracy bin {BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
 
             _ = figures.plot_area_bin(output_dir, surfaces_df, bins=bin_labels)
-         
             for attr in attribute_surfaces_df.attribute.unique():
                 if attr in xlabel_dict.keys():
                     filepath = figures.plot_area(output_dir, attribute_surfaces_df, attribute=attr, xlabel=xlabel_dict[attr])

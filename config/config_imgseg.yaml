@@ -2,11 +2,10 @@
 generate_tiles.py:
   working_dir: inputs
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  output_dir: image_segmentation/tiles/test
+  output_dir: image_segmentation/tiles/training
   tiles: ground_truth/tiles/Tuiles.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_test.csv
-  output_dir: image_segmentation/tiles/final_test
+  egids: ground_truth/egid/EGIDs_GT_training.csv
   filters:
     building_type: all          # choices: 'administrative', 'industrial', 'residential', 'all'
     roof_type: all              # choices: 'flat', 'pitched', 'mixed', 'all'
@@ -16,8 +15,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/final_test
-  output_dir: outputs/image_segmentation/final_test
+  image_dir:  inputs/image_segmentation/tiles/training
+  output_dir: outputs/image_segmentation/final/prec_eq_recall
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -51,15 +50,14 @@ segment_images.py:
         "min_mask_region_area": 250,
         # "output_mode": str = "binary_mask",
         }
-    visualization_masks: False          # Enable to show binary and annotated masks (save annotated mask) 
+    visualization_masks: True          # Enable to show binary and annotated masks (save annotated mask) 
 
 # 3 - Filters the vector layer for each roof and merges them
 filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: outputs/image_segmentation/test
-  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/final_test
+  output_dir: outputs/image_segmentation/final/prec_eq_recall/training
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file
 
@@ -68,9 +66,9 @@ assess_results.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/final_test
-  detections: outputs/image_segmentation/final_test/vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/final/prec_eq_recall/training
+  detections: outputs/image_segmentation/final/prec_eq_recall/training/vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
   visualization: True
@@ -88,9 +86,9 @@ assess_area.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/final_test
-  detections: outputs/image_segmentation/final_test/vectors/roof_segmentation.gpkg
+  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  output_dir: outputs/image_segmentation/final/prec_eq_recall/training
+  detections: outputs/image_segmentation/final/prec_eq_recall/training/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
   visualization: True           # show plots
