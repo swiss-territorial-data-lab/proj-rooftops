@@ -373,7 +373,7 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.xlabel(xlabel, fontweight='bold', fontsize=12)
 
     plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False)
-    plt.title(f'Metrics by {attribute.replace("_", " ")}')
+    # plt.title(f'Metrics by {attribute.replace("_", " ")}')
  
     plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')

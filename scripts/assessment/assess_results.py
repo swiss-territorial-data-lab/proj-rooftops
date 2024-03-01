@@ -378,11 +378,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualization and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_inclination': 'Roof type',
+        xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_type': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
+                    'nearest_distance_border': r'Object distance (m)', 
+                    'nearest_distance_centroid': r'Object distance (m)', 
+                    'roundness': r'Roundness'} 
 
-        # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
+        _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
         for attr in metrics_df.attribute.unique():
             if attr in xlabel_dict.keys():
                 _ = figures.plot_groups(output_dir, metrics_df, attribute=attr, xlabel=xlabel_dict[attr])
