@@ -61,7 +61,7 @@ post_processing.py:
   merge_detections: True            # Dissolve intersecting detections
   buffer_size: 1
   vw_threshold: 0.1
-  detections: post_processed_results/detections.gpkg    # Path for the detections in case "merge_files" is false
+  detections: post_processed_results/detections.gpkg    # Path for the detections in case "merge_files" is set to false
   files:
     all_detections: all_roofs/all_EGID_occupation.gpkg
     residential_pitched: pitched_roofs/all_EGID_occupation.gpkg
