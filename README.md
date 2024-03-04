@@ -17,11 +17,11 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
 ### Hardware
 
 Image processing was run on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4) compatible with CUDA. <br>
-No hardware requirements are needed to process the LiDAR point cloud.
+There are n0 hardware requirement to process the LiDAR point cloud.
 
 ### Installation
 
-The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Unbuntu 20.04 OS.
+The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Ubuntu 20.04 OS.
 
 All the dependencies required for the project are listed in `requirements.in` and `requirements.txt`. To install them:
 

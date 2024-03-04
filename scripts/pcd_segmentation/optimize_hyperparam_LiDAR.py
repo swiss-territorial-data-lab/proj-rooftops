@@ -1,8 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import sys

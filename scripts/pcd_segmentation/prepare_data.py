@@ -1,9 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
-
 import argparse
 import os
 import sys
@@ -81,7 +75,7 @@ written_files = []
 egids = pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
-    egids = egids[egids.roof_type==BUILDING_TYPE].copy()
+    egids = egids[egids.building_type==BUILDING_TYPE].copy()
 elif BUILDING_TYPE != 'all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
