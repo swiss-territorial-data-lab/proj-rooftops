@@ -5,8 +5,9 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
 **Table of content**
 
 - [Requirements](#requirements)
-	- [Hardware](#hardware)
+    - [Hardware](#hardware)
     - [Installation](#installation)
+    - [General data](#general-data)
 - [Classification of occupancy](#classification-of-the-roof-plane-occupation)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
@@ -67,17 +68,27 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 **Disclaimer**: We do not guaranty that the scripts in the sandbox folder and outside the main proposed workflows are functional in the proposed virtual environment.
 
+### General data
+
+The data on the delimitation of roofs was used in all workflows. The ground truth produced for this project was used to assess the segmentation workflows. They are described here after:
+
+- Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID,
+- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation,
+- EGID lists: lists of selected buildings identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
+    - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset;
+    - EGID_GT_training.csv: 105 EGID selected to perform hyperparameter optimization of algorithms on a training dataset;
+    - EGID_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameter optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
+
 ## Classification of the roof plane occupancy
 
 ## LiDAR segmentation
 
 ### Data
 
-- LiDAR point cloud. Here, the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used.
-- Delimitation of the roof for each EGID.
+In addition to the general data, the segmentation workflow need:
 
-This workflow was tested with a ground truth produced for this project. The ground truth is available ... <br>
-The ground truth is split into the training and test set to see if the algorithm performs equally on new buildings.
+- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used;
+- Shapes of the LiDAR tiles.
 
 ### Workflow
 
@@ -106,12 +117,12 @@ python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
 
 More in details, the scripts used above perform the following steps:
-1. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGIDs,
+1. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGID,
 2. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
 3. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
 7. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections.
 5. `assess_results.py`: evaluate the results based on the ground truth,
-6. `assess_area.py`: calculates the free and occupied surface of each EGIDs and compare it with the ground truth.
+6. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth.
 
 The workflow described here is working with the training subset of the ground truth used for the optimization of the hyperparameters. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth, allowing to test on buildings not considered in the optimization.
 
@@ -129,17 +140,10 @@ The set of scripts is dedicated to the segmentation of objects in images. The se
 
 ### Data
 
-The image segmentation workflow uses the following input data:
+In addition to the general data, the image segmentation workflow uses the following input data:
 
 - True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
-- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG. 
-- Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT.shp](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing roof planes by EGID. 
-- Ground truth objects: vector shapefile of the ground truth labels
-- EGIDs lists: lists of selected buildings (EGID = building identifier). The buildings are split into different datasets:
-    - EGIDs_GT_full.csv: list of 122 EGIDs selected to establish the labels vectorization
-    - EGIDs_GT_test.csv: list of 17 EGIDs selected to control the performance of the algorithm on a test dataset.
-    - EGIDs_GT_training.csv: list of 105 EGIDs selected to perform hyperparameter optimization of algorithms on a training dataset. 
-    - EGIDs_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameters optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
+- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG.
 
 ### Script description
 
