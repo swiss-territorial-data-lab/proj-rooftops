@@ -99,8 +99,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         ]
 
         # Determine the global number of EGID occupied areas in the correct bin
-        surfaces_df['right_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==1])
-        surfaces_df['wrong_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins']==0])
+        surfaces_df['right_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins'] == 1])
+        surfaces_df['wrong_bin'] = len(egid_surfaces_df[egid_surfaces_df['assess_classif_bins'] == 0])
 
         # Determine the global accuracy of detected areas
         surfaces_df['global_bin_accuracy'] = surfaces_df['right_bin'] / len(egid_surfaces_df['EGID'])
@@ -108,9 +108,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
         # Determine the accuracy of detected surfaces by area bins
         for area_bin in egid_surfaces_df['bin_free_area_labels (%)'].sort_values().unique():
             surfaces_df['accuracy bin ' + area_bin] = len(
-                egid_surfaces_df.loc[(egid_surfaces_df['bin_free_area_labels (%)']==area_bin) & (egid_surfaces_df['assess_classif_bins']==1)]
+                egid_surfaces_df.loc[(egid_surfaces_df['bin_free_area_labels (%)'] == area_bin) & (egid_surfaces_df['assess_classif_bins'] == 1)]
             ) \
-                / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)']==area_bin])
+                / len(egid_surfaces_df[egid_surfaces_df['bin_free_area_labels (%)'] == area_bin])
             
         print()
         logger.info(f"Occupied surface relative error for all EGIDs = {(surfaces_df.loc[0,'occup_rel_diff'] ):.2f}")
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     WORKING_DIR = cfg['working_dir']
     OUTPUT_DIR = cfg['output_dir']
 
-    DETECTIONS=cfg['detections']
+    DETECTIONS = cfg['detections']
     LABELS = cfg['ground_truth'] if 'ground_truth' in cfg.keys() else None
     ROOFS = cfg['roofs']
     EGIDS = cfg['egids']

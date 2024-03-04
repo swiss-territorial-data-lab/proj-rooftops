@@ -83,22 +83,23 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     metrics_egid_df = pd.DataFrame()
     metrics_objects_df = pd.DataFrame()
 
+    logger.info("Geohash the labels and detections...")
+    GT_PREFIX= 'gt_'
+    labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
+    labels_gdf = misc.drop_duplicates(labels_gdf, subset='geohash')
+    nbr_labels = labels_gdf.shape[0]
+    
+    DETS_PREFIX = "dt_"
+    detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
+    detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
+
     if detections_gdf.shape[0] == 0:
         logger.error('No detection is available, returning 0 as f1 score and IoU median.')
         metrics_df = pd.DataFrame({'attribute': ['EGID'], 'f1': [0], 'IoU_median': [0]})
 
         return metrics_df, []
+    
     elif method == 'charges' or method == 'fusion':
-
-        logger.info("Geohash the labels and detections to use them in graphs...")
-        GT_PREFIX= 'gt_'
-        labels_gdf = misc.add_geohash(labels_gdf, prefix=GT_PREFIX)
-        labels_gdf = misc.drop_duplicates(labels_gdf, subset='geohash')
-        nbr_labels = labels_gdf.shape[0]
-
-        DETS_PREFIX = "dt_"
-        detections_gdf = misc.add_geohash(detections_gdf, prefix=DETS_PREFIX)
-        detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
         logger.info(f"Metrics computation:")
         logger.info(f"     - Compute TP, FP and FN")
@@ -153,15 +154,13 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
             logger.info("    - Metrics per object class")
             for object_class in sorted(labels_gdf.descr.unique()):
-                filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr']==object_class].copy()
+                filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr'] == object_class].copy()
                     
                 TP = float(filter_gt_gdf['TP_charge'].sum())
                 FN = float(filter_gt_gdf['FN_charge'].sum())
                 FP = 0
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
-                rem_list = ['FP', 'precision', 'f1']
-                [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
@@ -186,7 +185,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         logger.info(f"Metrics computation:")
         logger.info(f"   - Compute TP, FP and FN")
 
-        tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[['detection_id', 'geometry']], labels_gdf, method=method, threshold=threshold)
+        tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[['detection_id', 'geometry']], labels_gdf, method=method, iou_threshold=threshold)
         TP = len(tp_gdf)
         FP = len(fp_gdf)
         FN = len(fn_gdf)
@@ -227,7 +226,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         if additional_metrics:
             logger.info("    - Metrics per egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
-                tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf, labels_gdf, method=method)
+                tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[detections_gdf.EGID == egid], labels_gdf[labels_gdf.EGID == egid], method=method)
                 TP = len(tp_gdf)
                 FP = len(fp_gdf)
                 FN = len(fn_gdf)
@@ -245,26 +244,23 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 FP = len(filter_gt_gdf[filter_gt_gdf['tag'] == 'FP'])
 
                 metrics_results = metrics.get_metrics(TP, FP, FN)
-                [metrics_results.pop(key) for key in rem_list]
                 tmp_df = pd.DataFrame.from_records([{'attribute': 'object_class', 'value': object_class, **metrics_results}])
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
             if (len(object_class) > 0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
-                logger.info("- Metrics per object attributes")
+                logger.info("    - Metrics per object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for val in param_ranges:
                         filter_dets_gdf = tagged_dets_gdf[(tagged_dets_gdf[parameter] >= val[0]) & (tagged_dets_gdf[parameter] <= val[1])].copy()
                             
-                        TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='TP'].shape[0])
-                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag=='FN'].shape[0])
+                        TP = float(filter_dets_gdf.loc[filter_dets_gdf.tag == 'TP'].shape[0])
+                        FN = float(filter_dets_gdf.loc[filter_dets_gdf.tag == 'FN'].shape[0])
                         FP = 0
 
                         metrics_results = metrics.get_metrics(TP, FP, FN)
-                        [metrics_results.pop(key) for key in rem_list]
                         tmp_df = pd.DataFrame.from_records([{'attribute': parameter, 'value': str(val).replace(",", " -"), **metrics_results}])
                         metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
-
 
     # Compute Jaccard index by EGID
     logger.info(f"    - Compute mean Jaccard index")
@@ -275,7 +271,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         metrics_egid_df['EGID'] = labels_by_attr_gdf.EGID
 
     metrics_egid_df['IoU_EGID'] = [
-        labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID==egid, 'IoU_EGID'].iloc[0]
+        labels_by_attr_gdf.loc[labels_by_attr_gdf.EGID == egid, 'IoU_EGID'].iloc[0]
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
     ]
@@ -303,10 +299,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if additional_metrics:
         logger.info("    - Metrics per roof attributes")
         for attribute in roof_attributes:
+
             metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
             metrics_iou_mean_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).mean()
             metrics_iou_median_df = metrics_egid_df[[attribute, 'IoU_EGID']].groupby([attribute], as_index=False).median()
-            
+
             for val in metrics_egid_df[attribute].unique():
                 TP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'TP'].iloc[0]  
                 FP = metrics_count_df.loc[metrics_count_df[attribute] == val, 'FP'].iloc[0]
@@ -318,7 +315,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 tmp_df = pd.DataFrame.from_records([{'attribute': attribute, 'value': val, 
                                                     **metrics_results, 'IoU_mean': iou_mean, 'IoU_median': iou_median}])
                 metrics_df = pd.concat([metrics_df, tmp_df])
-        
+
         metrics_df = pd.concat([metrics_df, metrics_objects_df]).reset_index(drop=True)
 
     # Sump-up results and save files
@@ -349,7 +346,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     filename = os.path.join(output_dir, 'problematic_objects.gpkg')
     if os.path.exists(filename):
         os.remove(filename)
-    if (labels_diff != 0) and (method != 'fusion'):
+    if (labels_diff != 0) and (method != 'fusion') and (method != 'charges'):
         logger.warning(f'There are {int(nbr_labels)} labels in input and {int(nbr_tagged_labels)} labels in output.')
         logger.info(f'The list of the problematic labels is exported to {filename}.')
 
@@ -378,7 +375,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualisation and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'EGID': '', 'roof_type': '', 'roof_inclination': '',
+        xlabel_dict = {'EGID': '', 'building_type': '', 'roof_inclination': '',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)', 'roundness': r'Roundness'} 
 

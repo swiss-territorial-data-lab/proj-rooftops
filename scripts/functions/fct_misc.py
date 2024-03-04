@@ -96,7 +96,7 @@ def check_validity(poly_gdf, correct=False):
     invalid_condition = ~poly_gdf.is_valid
 
     try:
-        assert(poly_gdf[invalid_condition].shape[0]==0), \
+        assert(poly_gdf[invalid_condition].shape[0] == 0), \
             f"{poly_gdf[invalid_condition].shape[0]} geometries are invalid on" + \
                     f" {poly_gdf.shape[0]} detections."
     except Exception as e:
@@ -385,8 +385,8 @@ def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
         
     # Clip labels to the corresponding roof
     for egid in selected_egids_arr:
-        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -483,7 +483,7 @@ def test_crs(crs1, crs2="EPSG:2056"):
         crs2 = crs2.crs
 
     try:
-        assert(crs1==crs2)
+        assert(crs1 == crs2)
     except AssertionError:
         logger.error(f"CRS mismatch between the two files ({crs1} vs {crs2}")
         sys.exit()

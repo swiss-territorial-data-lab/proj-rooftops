@@ -52,7 +52,7 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
         sys.exit(1)
 
     egid_surfaces_df[f'{surface_type}_area_{object_type}'] = [
-        objects_df.loc[objects_df.EGID==egid, f'{surface_type}_area'].iloc[0]
+        objects_df.loc[objects_df.EGID == egid, f'{surface_type}_area'].iloc[0]
         if egid in objects_df.EGID.unique() else 0
         for egid in egid_surfaces_df.EGID.unique() 
     ]
@@ -88,8 +88,8 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
             attribute_surface_dict['attribute'] = attribute
             attribute_surface_dict['value'] = val
             for var in surface_types:
-                total_area = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, f'total_area'].sum()
-                sum_surface = egid_surfaces_df.loc[egid_surfaces_df[attribute]==val, f'{surface_type}_area_{object_type}'].sum() if var!='total_area'\
+                total_area = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'total_area'].sum()
+                sum_surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'{surface_type}_area_{object_type}'].sum() if var!='total_area'\
                     else total_area
                 attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
                     else sum_surface / total_area
@@ -136,7 +136,7 @@ def apply_iou_threshold_one_to_one(tp_gdf_ini, threshold=0.1):
 
     # Filter detection based on IoU value
     # Keep only max IoU value for each detection
-    tp_grouped_gdf = tp_gdf_ini.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IoU==g.IoU.max()])
+    tp_grouped_gdf = tp_gdf_ini.groupby(['detection_id'], group_keys=False).apply(lambda g:g[g.IoU == g.IoU.max()])
     
     # Detection with IoU lower than threshold value are considered as FP and removed from TP list   
     fp_gdf_temp = tp_grouped_gdf[tp_grouped_gdf['IoU'] < threshold]

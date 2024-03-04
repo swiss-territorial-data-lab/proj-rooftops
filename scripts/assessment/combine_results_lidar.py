@@ -25,7 +25,7 @@ def assess_free_surfaces(labels_gdf, detections_gdf, classified_roofs_gdf, offic
     office = office.lower()
 
     logger.info('Filter for labels and detections on potentially free surfaces')
-    geoms_pot_free = classified_roofs_gdf.loc[classified_roofs_gdf[f'pred_status_{office}']=='occupied', 'geometry']
+    geoms_pot_free = classified_roofs_gdf.loc[classified_roofs_gdf[f'pred_status_{office}'] == 'occupied', 'geometry']
     geom_parts = geoms_pot_free.buffer(0.1, join_style=2).unary_union.buffer(-0.1, join_style=2)
     pot_free_gdf = gpd.GeoDataFrame(
         {'id': [i for i in range(len(geom_parts.geoms))], 'geometry': [geom for geom in geom_parts.geoms]}, 
