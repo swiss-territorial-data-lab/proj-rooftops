@@ -120,8 +120,8 @@ More in details, the scripts used above perform the following steps:
 1. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGID,
 2. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
 3. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
-7. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections.
-5. `assess_results.py`: evaluate the results based on the ground truth,
+7. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections,
+5. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
 6. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth.
 
 The workflow described here is working with the training subset of the ground truth used for the optimization of the hyperparameters. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth, allowing to test on buildings not considered in the optimization.
@@ -147,11 +147,12 @@ In addition to the general data, the image segmentation workflow uses the follow
 
 ### Script description
 
-1. `generate_tiles.py`: generates custom tiles of the roof extent
+1. `generate_tiles.py`: generates custom tiles of the roof extent;
 2. `segment_images.py`: creates detection masks and vectorize them. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework for using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data.
-3. `produce_vector_layer.py`: filters the vector layer for each building and aggregates all layers into a single one (detected objects)
-4. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections
-5. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1-score, median IoU, precision, recall,...). Based on the [Oputna](https://optuna.org/) framework
+3. `produce_vector_layer.py`: filters the vector layer for each building and aggregates all layers into a single one (detected objects);
+4. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections;
+5. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth;
+6. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1-score, median IoU, precision, recall,...). Based on the [Oputna](https://optuna.org/) framework.
 
 ### Workflow
 
