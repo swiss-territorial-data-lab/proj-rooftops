@@ -15,8 +15,8 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/training
-  output_dir: outputs/image_segmentation/final/prec_eq_recall
+  image_dir:  inputs/image_segmentation/tiles/training_subsample
+  output_dir: outputs/image_segmentation/final/prec_eq_recall/training_subsample_128
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)
     enable: False
@@ -36,7 +36,7 @@ segment_images.py:
     custom_SAM:               # customize the parameters for Segment Anything (https://github.com/facebookresearch/segment-anything/blob/main/segment_anything/automatic_mask_generator.py) 
       enable: True
       custom_parameters: {
-        "points_per_side": 64,
+        "points_per_side": 128,
         "points_per_batch": 96,
         "pred_iou_thresh": 0.65,
         "stability_score_thresh": 0.8,
@@ -56,7 +56,7 @@ segment_images.py:
 filter_merge_detections.py:
   working_dir: .
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  output_dir: outputs/image_segmentation/final/prec_eq_recall/training
+  output_dir: outputs/image_segmentation/final/prec_eq_recall/training_subsample_32
   egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file

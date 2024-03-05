@@ -82,7 +82,7 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, BIN
     attribute_surface_dict = {'attribute': [], 'value': []}
 
     for attribute in roof_attributes:
-        for val in egid_surfaces_df[attribute].unique():
+        for val in sorted(egid_surfaces_df[attribute].unique()):
             attribute_surface_dict['attribute'] = attribute
             attribute_surface_dict['value'] = val
             for var in surface_types:
