@@ -141,7 +141,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         metrics_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
         
         if additional_metrics:
-            logger.info("    - Metrics per egid")
+            logger.info("    - Metrics by egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
                 TP, FP, FN = metrics.get_count(
                     tagged_gt = tagged_gt_gdf[tagged_gt_gdf.EGID == egid],
@@ -152,7 +152,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
                 metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
 
-            logger.info("    - Metrics per object class")
+            logger.info("    - Metrics by object class")
             for object_class in sorted(labels_gdf.descr.unique()):
                 filter_gt_gdf = tagged_gt_gdf[tagged_gt_gdf['descr'] == object_class].copy()
                     
@@ -166,7 +166,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
             if (len(object_class) > 0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
-                logger.info("    - Metrics per object attributes")
+                logger.info("    - Metrics by object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for lim_inf, lim_sup in param_ranges:
@@ -225,7 +225,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         written_files[feature_path] = layer_name
 
         if additional_metrics:
-            logger.info("    - Metrics per egid")
+            logger.info("    - Metrics by egid")
             for egid in tqdm(sorted(labels_gdf.EGID.unique()), desc='Per-EGID metrics'):
                 tp_gdf, fp_gdf, fn_gdf = metrics.get_fractional_sets(detections_gdf[detections_gdf.EGID == egid], labels_gdf[labels_gdf.EGID == egid], method=method)
                 TP = len(tp_gdf)
@@ -235,7 +235,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 tmp_df = pd.DataFrame.from_records([{'EGID': egid, **metrics_results}])
                 metrics_egid_df = pd.concat([metrics_egid_df, tmp_df])
 
-            logger.info("    - Metrics per object class")
+            logger.info("    - Metrics by object class")
             for object_class in sorted(labels_gdf.descr.unique()):
                 
                 filter_gt_gdf = tagged_dets_gdf[tagged_dets_gdf['descr'] == object_class].copy()
@@ -250,7 +250,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
                 metrics_objects_df = pd.concat([metrics_objects_df, tmp_df])
 
             if (len(object_class) > 0) and isinstance(roofs_gdf, gpd.GeoDataFrame):
-                logger.info("    - Metrics per object attributes")
+                logger.info("    - Metrics by object attributes")
                 for parameter in object_parameters:
                     param_ranges = ranges_dict[parameter] 
                     for val in param_ranges:
@@ -278,7 +278,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         if egid in labels_by_attr_gdf.EGID.unique() else 0
         for egid in metrics_egid_df.EGID 
     ]
-    feature_path = os.path.join(output_dir, 'metrics_per_EGID.csv')
+    feature_path = os.path.join(output_dir, 'metrics_by_EGID.csv')
     metrics_egid_df.round(3).to_csv(feature_path, index=False)
     written_files[feature_path] = ''
         
@@ -300,7 +300,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     # Compute metrics by roof attributes 
     if additional_metrics:
-        logger.info("    - Metrics per roof attributes")
+        logger.info("    - Metrics by roof attributes")
         for attribute in roof_attributes:
 
             metrics_count_df = metrics_egid_df[[attribute, 'TP', 'FP', 'FN']].groupby([attribute], as_index=False).sum()
