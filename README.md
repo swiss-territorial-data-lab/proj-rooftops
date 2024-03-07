@@ -96,9 +96,17 @@ In addition to the general data, the segmentation workflow need:
 
 ### Workflow
 
-First, the segmentation is performed with different parameters on buildings with a pitched roof than on other buildings.
+First, the LiDAR point clouds have to be downloaded.
 
 ```
+python scripts\pcd_segmentation\retrieve_point_clouds.py
+config/config_pcdseg_all_roofs.yaml
+```
+
+After that, the segmentation is performed with different parameters on buildings with a pitched roof than on other buildings.
+
+```
+python scripts/pcd_segmentation/retrieve_point_clouds.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_all_roofs.yaml
@@ -121,12 +129,13 @@ python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
 
 More in details, the scripts used above perform the following steps:
-1. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGID,
-2. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
-3. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
-7. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections,
-5. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
-6. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth.
+1. `retrieve_point_clouds.py`: downloads the point clouds,
+2. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGID,
+3. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
+4. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
+5. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections,
+6. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
+7. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth.
 
 The workflow described here is working with the training subset of the ground truth used for the optimization of the hyperparameters. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth, allowing to test on buildings not considered in the optimization.
 
