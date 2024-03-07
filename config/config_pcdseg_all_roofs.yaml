@@ -1,3 +1,12 @@
+# 0 - Retrieve LiDAR point cloud
+retrieve_point_clouds.py:
+  working_dir: inputs
+  output_dir: LiDAR/2019
+  concerned_egids: EGIDs_GT_training.csv
+  input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  overwrite: False
+
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
   working_dir: /home/username/project_path       # !!! Absolute path needed to work with WhiteBox Tools!!!

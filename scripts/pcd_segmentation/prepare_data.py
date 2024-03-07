@@ -25,7 +25,7 @@ tic = time.time()
 logger.info('Starting...')
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser(description="The script prepares the point cloud dataset to be processed (STDL.proj-rooftops)")
+parser = argparse.ArgumentParser(description="The script prepares the point cloud dataset to be processed")
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 
