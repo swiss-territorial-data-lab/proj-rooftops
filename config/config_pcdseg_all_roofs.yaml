@@ -4,7 +4,7 @@ retrieve_point_clouds.py:
   output_dir: LiDAR/2019
   concerned_egids: EGIDs_GT_training.csv
   input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   overwrite: False
 
 # 2 - Prepare the lidar point cloud
@@ -13,7 +13,7 @@ prepare_data.py:
   pcd_dir: data/LiDAR/2019
   inputs:
     pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
     egids: data/EGIDs_GT_training.csv
   output_dir: outputs/PCD_segmentation/all_roofs
   filters:
