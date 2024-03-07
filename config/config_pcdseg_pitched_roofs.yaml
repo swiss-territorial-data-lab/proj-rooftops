@@ -1,11 +1,11 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
   working_dir: /home/username/project_path       # !!! Absolute path needed to work with WhiteBox Tools!!!
-  pcd_dir: inputs/LiDAR/2019
+  pcd_dir: data/LiDAR/2019
   inputs:
-    pcd_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_GT_training.csv
+    pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+    shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: data/EGIDs_GT_training.csv
   output_dir: outputs/PCD_segmentation/pitched_roofs
   filters:
     roof_inclination: pitched       # 'flat', 'pitched', 'mixed', 'all', if missing, defaults to all 
@@ -56,7 +56,7 @@ assess_results.py:
   working_dir: .
   output_dir: outputs/PCD_segmentation/pitched_roofs
   detections: outputs/PCD_segmentation/pitched_roofs/all_EGID_occupation.gpkg
-  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: outputs/PCD_segmentation/pitched_roofs/egid_properties.csv
   roofs: outputs/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
@@ -67,6 +67,7 @@ assess_results.py:
     parameters: ['area', 'nearest_distance_centroid']         # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
 
 
 # 2 & 3 & 4 - Optimization of the hyperparameters
@@ -75,7 +76,7 @@ optimize_hyperparam_LiDAR.py:
   output_dir: optimization
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
-  ground_truth: ../../../ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
+  ground_truth: ../../../data/ground_truth/oofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   epsg: 2056
   parameters:

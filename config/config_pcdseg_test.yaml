@@ -1,13 +1,23 @@
-# 1 - Prepare the lidar point cloud
+# 1 - Retrieve LiDAR point cloud
+retrieve_point_clouds.py:
+  working_dir: data
+  output_dir: LiDAR/2019
+  concerned_egids: EGIDs_GT_test.csv
+  input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  overwrite: False
+
+
+# 2 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: /home/username/project_path       # !!! Absolute path needed to work with WhiteBox Tools!!!
-  pcd_dir: inputs/LiDAR/2019
+  working_dir: /home/username/project_path      # !!! Absolute path needed to work with WhiteBox Tools!!!
+  pcd_dir: data/LiDAR/2019
   inputs:
-    pcd_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-    egids: EGIDs_GT_test.csv
-  output_dir: outputs/PCD_segmentation/test_zone/all
-  # output_dir: outputs/PCD_segmentation/test_zone/pitched
+    pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+    shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    egids: data/EGIDs_GT_test.csv
+  # output_dir: outputs/PCD_segmentation/test_zone/all
+  output_dir: outputs/PCD_segmentation/test_zone/pitched
   filters:
     # roof_inclination: pitched
     filter_class: False
@@ -17,7 +27,7 @@ prepare_data.py:
   overwrite: false
   visualisation: false
 
-# 2 - Point Cloud plane segmentation and clustering
+# 3 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
   working_dir: outputs/PCD_segmentation/test_zone/all
   # working_dir: outputs/PCD_segmentation/test_zone/pitched
@@ -47,7 +57,7 @@ pcd_segmentation.py:
     #   min_points: 8                # Minimum number of points to form a cluster
   visualisation: False
 
-# 3 - 2D vectorisation of segmented 3D point cloud 
+# 4 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
   working_dir: outputs/PCD_segmentation/test_zone/all
   # working_dir: outputs/PCD_segmentation/test_zone/pitched
@@ -65,7 +75,7 @@ vectorization.py:
   visualisation: False
 
 
-# 3bis - Post-process the results to improve them
+# 5 - Post-process the results to improve them
 post_processing.py:
   working_dir: outputs/PCD_segmentation/test_zone/
   output_dir: post_processed
@@ -82,12 +92,12 @@ post_processing.py:
     residential_pitched: pitched/all_EGID_occupation.gpkg
 
 
-# 4 - Evaluate the results
+# 6 - Evaluate the results
 assess_results.py: 
   working_dir: .
-  output_dir: final/PCD_segmentation/test_zone
+  output_dir: outputs/PCD_segmentation/test_zone/assessment
   detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
-  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
@@ -98,14 +108,15 @@ assess_results.py:
     parameters: ['area', 'nearest_distance_centroid'] 
     area_ranges:  [[0,0.5], [0.5, 1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
 
 
-# 5 - Estimate the free surface
+# 7 - Estimate the free surface
 assess_area.py:
   working_dir: .
-  output_dir: final/PCD_segmentation/test_zone
+  output_dir: outputs/PCD_segmentation/test_zone/assessment
   detections: outputs/PCD_segmentation/test_zone/post_processed/roof_partition.gpkg
-  ground_truth: ground_truth/partition/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
   egids: outputs/PCD_segmentation/test_zone/all/egid_properties.csv
   roofs: outputs/PCD_segmentation/test_zone/all/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
   bins: [0, 25, 50, 75, 85, 95, 100]  # limits for the creation of bins on the percentage of free area

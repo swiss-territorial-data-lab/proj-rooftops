@@ -21,7 +21,7 @@ There are n0 hardware requirement to process the LiDAR point cloud.
 
 ### Installation
 
-The scripts were developed with Python 3.8<!-- 3.10 actually for the pcdseg --> on Ubuntu 20.04 OS.
+The scripts were developed with Python 3.8 on Ubuntu 20.04 OS.
 
 All the dependencies required for the project are listed in `requirements.in` and `requirements.txt`. To install them:
 
@@ -96,7 +96,7 @@ In addition to the general data, the segmentation workflow need:
 
 ### Workflow
 
-First, the LiDAR point clouds have to be downloaded.
+First, the LiDAR point clouds have to be downloaded with the command below and unzipped by the user.
 
 ```
 python scripts\pcd_segmentation\retrieve_point_clouds.py
@@ -106,7 +106,6 @@ config/config_pcdseg_all_roofs.yaml
 After that, the segmentation is performed with different parameters on buildings with a pitched roof than on other buildings.
 
 ```
-python scripts/pcd_segmentation/retrieve_point_clouds.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_all_roofs.yaml
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_all_roofs.yaml
