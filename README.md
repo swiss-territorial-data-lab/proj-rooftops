@@ -72,12 +72,16 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 The data on the delimitation of roofs was used in all workflows. The ground truth produced for this project was used to assess the segmentation workflows. They are described here after:
 
-- Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID,
-- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation,
-- EGID lists: lists of selected buildings identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
+- Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
+- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation:
+   - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects of the low classes like lawn and terraces were removed from the dataset;
+   - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It correspond to the complete ground truth;
+- EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
     - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset;
     - EGID_GT_training.csv: 105 EGID selected to perform hyperparameter optimization of algorithms on a training dataset;
     - EGID_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameter optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
+
+In this repository, only the test data are provided to allow the user to run an example.
 
 ## Classification of the roof plane occupancy
 
@@ -88,7 +92,7 @@ The data on the delimitation of roofs was used in all workflows. The ground trut
 In addition to the general data, the segmentation workflow need:
 
 - LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used;
-- Shapes of the LiDAR tiles.
+- Shapes corresponding to the LiDAR tiles.
 
 ### Workflow
 

@@ -2,6 +2,8 @@
 **/*/test*.ipynb
 
 # Folders
+data/LiDAR/**/
+data/*photos/
 output*/
 input*/
 model*/

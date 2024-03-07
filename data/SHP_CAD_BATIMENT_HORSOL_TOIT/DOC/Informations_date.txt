@@ -1,0 +1,11 @@
+
+Informations sur les données Open Data du SITG que vous avez téléchargées:
+_________________________________________________________________________
+
+
+Date de création du fichier .zip téléchargé : 05.02.2023
+
+Les données contenues dans le .zip ont 
+été extraites de la géodatabase du SITG le vendredi soir précédent le 05.02.2023
+
+Les fichiers .zip contiennent également les fiches de métadonnées au format .pdf
