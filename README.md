@@ -75,13 +75,13 @@ The data on the delimitation of roofs was used in all workflows. The ground trut
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
 - Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation:
    - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects of the low classes like lawn and terraces were removed from the dataset;
-   - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It correspond to the complete ground truth;
+   - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It corresponds to the complete ground truth;
 - EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
     - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset;
     - EGID_GT_training.csv: 105 EGID selected to perform hyperparameter optimization of algorithms on a training dataset;
     - EGID_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameter optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
 
-In this repository, only the test data are provided to allow the user to run an example.
+In this repository, only the test data are supplied, along with a subset of vector shapefile for roof delimitation, to enable the user to run an example.
 
 ## Classification of the roof plane occupancy
 
