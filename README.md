@@ -17,7 +17,7 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
 ### Hardware
 
 Image processing was run on a 32 GiB RAM machine with 16 GiB GPU (NVIDIA Tesla T4) compatible with CUDA. <br>
-There are n0 hardware requirement to process the LiDAR point cloud.
+There is no hardware requirement to process the LiDAR point cloud.
 
 ### Installation
 
@@ -32,19 +32,19 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 - Install dependencies with pip >= 20.3:
 
-        pip install -r requirements/requirements.txt
+        pip install -r requirements.txt
 
 - _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
 
-        pip install -r requirements/requirements.txt
+        pip install -r requirements.txt
 
     - Requirements for the image workflow only
 
-            pip install -r requirements/requirements_images.txt
+            pip install -r requirements_images.txt
 
     - Requirements for the LiDAR workflow only
 
-            pip install -r requirements/requirements_lidar.txt
+            pip install -r requirements_lidar.txt
             
 - Specific libraries were used for image processing:
     - PyTorch version 1.10
@@ -61,49 +61,59 @@ All the dependencies required for the project are listed in `requirements.in` an
         or in editable mode:
 
         ```
-        $ pip install -e .
+        pip install -e .
         ```
 
         If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
-**Disclaimer**: We do not guaranty that the scripts in the sandbox folder and outside the main proposed workflows are functional in the proposed virtual environment.
+**Disclaimer**: We do not guarantee that the scripts in the sandbox folder and the scripts not included in the workflows can be executed with the provided requirements
 
 ### General data
 
-The data on the delimitation of roofs was used in all workflows. The ground truth produced for this project was used to assess the segmentation workflows. They are described here after:
+The datasets are described here after:
 
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
-- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation:
-   - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects of the low classes like lawn and terraces were removed from the dataset;
+- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation workflows:
+   - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects in the low height classes, such as lawn and terraces, have been removed from the dataset;
    - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It corresponds to the complete ground truth;
 - EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
-    - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset;
-    - EGID_GT_training.csv: 105 EGID selected to perform hyperparameter optimization of algorithms on a training dataset;
-    - EGID_GT_training_subsample_imgseg.csv: In the case of image segmentation, the training list is too long to perform hyperparameter optimization in a reasonable time. For this reason, a training list reduced to 25 buildings is provided. 
+    - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
 
-In this repository, only the test data are supplied, along with a subset of vector shapefile for roof delimitation, to enable the user to run an example.
+In this repository, only test data is supplied, along with a subset of the roof delimitations, to enable the user to run an example. The full datasets can be requested by contacting the STDL.
 
 ## Classification of the roof plane occupancy
 
 ## LiDAR segmentation
 
+The set of scripts is dedicated to the segmentation of rooftop objects in the LiDAR point cloud. This workflow is based on [Open3D](https://www.open3d.org/docs/release/). It supposes that roofs composed of flat planes and that obstacles protrude.
+
 ### Data
 
-In addition to the general data, the segmentation workflow need:
+In addition to the general data, the segmentation workflow needs:
 
-- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used;
-- Shapes corresponding to the LiDAR tiles.
+- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
+- Emprises tiles LiDAR 2019.shp: Shapes corresponding to the LiDAR tiles.
 
 ### Workflow
 
-First, the LiDAR point clouds have to be downloaded with the command below and unzipped by the user.
+The following scripts are used to segment the LiDAR point cloud:
+1. `retrieve_point_clouds.py`: downloads the point clouds,
+2. `prepare_data.py`: reads and filters the roofs of the selected EGID in the point clouds,
+3. `pcd_segmentation.py`: segments the point clouds in planes and clusters,
+4. `vectorization.py`: creates 2D polygons from the segmented point clouds,
+5. `post_processing.py`: merges the results for the pitched and other roofs together and simplifies the geometry of the detections,
+6. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
+7. `assess_area.py`: calculates the free and occupied surface of each EGID and compares it with the ground truth.
+
+The corresponding command lines are provided here below.
+
+First, the LiDAR point cloud tiles have to be downloaded with the command below and unzipped by the user.
 
 ```
-python scripts\pcd_segmentation\retrieve_point_clouds.py
-config/config_pcdseg_all_roofs.yaml
+python scripts/pcd_segmentation/retrieve_point_clouds.py config/config_pcdseg_all_roofs.yaml
 ```
 
-After that, the segmentation is performed with different parameters on buildings with a pitched roof than on other buildings.
+After that, the point cloud segmentation is performed. Specific parameters are used for pitched roofs.
 
 ```
 python scripts/pcd_segmentation/prepare_data.py config/config_pcdseg_all_roofs.yaml
@@ -114,7 +124,7 @@ python scripts/pcd_segmentation/pcd_segmentation.py config/config_pcdseg_pitched
 python scripts/pcd_segmentation/vectorization.py config/config_pcdseg_pitched_roofs.yaml
 ```
 
-Then, the results for the pitched roofs and the general results are merged. Their geometry is also simplified with a buffer and copping operation, as well as with the Visvalingam-Wyatt algorithm. The different obstacles are merged together to form the occupied surfaces.
+Then, the results for the pitched and other roofs are merged. Their geometry is simplified with buffering and copping operations, as well as the Visvalingam-Wyatt algorithm. The different obstacles are merged together to form the occupied surfaces.
 
 ```
 python scripts/pcd_segmentation/post_processing.py config/config_pcdseg_all_roofs.yaml
@@ -126,15 +136,6 @@ Finally, the results are assessed
 python scripts/assessment/assess_results.py config/config_pcdseg_all_roofs.yaml
 python scripts/assessment/assess_area.py config/config_pcdseg_all_roofs.yaml
 ```
-
-More in details, the scripts used above perform the following steps:
-1. `retrieve_point_clouds.py`: downloads the point clouds,
-2. `prepare_data.py`: reads and filter the 3D point cloud data to keep the roofs of the selected EGID,
-3. `pcd_segmentation.py`: segments in planes and clusters the point cloud data,
-4. `vectorization.py`: creates 2D polygons from the segmented point cloud data,
-5. `post_processing.py`: merges the results for the pitched and general roofs together and simplify the geometry of the detections,
-6. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
-7. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth.
 
 The workflow described here is working with the training subset of the ground truth used for the optimization of the hyperparameters. The configuration file `config_pcdseg_test.yaml` works with the test subset of the ground truth, allowing to test on buildings not considered in the optimization.
 
@@ -160,7 +161,7 @@ In addition to the general data, the image segmentation workflow uses the follow
 ### Script description
 
 1. `generate_tiles.py`: generates custom tiles of the roof extent;
-2. `segment_images.py`: creates detection masks and vectorize them. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework for using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data.
+2. `segment_images.py`: creates detection masks and vectorizes them. Images are segmented using [segment-geospatial](https://github.com/opengeos/segment-geospatial) which provides a practical framework for using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model) with georeferenced data.
 3. `produce_vector_layer.py`: filters the vector layer for each building and aggregates all layers into a single one (detected objects);
 4. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections;
 5. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth;

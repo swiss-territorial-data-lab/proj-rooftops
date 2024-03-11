@@ -42,7 +42,7 @@ vectorization.py:
   output_dir: .
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
-  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  roofs: CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   epsg: 2056
   area_threshold: 
     min: 11        # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
@@ -58,7 +58,7 @@ assess_results.py:
   detections: outputs/PCD_segmentation/pitched_roofs/all_EGID_occupation.gpkg
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_training.shp
   egids: outputs/PCD_segmentation/pitched_roofs/egid_properties.csv
-  roofs: outputs/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  roofs: outputs/PCD_segmentation/pitched_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
   threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
   additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
@@ -77,7 +77,7 @@ optimize_hyperparam_LiDAR.py:
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
   ground_truth: ../../../data/ground_truth/oofs_STDL_proofed_2023-11-10_LiDAR_training.shp
-  roofs: CAD_BATIMENT_HORSOL_TOIT_EGID_subset.shp
+  roofs: CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   epsg: 2056
   parameters:
     alpha_shape: 2.4

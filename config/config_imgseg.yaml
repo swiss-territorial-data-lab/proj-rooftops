@@ -5,7 +5,7 @@ generate_tiles.py:
   output_dir: image_segmentation/tiles/test
   tiles: ground_truth/tiles/Tuiles.shp
   roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
-  egids: ground_truth/egid/EGIDs_GT_test.csv
+  egids: data/EGIDs_GT_test.csv
   filters:
     building_type: all          # choices: 'administrative', 'industrial', 'residential', 'all'
     roof_type: all              # choices: 'flat', 'pitched', 'mixed', 'all'
@@ -57,7 +57,7 @@ filter_merge_detections.py:
   working_dir: .
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   output_dir: outputs/image_segmentation/test
-  egids: data/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  egids: data/EGIDs_GT_test_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file
 
@@ -66,7 +66,7 @@ assess_results.py:
   working_dir: .
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
-  egids: data/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -85,7 +85,7 @@ assess_area.py:
   working_dir: .
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
-  egids: data/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -98,7 +98,7 @@ optimize_hyperparameters.py:
   image_dir: data/image_segmentation/tiles/selection/
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
-  egids: data/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/optimization_training
   detections: outputs/image_segmentation/optimization_training/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'

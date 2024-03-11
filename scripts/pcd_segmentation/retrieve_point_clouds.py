@@ -33,7 +33,7 @@ with open(args.config_file) as fp:
 WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
 
-CONCERNED_EGIDS = cfg['concerned_egids']
+SELECTED_EGIDS = cfg['selected_egids']
 INPUT_TILES = cfg['input_tiles']
 ROOFS = cfg['roofs']
 
@@ -44,7 +44,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 logger.info('Read dataframes')
 roofs_gdf = gpd.read_file(ROOFS)
-egids_df = pd.read_csv(CONCERNED_EGIDS)
+egids_df = pd.read_csv(SELECTED_EGIDS)
 tiles_gdf = gpd.read_file(INPUT_TILES)
 
 logger.info('Determine the tiles to download')

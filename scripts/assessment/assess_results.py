@@ -55,7 +55,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     logger.info("Get input data")
 
-    egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, OUTPUT_DIR, LABELS, DETECTIONS)
+    egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, LABELS, DETECTIONS)
 
     if (len(object_parameters) > 0) and additional_metrics:
   
