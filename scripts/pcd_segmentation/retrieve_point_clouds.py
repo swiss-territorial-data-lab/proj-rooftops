@@ -39,6 +39,8 @@ ROOFS = cfg['roofs']
 
 OVERWRITE = cfg['overwrite']
 
+written_files = []
+
 os.chdir(WORKING_DIR)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -61,3 +63,11 @@ for tile_name in tqdm(tile_subset_gdf.fme_basena.unique(), desc="Download the ti
     url = 'https://ge.ch/sitg/geodata/SITG/TELECHARGEMENT/LIDAR_2019/' + tile_name + '.las.zip'
 
     _ = urlretrieve(url, filepath)
+    written_files.append(filepath)
+
+if len(written_files) == 0:
+    logger.success("Done! All files were present in the output folder.")
+else:
+    logger.success("Done! Some files were written:")
+    for file in written_files:
+        logger.success(f"- {file}")

@@ -64,15 +64,15 @@ def objective(trial):
     # print(dict_parameters_vect)
 
 
-    _ = pcd_segmentation.main(WORKING_DIR, OUTPUT_DIR,
+    _ = pcd_segmentation.main('.', OUTPUT_DIR,
                               INPUT_DIR_PCD, EGIDS,
                               **dict_parameters_pcd_seg)
-    all_occupation_gdf, _ = vectorization.main(WORKING_DIR, OUTPUT_DIR,
+    all_occupation_gdf, _ = vectorization.main('.', OUTPUT_DIR,
                                                     INPUT_DIR_PCD, EGIDS, ROOFS, EPSG,
                                                     alpha_shape=ALPHA_SHAPE,
                                                     **dict_parameters_vect
     )
-    metrics_df, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR,
+    metrics_df, _ = assess_results.main('.', OUTPUT_DIR,
                                                     LABELS, all_occupation_gdf,
                                                     EGIDS, ROOFS, method=METHOD, buffer=0.01)
 

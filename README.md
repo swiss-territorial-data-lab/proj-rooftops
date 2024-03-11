@@ -142,7 +142,7 @@ The workflow described here is working with the training subset of the ground tr
 The optimization of hyperparameters can be performed as follow:
 
 ```
-python scripts/pcd_segmentation/optimize_hyperparameters.py config/config_pcdseg_all_roofs.yaml
+python scripts/pcd_segmentation/optimize_hyperparam_LiDAR.py config/config_pcdseg_all_roofs.yaml
 ```
 
 ## Image segmentation
