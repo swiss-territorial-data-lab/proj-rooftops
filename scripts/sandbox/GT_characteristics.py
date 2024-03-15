@@ -54,10 +54,10 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, EGIDS_TRAINING, EGIDS_TEST, roofs=None
     logger.info("Get input data")
 
     # Get the EGIDS of interest
-    egids_training = pd.read_csv(EGIDS_TRAINING)
-    egids_training['dataset'] = 'training' 
     egids_test = pd.read_csv(EGIDS_TEST)
     egids_test['dataset'] = 'test' 
+    egids_training = pd.read_csv(EGIDS_TRAINING)
+    egids_training['dataset'] = 'training' 
     egids = pd.concat([egids_training, egids_test])
     array_egids = egids.EGID.to_numpy()
     logger.info(f"- {egids.shape[0]} selected EGIDs")
@@ -106,7 +106,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, EGIDS_TRAINING, EGIDS_TEST, roofs=None
     labels_gdf['area'] = round(labels_gdf.area, 4)
 
     labels_gdf.drop(columns=['fid', 'layer', 'path'], inplace=True, errors='ignore')
-    labels_gdf = labels_gdf.explode(ignore_index=True)
+    # labels_gdf = labels_gdf.explode(ignore_index=True)
     
     nbr_labels = labels_gdf.shape[0]
     logger.info(f"- {nbr_labels} label's shapes")

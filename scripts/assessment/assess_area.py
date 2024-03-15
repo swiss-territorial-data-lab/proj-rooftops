@@ -40,7 +40,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, BINS, METHOD
     os.chdir(WORKING_DIR)
 
     # Create an output directory in case it doesn't exist
-    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment', METHOD))
+    output_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'assessment_' + METHOD))
 
     written_files = {}
 
