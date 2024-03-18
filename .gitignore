@@ -4,7 +4,7 @@
 # Folders
 data/LiDAR/**/
 data/*photos/
-data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.*
+data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset_EGID.*
 output*/
 input*/
 model*/
