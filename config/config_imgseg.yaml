@@ -2,10 +2,10 @@
 generate_tiles.py:
   working_dir: data
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  output_dir: image_segmentation/tiles/training
+  output_dir: image_segmentation/tiles/test
   tiles: ground_truth/tiles/Tuiles.shp
-  roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
-  egids: data/EGIDs_GT_test.csv
+  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  egids: EGIDs_GT_test.csv
   filters:
     building_type: all          # choices: 'administrative', 'industrial', 'residential', 'all'
     roof_type: all              # choices: 'flat', 'pitched', 'mixed', 'all'
@@ -50,7 +50,7 @@ segment_images.py:
         "min_mask_region_area": 250,
         # "output_mode": str = "binary_mask",
         }
-    visualization_masks: True          # Enable to show binary and annotated masks (save annotated mask) 
+    visualization_masks: False          # save annotated masks
 
 # 3 - Filters the vector layer for each roof and merges them
 filter_merge_detections.py:
@@ -78,9 +78,9 @@ assess_results.py:
     area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
     distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
     round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
-  visualization: True           # show plots
+  visualization: True           # save plots
 
-# 5 - Compute free area
+# 5 - Compute free and occupied areas
 assess_area.py:
   working_dir: .
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
@@ -90,22 +90,22 @@ assess_area.py:
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
-  visualization: True           # show plots
+  visualization: True           # save plots
 
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: data/image_segmentation/tiles/selection/
+  image_dir: data/image_segmentation/tiles/test/
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
   egids: data/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/optimization_training
-  detections: outputs/image_segmentation/optimization_training/vectors/roof_segmentation.gpkg
+  output_dir: outputs/image_segmentation/optimization_test
+  detections: outputs/image_segmentation/optimization_test/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   additional_metrics: False     # compute metrics for given attributes (building type, roof type, object class, object attributes)
-  visualization: True           # show binary and annotated masks + saves annotated masks 
+  visualization: True           # save annotated masks 
   threshold: 0.1                # threshold value (area) to consider that a detection overlaps a label
   buffer: 0.1                   # buffer applied to labels and detections to prevent adjecent polygons from being considered as overlapping
   object_attributes:
@@ -131,7 +131,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     visualization_masks: False 
   optimization:                 # SAM hyperparameter optimization with optuna library https://optuna.org/
-    n_trials: 50                # number of trials
+    n_trials: 5                # number of trials
     sampler: TPESampler         # choices: 'TPESampler', 'GridSampler' 
     param_grid:                 # define explicit hyperameter values to test: valid only for the 'GridSampler' method. Values will be ignored using the 'TPESampler' method.
       points_per_side: [160, 160]
