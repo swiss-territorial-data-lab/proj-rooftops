@@ -291,7 +291,22 @@ def geohash(row):
     return out
 
 
-def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detections):
+def get_inputs_for_assessment(path_egids, path_roofs, labels, detections):
+    """Read the different files and format the roofs, labels and detections for the assessment
+
+    Args:
+        path_egids (string): path to the list of egids in csv format
+        path_roofs (string): path the geodata file for the roofs
+        labels (string or GeoDataFrame): path to the labels or labels in the form of a GeoDataFrame
+        detections (string or GeoDataFrame): path to the detections or labels in the form of a GeoDataFrame
+
+    Returns:
+        tuple: 
+            - Dataframe: egid properties
+            - Geodataframe: extend of the roofs
+            - Geodataframe: labels
+            - Geodataframe: detections
+    """
 
     # Get the EGIDS of interest
     egids = pd.read_csv(path_egids)

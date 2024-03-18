@@ -5,8 +5,8 @@ combine_results_seg.py:
   img_seg: outputs/results_combination/training/final_prec_eq_recall/roof_segmentation.gpkg
   pcd_seg: outputs/results_combination/training/final_prec_eq_recall/final_detections_pcd_seg.gpkg
   layer_pcd: detections_pcd_seg 
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_full.csv
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
+  egids: data/EGIDs_GT_test.csv
 
 # 2 - Evaluate the results
 assess_results.py:  
