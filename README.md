@@ -77,7 +77,7 @@ The datasets needed for **all workflows** are described here after:
    - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects in the low height classes, such as lawn and terraces, have been removed from the dataset;
    - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It corresponds to the complete ground truth;
 - EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
-    - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
+    - EGID_GT_test.csv: 17 EGIDs selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
 
 In addition, the workflows working with **LiDAR** need:
 
@@ -102,7 +102,7 @@ The set of scripts is dedicated to the segmentation of rooftop objects in the Li
 
 The following scripts are used to segment the LiDAR point cloud:
 1. `retrieve_point_clouds.py`: downloads the point clouds,
-2. `prepare_data.py`: reads and filters the roofs of the selected EGID in the point clouds,
+2. `prepare_data.py`: reads and filters the roofs of the selected EGIDs in the point clouds,
 3. `pcd_segmentation.py`: segments the point clouds in planes and clusters,
 4. `vectorization.py`: creates 2D polygons from the segmented point clouds,
 5. `post_processing.py`: merges the results for the pitched and other roofs together and simplifies the geometry of the detections,
