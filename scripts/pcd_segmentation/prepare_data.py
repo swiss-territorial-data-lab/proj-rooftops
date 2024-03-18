@@ -52,7 +52,7 @@ CLASS_NUMBER = FILTERS['class_number']
 FILTER_ROOF = FILTERS['filter_roof']
 DISTANCE_BUFFER = FILTERS['distance_buffer']
 
-VISU = cfg['visualisation']
+VISU = cfg['visualization']
 OVERWRITE=cfg['overwrite'] if 'overwrite' in cfg.keys() else True
 
 PCD_EXT = '.las'
@@ -183,7 +183,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
         alti_roof = rooftops.loc[rooftops['EGID'] == int(egid), 'ALTI_MIN'].iloc[0] - DISTANCE_BUFFER
         pcd_filter = pcd_points[pcd_points[:, 2] > alti_roof].copy()
 
-    # Conversion of numpy array to Open3D format + visualisation
+    # Conversion of numpy array to Open3D format + visualization
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pcd_filter)
     if VISU:
