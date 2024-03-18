@@ -137,7 +137,7 @@ def plot_groups(dir_plots, df, attribute, xlabel):
     plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
-    
+
     return plot_path
 
 

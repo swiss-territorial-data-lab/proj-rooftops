@@ -357,6 +357,7 @@ def ensure_dir_exists(dirpath):
 def format_detections(detections_gdf):
 
     if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf.fillna(1)
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
     if 'det_id' in detections_gdf.columns:

@@ -73,17 +73,20 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
 
     logger.info(f"- {len(pcd_gdf)} detection's shapes")
     logger.info(f"- {len(img_gdf)} detection's shapes")
+    pcd_gdf = pcd_gdf.drop(['geohash', 'group_id', 'TP_charge', 'FP_charge', 'nearest_distance_centroid', 'nearest_distance_border'], axis=1)
 
-    pcd_gdf = pcd_gdf.drop(['ID_DET', 'geohash', 'group_id', 'TP_charge', 'FP_charge', 'nearest_distance_centroid', 'nearest_distance_border'], axis=1)
- 
+    # Filter img segmentation polygons with pcd segmentation polygons  
+    final_gdf = pd.concat([img_gdf, pcd_gdf]).reset_index(drop=True)
+    feature_path = os.path.join(output_dir, "roof_segmentation_combined.gpkg")
+    final_gdf.to_file(feature_path, driver="GPKG") 
+
     # Filter img segmentation polygons with pcd segmentation polygons  
     pcd_gdf.geometry = pcd_gdf.geometry.buffer(-0.01, join_style='mitre')
     left_join = gpd.sjoin(img_gdf, pcd_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
     left_join = left_join[left_join['det_id'].notnull()] 
-    left_join.drop_duplicates(subset=['detection_id'], inplace=True)
     left_join = left_join.rename(columns={"EGID_left": "EGID", "area_left": "area"})
     left_join = left_join.drop('EGID_right', axis=1)
-    feature_path = os.path.join(output_dir, "roof_segmentation.gpkg")
+    feature_path = os.path.join(output_dir, "roof_segmentation_sjoin.gpkg")
     left_join.to_file(feature_path, driver="GPKG") 
 
     return written_files

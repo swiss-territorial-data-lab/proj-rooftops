@@ -71,7 +71,6 @@ assess_results.py:
   detections: outputs/image_segmentation/final/prec_eq_recall/training/vectors/roof_segmentation.gpkg
   method: fusion                 # Method choices: 1: one-to-one, 2: one-to-many, 3: charges, 4: fusion 
   additional_metrics: True
-  visualization: True
   threshold: 0.1                 # Threshold value to consider that a detection overlaps a label
   buffer: 0.1              
   object_attributes:
