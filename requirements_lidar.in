@@ -1,0 +1,18 @@
+# NOTE ---------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------
+alphashape
+geopandas
+kaleido
+laspy
+loguru
+matplotlib
+open3d
+optuna
+pygeohash
+pyyaml
+rasterio
+rasterstats
+scikit-learn
+visvalingamwyatt
+whitebox

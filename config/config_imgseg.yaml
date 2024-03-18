@@ -1,11 +1,11 @@
 # 1 - Image tile generation
 generate_tiles.py:
-  working_dir: inputs
+  working_dir: data
   image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
   output_dir: image_segmentation/tiles/test
   tiles: ground_truth/tiles/Tuiles.shp
-  roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  egids: ground_truth/egid/EGIDs_GT_test.csv
+  roofs: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  egids: data/EGIDs_GT_test.csv
   filters:
     building_type: all          # choices: 'administrative', 'industrial', 'residential', 'all'
     roof_type: all              # choices: 'flat', 'pitched', 'mixed', 'all'
@@ -15,7 +15,7 @@ generate_tiles.py:
 # 2 - Segment Anything Method
 segment_images.py:
   working_dir: .
-  image_dir:  inputs/image_segmentation/tiles/test
+  image_dir:  data/image_segmentation/tiles/test
   output_dir: outputs/image_segmentation/test
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)
@@ -55,18 +55,18 @@ segment_images.py:
 # 3 - Filters the vector layer for each roof and merges them
 filter_merge_detections.py:
   working_dir: .
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   output_dir: outputs/image_segmentation/test
-  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  egids: data/EGIDs_GT_test_all_all.csv
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file
 
 # 4 - Evaluate the results
 assess_results.py:  
   working_dir: .
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_test_all_all.csv
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -83,9 +83,9 @@ assess_results.py:
 # 5 - Compute free area
 assess_area.py:
   working_dir: .
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_all_all.csv
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -95,10 +95,10 @@ assess_area.py:
 # 6 - Hyperparamters optimization
 optimize_hyperparameters.py:
   working_dir: .
-  image_dir: inputs/image_segmentation/tiles/selection/
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
-  ground_truth: inputs/ground_truth/occupation/custom/roofs_STDL_proofed_2023-11-13.shp
-  egids: inputs/ground_truth/egid/EGIDs_GT_training_subsample_imgseg_all_all.csv
+  image_dir: data/image_segmentation/tiles/selection/
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
+  egids: data/EGIDs_GT_test_all_all.csv
   output_dir: outputs/image_segmentation/optimization_training
   detections: outputs/image_segmentation/optimization_training/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'
@@ -152,11 +152,11 @@ optimize_hyperparameters.py:
 # Evaluation of results obtained on synthetic polygons (used to develop results assessment)
 assess_synthetic_examples.py:  
   working_dir: .
-  ground_truth: data/GT/synthetic_examples/ground_truth_synthetic.gpkg
+  ground_truth: data/ground_truth/synthetic_examples/ground_truth_synthetic.gpkg
   output_dir: outputs/assessment
-  detections: data/GT/synthetic_examples/detection_synthetic.gpkg
-  egids: inputs/image_segmentation/ground_truth/EGIDs_full_GT.csv
-  roofs: inputs/image_segmentation/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  detections: data/ground_truth/synthetic_examples/detection_synthetic.gpkg
+  egids: data/EGIDs_full_GT.csv
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   method: charges
   threshold: 0.1                 
 
@@ -164,8 +164,8 @@ assess_synthetic_examples.py:
 mask_for_buildings.py:
   transparency: true
   working_dir: data/
-  image_dir: inputs/tiles/
-  roofs_shp: vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  image_dir: data/tiles/
+  roofs_shp: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
 
 
 ## Use of scripts of 'proj-dqry' and 'object-detector'

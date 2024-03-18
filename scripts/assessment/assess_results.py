@@ -55,7 +55,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
     logger.info("Get input data")
 
-    egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, OUTPUT_DIR, LABELS, DETECTIONS)
+    egids, roofs_gdf, labels_gdf, detections_gdf = misc.get_inputs_for_assessment(EGIDS, ROOFS, LABELS, DETECTIONS)
 
     if (len(object_parameters) > 0) and additional_metrics:
   
@@ -94,9 +94,11 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     detections_gdf = misc.drop_duplicates(detections_gdf, subset='geohash')
 
     if detections_gdf.shape[0] == 0:
-        logger.error('No detection is available, returning 0 as f1 score and IoU average.')
-        return 0, 0, []
+        logger.error('No detection is available, returning 0 as f1 score and IoU median.')
+        metrics_df = pd.DataFrame({'attribute': ['EGID'], 'f1': [0], 'IoU_median': [0]})
 
+        return metrics_df, []
+    
     elif method == 'charges' or method == 'fusion':
 
         logger.info(f"Metrics computation:")
