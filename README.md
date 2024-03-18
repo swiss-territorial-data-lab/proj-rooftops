@@ -82,7 +82,7 @@ The datasets needed for **all workflows** are described here after:
 In addition, the workflows working with **LiDAR** need:
 
 - LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
-- Emprises tiles LiDAR 2019.shp: Shapes corresponding to the LiDAR tiles.
+- Emprises tiles LiDAR 2019.shp: shapes corresponding to the LiDAR tiles.
 
 In addition, the workflow for the **image** segmentation needs:
 
