@@ -46,9 +46,9 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
     Args:
         WORKING_DIR (path): working directory
         OUTPUT_DIR (path): output directory
-        DETECTIONS_PCD (path): file of the pcd segmentation detections
+        DETECTIONS_PCD (path): LiDAR segmentation detection shapefile
         LAYER_PCD (string): test or training layer
-        DETECTIONS_IMG (path): file of the img segmentation detections
+        DETECTIONS_IMG (path): image segmentation detection shapefile
 
     Returns:
     """
@@ -62,11 +62,10 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
 
     logger.info("Get input data")
 
-    # Read detection shapefile 
+    # Read detection shapefiles from LiDAR segmentation (PCD) and image segmentation (IMG) 
     DETECTIONS_PCD = os.path.join(DETECTIONS_PCD)
     _ = misc.ensure_file_exists(DETECTIONS_PCD)
     pcd_gdf = gpd.read_file(DETECTIONS_PCD, layer=LAYER_PCD)
-
     DETECTIONS_IMG = os.path.join(DETECTIONS_IMG)
     _ = misc.ensure_file_exists(DETECTIONS_IMG)
     img_gdf = read_gpd(DETECTIONS_IMG)
@@ -75,17 +74,17 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, LAYER_PCD, DETECTIONS_IMG):
     logger.info(f"- {len(img_gdf)} detection's shapes")
     pcd_gdf = pcd_gdf.drop(['geohash', 'group_id', 'TP_charge', 'FP_charge', 'nearest_distance_centroid', 'nearest_distance_border'], axis=1)
 
-    # Filter img segmentation polygons with pcd segmentation polygons  
+    # Concatenate img segmentation polygons with pcd segmentation polygons  
     final_gdf = pd.concat([img_gdf, pcd_gdf]).reset_index(drop=True)
-    feature_path = os.path.join(output_dir, "roof_segmentation_combined.gpkg")
+    feature_path = os.path.join(output_dir, "roof_segmentation_concatenate.gpkg")
     final_gdf.to_file(feature_path, driver="GPKG") 
 
-    # Filter img segmentation polygons with pcd segmentation polygons  
+    # Filter img segmentation polygons with pcd segmentation polygons 
     pcd_gdf.geometry = pcd_gdf.geometry.buffer(-0.01, join_style='mitre')
-    left_join = gpd.sjoin(img_gdf, pcd_gdf, how='left', predicate='intersects', lsuffix='left', rsuffix='right')
-    left_join = left_join[left_join['det_id'].notnull()] 
-    left_join = left_join.rename(columns={"EGID_left": "EGID", "area_left": "area"})
-    left_join = left_join.drop('EGID_right', axis=1)
+    left_join = gpd.sjoin(img_gdf, pcd_gdf, how='left', predicate='intersects', lsuffix='img', rsuffix='pcd')
+    left_join = left_join[left_join['detection_id_pcd'].notnull()] 
+    left_join = left_join.rename(columns={"EGID_img": "EGID", "area_img": "area"})
+    left_join = left_join.drop('EGID_pcd', axis=1)
     feature_path = os.path.join(output_dir, "roof_segmentation_sjoin.gpkg")
     left_join.to_file(feature_path, driver="GPKG") 
 
