@@ -1,6 +1,6 @@
 # 1 - Prepare the lidar point cloud
 prepare_data.py:
-  working_dir: C:/Users/gwena/Documents/GitHub/proj-rooftops       # !!! Absolute path needed to work with WhiteBox Tools!!!
+  working_dir: </home/username/project_path>       # !!! Absolute path needed to work with WhiteBox Tools!!!
   pcd_dir: data/LiDAR/2019
   inputs:
     pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp

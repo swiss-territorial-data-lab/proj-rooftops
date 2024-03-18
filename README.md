@@ -68,9 +68,9 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 **Disclaimer**: We do not guarantee that the scripts in the sandbox folder and the scripts not included in the workflows can be executed with the provided requirements
 
-### General data
+### Data
 
-The datasets are described here after:
+The datasets needed for **all workflows** are described here after:
 
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
 - Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation workflows:
@@ -79,6 +79,17 @@ The datasets are described here after:
 - EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
     - EGID_GT_test.csv: 17 EGID selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
 
+In addition, the workflows working with **LiDAR** need:
+
+- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
+- Emprises tiles LiDAR 2019.shp: Shapes corresponding to the LiDAR tiles.
+
+In addition, the workflow for the **image** segmentation needs:
+
+- True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
+- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG.
+
+
 In this repository, only test data is supplied, along with a subset of the roof delimitations, to enable the user to run an example. The full datasets can be requested by contacting the STDL.
 
 ## Classification of the roof plane occupancy
@@ -86,13 +97,6 @@ In this repository, only test data is supplied, along with a subset of the roof 
 ## LiDAR segmentation
 
 The set of scripts is dedicated to the segmentation of rooftop objects in the LiDAR point cloud. This workflow is based on [Open3D](https://www.open3d.org/docs/release/). It supposes that roofs composed of flat planes and that obstacles protrude.
-
-### Data
-
-In addition to the general data, the segmentation workflow needs:
-
-- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
-- Emprises tiles LiDAR 2019.shp: Shapes corresponding to the LiDAR tiles.
 
 ### Workflow
 
@@ -150,13 +154,6 @@ python scripts/pcd_segmentation/optimize_hyperparam_LiDAR.py config/config_pcdse
 ### Overview
 
 The set of scripts is dedicated to the segmentation of objects in images. The segmentation is based on a deep learning method using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model). The final product is a vector layer of detected objects on the selected roofs. 
-
-### Data
-
-In addition to the general data, the image segmentation workflow uses the following input data:
-
-- True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
-- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG.
 
 ### Script description
 
