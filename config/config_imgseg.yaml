@@ -99,8 +99,8 @@ optimize_hyperparameters.py:
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
   egids: data/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/image_segmentation/optimization_test
-  detections: outputs/image_segmentation/optimization_test/vectors/roof_segmentation.gpkg
+  output_dir: outputs/image_segmentation/optimization
+  detections: outputs/image_segmentation/optimization/vectors/roof_segmentation.gpkg
   vector_extension: gpkg        # 'gpkg' or 'shp'
   crs: EPSG:2056                # projection of the input file 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -131,7 +131,7 @@ optimize_hyperparameters.py:
     custom_SAM: True
     visualization_masks: False 
   optimization:                 # SAM hyperparameter optimization with optuna library https://optuna.org/
-    n_trials: 5                # number of trials
+    n_trials: 50                # number of trials
     sampler: TPESampler         # choices: 'TPESampler', 'GridSampler' 
     param_grid:                 # define explicit hyperameter values to test: valid only for the 'GridSampler' method. Values will be ignored using the 'TPESampler' method.
       points_per_side: [160, 160]
