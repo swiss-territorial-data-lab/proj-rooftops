@@ -83,7 +83,7 @@ The following scripts are used to classify roof planes by occupancy:
     2. Using a random forest *with the ground truth* 
         - `random_forest.py`:
             - train mode: if the parameter `TRAIN` is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classification.
-            - inference mode: if the parameter `TRAIN` is set to `False`, use the saved models to make inferences on the roof planes.
+            - inference mode: if the parameter `TRAIN` is set to `False`, uses the saved models to make inferences on the roof planes.
 
 The corresponding command lines are provided here below.
 
@@ -106,7 +106,7 @@ When *a ground truth is available*, the classification can be performed and asse
 python scripts/occupation_classification/random_forest.py config/config_occupation_classification.yaml
 ```
 
-The other scripts are attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
+Other scripts are present in the folder `scripts/occupation_classification`. Their goal is to detect objects based on intensity. The results were not as good as expected and were therefore not implemented in the final workflow.
 
 
 ## LiDAR segmentation
