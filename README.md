@@ -80,9 +80,10 @@ The following scripts are used to classify roof planes by occupancy:
     1. Using manual thresholds *without ground truth*:
         - `manual_thresholds.py`: classifies the roofs using threshold passed in the config file.
         - `assess_classif_surfaces.py`: if some ground truth is provided later on or an expert assess the result, calculates the precision of the classification, also called "satisfaction  rate" in the documentation.
-    2. Using a random forest with the script `random_forest.py`:
-        - train mode: if the parameter `TRAIN` is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classification.
-        - inference mode: if the parameter `TRAIN` is set to `False`, use the saved models to make inferences on the roof planes.
+    2. Using a random forest *with the ground truth* 
+        - `random_forest.py`:
+            - train mode: if the parameter `TRAIN` is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classification.
+            - inference mode: if the parameter `TRAIN` is set to `False`, use the saved models to make inferences on the roof planes.
 
 The corresponding command lines are provided here below.
 
