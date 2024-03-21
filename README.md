@@ -59,33 +59,38 @@ _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling
 If the installation is successful the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
 
-## Classification of the roof plane occupation
+## Classification of the roof plane occupancy
 
-**Goal**: Classify the roof planes as occupied or potentially free based on their roughness and intensity.
+**Goal**: Classify the roof planes as "occupied" or "potentially free" based on their roughness and intensity.
 
-**Data**: LiDAR point cloud with intensity values. Here, the [the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) was used.
-
-**Workflow**
+##Workflow
 
 (*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
-Run the following command lines to perform the LiDAR processing:
+The following scripts are used to classify roof planes by occupancy:
+1. `rasterize_intensity.py`: creates an intensity raster for each LiDAR point cloud in the input directory.
+    - The parameters and the function for the raster of intensity are referenced here: [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation)
+2. `rasterize_roughness.py`: creates a DEM and saves it in a raster, then estimates the multi-scale roughness from the DEM.
+    - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
+    - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
+3. `get_zonal_stats.py`: gets zonal stats of intensity and roughness for roof planes.
+    - Roof planes smaller than 2 m<sup>2</sup> are classified as "occupied" and no zonal stats are calculated. They are too small for a solar or vegetated installation.
+    - When LiDAR point cloud is not classified as building under roof planes, they are classified as "undefined". The existence of a roof at this location should be controlled.
+4. Two possibilities were developed for classification:
+    1. Using manual thresholds *without ground truth*:
+        - `manual_thresholds.py`: classifies the roofs using threshold passed in the config file.
+        - `assess_classif_surfaces.py`: if some ground truth is provided later on or an expert assess the result, calculates the precision of the classification, also called "satisfaction  rate" in the documentation.
+    2. Using a random forest with the script `random_forest.py`:
+        - train mode: if the parameter `TRAIN` is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classification.
+        - inference mode: if the parameter `TRAIN` is set to `False`, use the saved models to make inferences on the roof planes.
+
+The corresponding command lines are provided here below.
 
 ```
 python scripts/occupation_classification/rasterize_intensity.py config/config_occupation_classification.yaml
 python scripts/occupation_classification/rasterize_roughness.py config/config_occupation_classification.yaml
 python scripts/occupation_classification/get_zonal_stats.py config/config_occupation_classification.yaml
-````
-
-The command lines perform the following steps:
-1. Create an intensity raster for each LiDAR point cloud in the input directory.
-    - The parameters and the function for the raster of intensity are referenced here: [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation)
-2. Create a DEM and save it in a raster. Then estimate the multi-scale roughness from the DEM.
-    - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
-    - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
-3. Get zonal stats of intensity and roughness for roof planes.
-    - Roof planes smaller than 2 m<sup>2</sup> are classified as occupied and no zonal stats are calculated. They are too small for a solar or vegetated installation.
-    - Roof planes under which the LiDAR point cloud is not classified as building are classified as undefined. The existence of a roof should be controlled.
+```
 
 When *no ground truth is available*, the classification can be performed with the script `manual_thresholds.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
 
@@ -100,10 +105,14 @@ When *a ground truth is available*, the classification can be performed and asse
 python scripts/occupation_classification/random_forest.py config/config_occupation_classification.yaml
 ```
 
-The other scripts are some attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
+The other scripts are attempts to detect objects based on intensity. The results were not as good as expected and were therefore not implemented.
 
 
 ## LiDAR segmentation
+
+**Goal**: segment rooftop objects in the LiDAR point cloud. 
+
+This workflow is based on [Open3D](https://www.open3d.org/docs/release/). It supposes that roofs composed of flat planes and that obstacles protrude.
 
 ### Data
 
