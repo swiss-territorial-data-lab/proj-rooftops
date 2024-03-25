@@ -89,7 +89,6 @@ assess_area.py:
   output_dir: outputs/image_segmentation/test
   detections: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
-  bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
   visualization: True           # save plots
 
 # 6 - Hyperparamters optimization

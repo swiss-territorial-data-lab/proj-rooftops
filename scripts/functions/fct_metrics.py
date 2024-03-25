@@ -35,7 +35,7 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, surfa
     return egid_surfaces_df, surfaces_df, attribute_surfaces_df
 
 
-def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surfaces_df=None):
+def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roof_attributes, surfaces_df=None, attribute_surfaces_df=None):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -61,13 +61,7 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, BIN
         logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
         egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
 
-    # Attribute bin to surface area
-    bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
-
     egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
-    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(
-        egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels
-    )
 
     # Get the global area
     if not isinstance(attribute_surfaces_df, pd.DataFrame):

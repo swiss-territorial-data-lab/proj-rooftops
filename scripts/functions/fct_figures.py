@@ -80,34 +80,6 @@ def plot_area(dir_plots, df, attribute, xlabel):
     return plot_path
 
 
-def plot_area_bin(dir_plots, df, bins):
-
-    fig, ax = plt.subplots(1, 1, figsize=(9,6))
- 
-    bins = list(set(bins).intersection(df.keys()))
-    bins.sort()
-
-    values = df[bins].iloc[0]
-
-    df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    ax = df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
-
-    labels = list(map(lambda x: x.replace('accuracy bin ', ''), bins))
-    ax.set_xticklabels(labels)
-
-    plt.xlabel('Free surface (%)', fontweight='bold', fontsize=14)
-    plt.ylabel('Accurate detection (%)', fontweight='bold', fontsize=14)
-    plt.legend('', frameon=False, fontsize=14)
-    plt.title('by EGID')
-
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'area_accuracy_EGID.png')  
-    plt.savefig(plot_path, bbox_inches='tight')
-    plt.close(fig)
-
-    return plot_path
-
-
 def plot_groups(dir_plots, df, attribute, xlabel):
 
     fig, ax = plt.subplots(figsize=(9,6), layout='constrained')
