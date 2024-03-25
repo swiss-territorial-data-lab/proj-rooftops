@@ -65,7 +65,7 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roo
 
     # Get the global area
     if not isinstance(attribute_surfaces_df, pd.DataFrame):
-        surfaces_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL'}])
+        surfaces_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'All evaluated EGIDs'}])
     surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
     surfaces_df['total_area'] = egid_surfaces_df['total_area'].sum()
     surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']

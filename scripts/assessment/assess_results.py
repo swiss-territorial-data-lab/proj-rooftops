@@ -140,7 +140,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         logger.info("    - Global metrics")
         TP, FP, FN = metrics.get_count(tagged_gt_gdf, tagged_dets_gdf)
         metrics_results = metrics.get_metrics(TP, FP, FN)
-        metrics_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
+        metrics_df = pd.DataFrame.from_records([{'attribute': 'all', 'value': 'all', **metrics_results}])
         
         if additional_metrics:
             logger.info("    - Metrics by egid")
@@ -196,7 +196,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
         # Compute metrics
         logger.info("    - Global metrics")
         metrics_results = metrics.get_metrics(TP, FP, FN)
-        metrics_df = pd.DataFrame.from_records([{'attribute': 'EGID', 'value': 'ALL', **metrics_results}])
+        metrics_df = pd.DataFrame.from_records([{'attribute': 'all', 'value': 'all', **metrics_results}])
 
         if method == 'one-to-many':
             tp_with_duplicates = tp_gdf.copy()
@@ -368,7 +368,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
 
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+            duplicated_labels = all_taEGIDgged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
             duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
             layer_name = 'duplicated_label_tags'
@@ -380,7 +380,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualization and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_type': 'Roof type',
+        xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_type': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Object distance (m)', 
                     'nearest_distance_centroid': r'Object distance (m)', 

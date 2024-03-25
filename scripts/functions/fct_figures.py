@@ -64,10 +64,10 @@ def plot_area(dir_plots, df, attribute, xlabel):
         minor_ticks_labels.extend(['labels', 'detections'])
     ax.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
 
-    if 'ALL' in df['value'].unique():
+    if 'All evaluated EGIDs' in df['value'].unique():
         ax.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
     else:
-        ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontweight='bold', fontsize=14)
+        ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontsize=14)
         ax.tick_params(axis='x', which='major', pad=30, length=0)
 
     ax.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
@@ -98,6 +98,8 @@ def plot_groups(dir_plots, df, attribute, xlabel):
     df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.8)
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
+    elif attribute == 'all':
+        plt.xticks([])
     plt.xlabel(xlabel, fontweight='bold', fontsize=14)
 
     for c in ax.containers:
@@ -193,6 +195,8 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.ylim(-0.05, 1.05)
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
+    elif attribute == 'all':
+        plt.xticks([])
     plt.xlabel(xlabel, fontweight='bold', fontsize=14)
 
     plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)
