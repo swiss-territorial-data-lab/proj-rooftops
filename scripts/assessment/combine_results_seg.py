@@ -4,17 +4,13 @@ import sys
 import time
 
 from loguru import logger
-from tqdm import tqdm
 from yaml import load, FullLoader
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 sys.path.insert(1, 'scripts')
-import functions.fct_figures as figures
 import functions.fct_misc as misc
-import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
@@ -99,7 +95,7 @@ if __name__ == "__main__":
     logger.info('Starting...')
 
     # Argument and parameter specification
-    parser = argparse.ArgumentParser(description="The script allows to evaluate the workflow results (STDL.proj-rooftops)")
+    parser = argparse.ArgumentParser(description="The script allows to combine LiDAR and image segmentation results (STDL.proj-rooftops)")
     parser.add_argument('config_file', type=str, help='Framework configuration file')
     args = parser.parse_args()
 

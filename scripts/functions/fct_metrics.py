@@ -61,7 +61,7 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roo
         logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
         egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
 
-    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
+    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}'] / egid_surfaces_df['total_area']
 
     # Get the global area
     if not isinstance(attribute_surfaces_df, pd.DataFrame):
