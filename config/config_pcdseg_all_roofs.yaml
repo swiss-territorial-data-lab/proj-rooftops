@@ -15,7 +15,7 @@ prepare_data.py:
     pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
     shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
     egids: data/EGIDs_GT_test.csv
-  output_dir: outputs/PCD_segmentation/test_buildings/all_roofs
+  output_dir: outputs/PCD_segmentation/test/all_roofs
   filters:
     filter_class: False
     class_number: 6                 # 6: Building class
@@ -27,7 +27,7 @@ prepare_data.py:
 
 # 3 - Point Cloud plane segmentation and clustering
 pcd_segmentation.py: 
-  working_dir: outputs/PCD_segmentation/test_buildings/all_roofs
+  working_dir: outputs/PCD_segmentation/test/all_roofs
   output_dir: per_EGID_data
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
@@ -46,7 +46,7 @@ pcd_segmentation.py:
 
 # 4 - 2D vectorisation of segmented 3D point cloud 
 vectorization.py:  
-  working_dir: outputs/PCD_segmentation/test_buildings/all_roofs
+  working_dir: outputs/PCD_segmentation/test/all_roofs
   output_dir: .
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
@@ -61,7 +61,7 @@ vectorization.py:
 
 # 5 - Post-process the results to improve them
 post_processing.py:
-  working_dir: outputs/PCD_segmentation/test_buildings
+  working_dir: outputs/PCD_segmentation/test
   output_dir: post_processed_results
   roofs: all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   merge_files: True                 # Merge the file listed under "files" together
@@ -79,11 +79,11 @@ post_processing.py:
 # 6 - Evaluate the results
 assess_results.py: 
   working_dir: .
-  output_dir: outputs/PCD_segmentation/test_buildings
-  detections: outputs/PCD_segmentation/test_buildings/post_processed_results/roof_partition.gpkg
+  output_dir: outputs/PCD_segmentation/test
+  detections: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
-  egids: outputs/PCD_segmentation/test_buildings/all_roofs/egid_properties.csv
-  roofs: outputs/PCD_segmentation/test_buildings/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
   threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
   additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
@@ -98,19 +98,18 @@ assess_results.py:
 # 7 - Estimate the free surface
 assess_area.py:
   working_dir: .
-  output_dir: outputs/PCD_segmentation/test_buildings
-  detections: outputs/PCD_segmentation/test_buildings/post_processed_results/roof_partition.gpkg
+  output_dir: outputs/PCD_segmentation/test
+  detections: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
-  egids: outputs/PCD_segmentation/test_buildings/all_roofs/egid_properties.csv
-  roofs: outputs/PCD_segmentation/test_buildings/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
-  bins: [0, 25, 50, 75, 85, 95, 100]  # limits for the creation of bins on the percentage of free area
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   method: fusion                      # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
   visualization: True                 # Save figures with the absolute and realtive free and occupied area in the results and labels
 
 
 # 3 & 4 & 5 - Optimization of the hyperparameters
 optimize_hyperparam_LiDAR.py:
-  working_dir: outputs/PCD_segmentation/test_buildings/all_roofs
+  working_dir: outputs/PCD_segmentation/test/all_roofs
   output_dir: optimization
   input_dir_pcd: per_EGID_data
   egids: egid_properties.csv
@@ -126,11 +125,11 @@ optimize_hyperparam_LiDAR.py:
 # 5 & 6 bis - Test combining the results between the classification of occupancy and the LiDAR segmentation and assess the produced polygons
 combine_results_lidar.py: 
   working_dir: .
-  output_dir: outputs/PCD_segmentation/test_buildings/combined_results
-  detections: outputs/PCD_segmentation/test_buildings/post_processed_results/merged_detections_buffer_VW.gpkg
+  output_dir: outputs/PCD_segmentation/test/combined_results
+  detections: outputs/PCD_segmentation/test/post_processed_results/merged_detections_buffer_VW.gpkg
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
-  egids: outputs/PCD_segmentation/test_buildings/all_roofs/egid_properties.csv
-  roofs: outputs/PCD_segmentation/test_buildings/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
   classified_roofs: outputs/roofs/roofs.gpkg
   classified_roofs_layer: roof_occupation_by_RF
   # Parameters for the assessment

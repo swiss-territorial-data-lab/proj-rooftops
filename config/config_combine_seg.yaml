@@ -3,8 +3,7 @@ combine_results_seg.py:
   working_dir: .
   output_dir: outputs/seg_combination/test/
   img_seg: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
-  pcd_seg: outputs/PCD_segmentation/test_buildings/assessment_fusion/tags.gpkg
-  layer_pcd: tagged_detections_fusion_thd_0dot1
+  pcd_seg: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
   egids: data/EGIDs_GT_test.csv
 
@@ -33,8 +32,7 @@ assess_area.py:
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
   egids: data/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/seg_combination/test/<combination method>                           # choices: "concatenate", "sjoin" 
-  detections: outputs/seg_combination/test/roof_segmentation_<combination method>.gpkg    # choices: "concatenate", "sjoin" 
+  output_dir: outputs/seg_combination/test/concatenate                          # choices: "concatenate", "sjoin" 
+  detections: outputs/seg_combination/test/roof_segmentation_concatenate.gpkg    # choices: "concatenate", "sjoin" 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
-  bins: [0, 25, 50, 75, 100]    # percentage of free area bin limits
   visualization: True           # show plots

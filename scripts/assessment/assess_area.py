@@ -92,6 +92,9 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, visu
         logger.info(f"Free surface relative error for all EGIDs = {(surfaces_df.loc[0, 'free_rel_error']):.2f}")
         print()
 
+        # for df in [egid_surfaces_df, surfaces_df, attribute_surfaces_df]:
+        #     df['rel_occup_error'] = abs(df.occup_area_dets - df.occup_area_labels) / df.total_area
+
         attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])
         if visualization:
             # Plots
