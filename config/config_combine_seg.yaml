@@ -32,7 +32,7 @@ assess_area.py:
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
   egids: data/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/seg_combination/test/concatenate                          # choices: "concatenate", "sjoin" 
-  detections: outputs/seg_combination/test/roof_segmentation_concatenate.gpkg    # choices: "concatenate", "sjoin" 
+  output_dir: outputs/seg_combination/test/<combination method>                        # choices: "concatenate", "sjoin"
+  detections: outputs/seg_combination/test/roof_segmentation_<combination method>.gpkg # choices: "concatenate", "sjoin" 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   visualization: True           # show plots
