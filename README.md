@@ -193,7 +193,7 @@ LiDAR and image segmentation results can be combined. Two methods are used:
 
 ### Script description
 
-1. `combine_results_seg.py`: combines results of LiDAR segmentation and image segmentation using concatenation (`concat`) of polygons and spatial join (`sjoin`) of polygons;
+1. `combine_results_seg.py`: combines results of LiDAR segmentation and image segmentation using concatenation (`concatenation`) of polygons and spatial join (`sjoin`) of polygons;
 2. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections. Specify which combination method to assess;
 3. `assess_area.py`: calculates the free and occupied surface of each EGID and compares it with the ground truth. Specify which combination method to assess.
 

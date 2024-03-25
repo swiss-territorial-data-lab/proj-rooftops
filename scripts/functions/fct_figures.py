@@ -48,7 +48,7 @@ def plot_area(dir_plots, df, attribute, xlabel):
     df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
     
     for b in ax.containers:
-        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
+        labels = [f'{int(a)}' if a > 0 else "" for a in b.datavalues]
         ax.bar_label(b, label_type='center', color = "black", labels=labels, fontsize=8)
  
     ax.set_xlim((-0.5, len(df)-0.5)) 

@@ -98,7 +98,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, visu
         attribute_surfaces_df = pd.concat([surfaces_df, attribute_surfaces_df])
         if visualization:
             # Plots
-            xlabel_dict = {'EGID': '', 'building_type': 'Building type', 'roof_type': 'Roof type'}
+            xlabel_dict = {'all': '', 'building_type': 'Building type', 'roof_type': 'Roof type'}
 
             for attr in attribute_surfaces_df.attribute.unique():
                 if attr in xlabel_dict.keys():
