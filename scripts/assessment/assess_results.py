@@ -382,8 +382,8 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
 
         xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_type': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
-                    'nearest_distance_border': r'Object distance (m)', 
-                    'nearest_distance_centroid': r'Object distance (m)', 
+                    'nearest_distance_border': r'Distance from object edge to roof edge (m)', 
+                    'nearest_distance_centroid': r'Distance from object centroid to roof edge (m)', 
                     'roundness': r'Roundness'} 
 
         # _ = figures.plot_histo(output_dir, labels_gdf, detections_gdf, attribute=OBJECT_PARAMETERS, xlabel=xlabel_dict)
