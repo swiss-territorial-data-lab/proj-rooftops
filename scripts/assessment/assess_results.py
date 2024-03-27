@@ -380,7 +380,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualization and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_type': 'Roof type',
+        xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_inclination': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Distance from object edge to roof edge (m)', 
                     'nearest_distance_centroid': r'Distance from object centroid to roof edge (m)', 

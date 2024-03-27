@@ -71,7 +71,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if ROOF_TYPE in ['flat', 'pitched', 'mixed']:
         logger.info(f'Only the roofs with the type "{ROOF_TYPE}" are considered.')
-        egids = egids[egids.roof_type == ROOF_TYPE].copy()
+        egids = egids[egids.roof_inclination == ROOF_TYPE].copy()
     elif ROOF_TYPE != 'all':
         logger.critical('Unknown roof type passed.')
         sys.exit(1) 

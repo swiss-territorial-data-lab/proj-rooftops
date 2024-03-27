@@ -1,4 +1,4 @@
-EGID,building_type,roof_type
+EGID,building_type,roof_inclination
 1001489,residential,pitched
 1004997,residential,flat
 1010515,residential,mixed

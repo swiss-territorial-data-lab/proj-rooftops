@@ -4,15 +4,15 @@ combine_results_seg.py:
   output_dir: outputs/seg_combination/test/
   img_seg: outputs/image_segmentation/test/vectors/roof_segmentation.gpkg
   pcd_seg: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
-  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_EGID.shp
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   egids: data/EGIDs_GT_test.csv
 
 # 2 - Evaluate the results
 assess_results.py:  
   working_dir: .
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
-  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
-  egids: data/EGIDs_GT_test_all_all.csv
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13.shp
+  egids: data/EGIDs_GT_test.csv
   output_dir: outputs/seg_combination/test/<combination method>                        # choices: "concatenate", "sjoin"
   detections: outputs/seg_combination/test/roof_segmentation_<combination method>.gpkg # choices: "concatenate", "sjoin" 
   method: fusion                # methods: 'one-to-one', 'one-to-many', 'charges', 'fusion'
@@ -32,7 +32,7 @@ assess_area.py:
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-13_test.shp
   egids: data/EGIDs_GT_test_all_all.csv
-  output_dir: outputs/seg_combination/test/<combination method>                        # choices: "concatenate", "sjoin"
-  detections: outputs/seg_combination/test/roof_segmentation_<combination method>.gpkg # choices: "concatenate", "sjoin" 
+  output_dir: outputs/seg_combination/test/<combination method>                           # choices: "concatenate", "sjoin" 
+  detections: outputs/seg_combination/test/roof_segmentation_<combination method>.gpkg    # choices: "concatenate", "sjoin" 
   method: fusion                # choices: 'one-to-one', 'one-to-many', 'charges', 'fusion'
   visualization: True           # show plots
