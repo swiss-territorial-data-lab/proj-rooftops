@@ -58,18 +58,19 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roo
         logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
         egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
 
-    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}'] / egid_surfaces_df['total_area']
+    # egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}'] / egid_surfaces_df['total_area']
 
     # Get the global area
     if not isinstance(attribute_surfaces_df, pd.DataFrame):
         surfaces_df = pd.DataFrame.from_records([{'attribute': 'all', 'value': 'All evaluated EGIDs'}])
     surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
     surfaces_df['total_area'] = egid_surfaces_df['total_area'].sum()
-    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
+    # surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
 
     # Compute area by roof attributes
     tmp_df = pd.DataFrame()
-    surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
+    # surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
+    surface_types = [f'{surface_type}_area_{object_type}', 'total_area']
     attribute_surface_dict = {'attribute': [], 'value': []}
 
     for attribute in roof_attributes:
@@ -80,8 +81,9 @@ def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roo
                 total_area = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'total_area'].sum()
                 sum_surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'{surface_type}_area_{object_type}'].sum() if var!='total_area'\
                     else total_area
-                attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
-                    else sum_surface / total_area
+                # attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
+                #     else sum_surface / total_area
+                attribute_surface_dict[var] = sum_surface
 
             tmp_df = pd.concat([tmp_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
 

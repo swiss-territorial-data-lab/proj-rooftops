@@ -12,13 +12,11 @@ from tqdm import tqdm
 from yaml import load, FullLoader
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 sys.path.insert(1, 'scripts')
 import functions.fct_figures as figures
 import functions.fct_misc as misc
-import functions.fct_metrics as metrics
 
 logger = misc.format_logger(logger)
 
@@ -109,7 +107,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, EGIDS_TRAINING, EGIDS_TEST, roofs=None
     # labels_gdf = labels_gdf.explode(ignore_index=True)
     
     nbr_labels = labels_gdf.shape[0]
-    logger.info(f"- {nbr_labels} label's shapes")
+    logger.info(f"- {nbr_labels} label shapes")
 
     if (len(object_parameters) > 0):
   

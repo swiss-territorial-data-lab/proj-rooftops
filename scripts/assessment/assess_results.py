@@ -368,7 +368,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
             all_tagged_labels_gdf = pd.concat([tp_gdf, fn_gdf])
 
             duplicated_label_id = all_tagged_labels_gdf.loc[all_tagged_labels_gdf.duplicated(subset=['label_id']), 'label_id'].unique().tolist()
-            duplicated_labels = all_taEGIDgged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
+            duplicated_labels = all_tagged_labels_gdf[all_tagged_labels_gdf['label_id'].isin(duplicated_label_id)]
             duplicated_labels.drop(columns=['label_geometry', 'detection_geometry', 'index_right', 'EGID', 'occupation_left', 'occupation_right'], inplace=True)
 
             layer_name = 'duplicated_label_tags'
@@ -380,7 +380,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS, method='one-
     if visualization and additional_metrics:
         logger.info('Save some figures...')
 
-        xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_inclination': 'Roof type',
+        xlabel_dict = {'all': 'All evaluated EGIDs', 'building_type': 'Building type', 'roof_type': 'Roof type',
                     'object_class':'', 'area': r'Object area ($m^2$)', 
                     'nearest_distance_border': r'Distance from object edge to roof edge (m)', 
                     'nearest_distance_centroid': r'Distance from object centroid to roof edge (m)', 

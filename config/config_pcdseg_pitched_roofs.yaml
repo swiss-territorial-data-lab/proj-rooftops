@@ -8,7 +8,7 @@ prepare_data.py:
     egids: data/EGIDs_GT_test.csv
   output_dir: outputs/PCD_segmentation/test/pitched_roofs
   filters:
-    roof_inclination: pitched       # 'flat', 'pitched', 'mixed', 'all', if missing, defaults to all 
+    roof_type: pitched              # 'flat', 'pitched', 'mixed', 'all', if missing, defaults to all 
     filter_class: False
     class_number: 6                 # 6: Building class
     filter_roof: True               # Remove all the point below the roof altitude

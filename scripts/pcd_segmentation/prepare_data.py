@@ -43,10 +43,10 @@ INPUTS=cfg['inputs']
 FILTERS=cfg['filters']
 
 PCD_TILES=INPUTS['pcd_tiles']
-SHP_ROOFS = INPUTS['shp_roofs']
+ROOFS = INPUTS['roofs']
 EGIDS = INPUTS['egids']
 BUILDING_TYPE = FILTERS['building_type'] if 'building_type' in FILTERS.keys() else 'all'
-ROOF_INCLINATION = FILTERS['roof_inclination'] if 'roof_inclination' in FILTERS.keys() else 'all'
+ROOF_TYPE = FILTERS['roof_type'] if 'roof_type' in FILTERS.keys() else 'all'
 FILTER_CLASS = FILTERS['filter_class']
 CLASS_NUMBER = FILTERS['class_number']
 FILTER_ROOF = FILTERS['filter_roof']
@@ -79,20 +79,20 @@ if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
 elif BUILDING_TYPE != 'all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
-if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
-    logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
-    egids = egids[egids.roof_inclination==ROOF_INCLINATION].copy()
-elif ROOF_INCLINATION != 'all':
+if ROOF_TYPE in ['flat', 'pitched', 'mixed']:
+    logger.info(f'Only the roofs with the type "{ROOF_TYPE}" are considered.')
+    egids = egids[egids.roof_type==ROOF_TYPE].copy()
+elif ROOF_TYPE != 'all':
     logger.critical('Unknown roof type passed.')
     sys.exit(1) 
 
 logger.info(f'{egids.shape[0]} egids will be processed.')
 
 # Get the per-EGID rooftops shapes
-ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
+ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
 feature_path = os.path.join(OUTPUT_DIR.split('/')[0], ROOFS_NAME[:-4]  + "_EGID.shp")
 
-rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
+rooftops = misc.dissolve_by_attribute(feature_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 
 # Produce light files of the selected EGIDs with the essential per-EGID information for the workflow 
 egid_properties = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')

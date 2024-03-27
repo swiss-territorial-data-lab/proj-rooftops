@@ -65,8 +65,8 @@ def main(WORKING_DIR, OUTPUT_DIR, DETECTIONS_PCD, DETECTIONS_IMG):
     _ = misc.ensure_file_exists(DETECTIONS_IMG)
     img_gdf = read_gpd(DETECTIONS_IMG)
 
-    logger.info(f"- {len(pcd_gdf)} detection's shapes")
-    logger.info(f"- {len(img_gdf)} detection's shapes")
+    logger.info(f"- {len(pcd_gdf)} detection shapes")
+    logger.info(f"- {len(img_gdf)} detection shapes")
 
     # Concatenate img segmentation polygons with pcd segmentation polygons  
     final_gdf = pd.concat([img_gdf, pcd_gdf]).reset_index(drop=True)

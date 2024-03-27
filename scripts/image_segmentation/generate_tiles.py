@@ -65,13 +65,13 @@ if __name__ == "__main__":
     egids = pd.read_csv(EGIDS)
     if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
         logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
-        egids = egids[egids.building_type == BUILDING_TYPE].copy()
+        egids = egids[egids.building_type==BUILDING_TYPE].copy()
     elif BUILDING_TYPE != 'all':
         logger.critical('Unknown building type passed.')
         sys.exit(1)
     if ROOF_TYPE in ['flat', 'pitched', 'mixed']:
         logger.info(f'Only the roofs with the type "{ROOF_TYPE}" are considered.')
-        egids = egids[egids.roof_inclination == ROOF_TYPE].copy()
+        egids = egids[egids.roof_type==ROOF_TYPE].copy()
     elif ROOF_TYPE != 'all':
         logger.critical('Unknown roof type passed.')
         sys.exit(1) 
