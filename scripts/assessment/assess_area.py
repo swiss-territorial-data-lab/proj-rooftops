@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     # Load input parameters
     WORKING_DIR = cfg['working_dir']
-    OUTPUT_DIR = cfg['output_dir'] in the configuration file
+    OUTPUT_DIR = cfg['output_dir']
 
     DETECTIONS = cfg['detections']
     LABELS = cfg['ground_truth'] if 'ground_truth' in cfg.keys() else None

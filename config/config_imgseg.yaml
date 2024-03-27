@@ -12,7 +12,7 @@ generate_tiles.py:
   buffer: 1                     # m, buffer distance around roof shape (avoids "cutting" the roof edges)
   mask: False                   # choose to apply or not a mask to the image to only keep the buildings visible 
 
-# 2 - Segment Anything Method
+# 2 - Segment Anything Model
 segment_images.py:
   working_dir: .
   image_dir:  data/image_segmentation/tiles/test
@@ -169,7 +169,7 @@ assess_synthetic_examples.py:
   ground_truth: data/ground_truth/synthetic_examples/ground_truth_synthetic.gpkg
   output_dir: outputs/assessment
   detections: data/ground_truth/synthetic_examples/detection_synthetic.gpkg
-  egids: data/EGIDs_full_GT.csv
+  egids: data/EGIDs_GT_test.csv
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   method: charges
   threshold: 0.1                 

@@ -4,7 +4,7 @@ prepare_data.py:
   pcd_dir: data/LiDAR/2019
   inputs:
     pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
-    shp_roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+    roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
     egids: data/EGIDs_GT_test.csv
   output_dir: outputs/PCD_segmentation/test/pitched_roofs
   filters:
