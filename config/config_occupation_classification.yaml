@@ -2,27 +2,27 @@
 get_lidar_infos.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: outputs/2019/processed_lidar/infos
-  input_dir: initial/LiDAR/2019
+  input_dir: inputs/LiDAR/2019
   overwrite: False
+
 
 rasterize_intensity.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: outputs/2019/processed_lidar/intensity           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
-  input_dir: initial/LiDAR/2019
+  input_dir: inputs/LiDAR/2019
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
     resolution: 0.3   # Output resolution
     radius: 0.3       # Search radius
     returns: first    # Point return types to include. Supported values: all, first, last
-    # excluded_classes: 1, 2, 3, 5, 7, 9, 13, 15, 16, 19         # Classes to exclude, i.e., classes that are not about the building roof.
-    excluded_classes: 1, 2, 3, 4, 5, 7, 14, 15, 18, 21, 22, 25, 29, 31
+    excluded_classes: 1, 2, 3, 5, 7, 9, 13, 15, 16, 19         # Classes to exclude, i.e., classes that are not about the building roof.
 
 
 rasterize_roughness.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: outputs/2019/processed_lidar/roughness           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
-  input_dir: initial/LiDAR/2019
+  input_dir: inputs/LiDAR/2019
   overwrite: False
   make_dem: True
   parameters_dem: 
@@ -42,8 +42,8 @@ get_zonal_stats.py:
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   output_dir: outputs/2019/roof_classification
   input_dir_rasters: outputs/2019/processed_lidar
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+  lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   debug_mode: False
   check_tiles: False
   tile_id: fme_basena
@@ -84,7 +84,7 @@ segment_objects.py:
   debug_mode: True
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   input_dir_images: outputs/2019/processed_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/2019/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
@@ -96,7 +96,7 @@ filter_for_objects.py:
   debug_mode: False
   working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
   input_dir_images: outputs/2019/processed_lidar/intensity
-  lidar_tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/2019/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   kernel: False

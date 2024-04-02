@@ -178,7 +178,8 @@ if __name__ == '__main__':
     features_gdf['area'] = features_gdf.area
     features_df = features_gdf.drop(columns=[
                             'count_i', 'count_r',
-                            #  'nodata_overlap', 'min_i', 'max_r', 'max_i', 'ALTI_MIN', 'mean_i', 'median_i',
+                            # 'nodata_overlap', 'min_i', 'max_i', 'ALTI_MIN', 'median_i',
+                            # 'mean_i', 'mean_r', 'max_r',
                             'status', 'reason', 'geometry'
     ])
 
@@ -205,7 +206,7 @@ if __name__ == '__main__':
         if 'model_ocan' in cfg.keys():
             MODEL_OCAN = cfg['model_ocan']
 
-            logger.info('Classifiy roof planes for the OCAN')
+            logger.info('Classify roof planes for the OCAN')
             rf_model_ocan = pickle.load(open(MODEL_OCAN, 'rb'))
             predictions_ocan = rf_model_ocan.predict(features_array)
 
@@ -215,7 +216,7 @@ if __name__ == '__main__':
         if 'model_ocen' in cfg.keys():
             MODEL_OCEN = cfg['model_ocen']
 
-            logger.info('Classifiy roof planes for the OCEN')
+            logger.info('Classify roof planes for the OCEN')
             rf_model_ocen = pickle.load(open(MODEL_OCEN, 'rb'))
             predictions_ocen = rf_model_ocen.predict(features_array)
 

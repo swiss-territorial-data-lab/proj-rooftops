@@ -61,6 +61,10 @@ logger.info('Getting the list of files...')
 lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
 
 logger.info('Processing files...')
+if len(lidar_files) == 0:
+    logger.critical('The list of LiDAR files is empty. Please, check that you provided the right folder path.')
+    sys.exit(1)
+
 for file in lidar_files:
 
     filename=os.path.basename(file.rstrip('.las'))

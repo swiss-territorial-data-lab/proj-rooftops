@@ -63,7 +63,7 @@ If the installation is successful the message "You are using a modified version 
 
 **Goal**: Classify the roof planes as "occupied" or "potentially free" based on their roughness and intensity.
 
-##Workflow
+## Workflow
 
 (*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
@@ -215,7 +215,6 @@ The suitability of a roof to host a solar or vegetated installation can be estim
 **Requirements**
 - There are no hardware or software requirements.
 - Everything was tested with Python 3.11.
-- The necessary libraries can be installed from the file `requirements.txt`.
 
 **Workflow**
 
