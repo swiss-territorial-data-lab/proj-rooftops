@@ -12,10 +12,8 @@ from fractions import Fraction
 from shapely import unary_union
 from shapely.geometry import GeometryCollection
 
-sys.path.insert(1, 'scripts')
-import functions.fct_misc as misc
 
-def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surface_type):
+def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surfaces_df, surface_type):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -23,21 +21,18 @@ def area_comparisons(egid_surfaces_df, surfaces_df, attribute_surface_df, surfac
         logger.critical('The surface type is not valid. Please pass "occupied" or "free".')
         sys.exit(1)
 
-    # Determine relative results
-
+    # Compute relative error
     # by EGID
-    egid_surfaces_df[f'{surface_type}_rel_error'] = misc.relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
+    egid_surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(egid_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     # total
-    surfaces_df[f'{surface_type}_rel_diff'] = abs(surfaces_df[f'{surface_type}_area_dets'] - surfaces_df[f'{surface_type}_area_labels'])\
-         / surfaces_df[f'{surface_type}_area_labels']
+    surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     # by attriubte
-    attribute_surface_df[f'{surface_type}_rel_diff'] = abs(attribute_surface_df[f'{surface_type}_area_dets'] - attribute_surface_df[f'{surface_type}_area_labels']) \
-        / attribute_surface_df[f'{surface_type}_area_labels']
+    attribute_surfaces_df[f'{surface_type}_rel_error'] = relative_error_df(attribute_surfaces_df, target=f'{surface_type}_area_labels', measure=f'{surface_type}_area_dets')
     
-    return egid_surfaces_df, surfaces_df, attribute_surface_df
+    return egid_surfaces_df, surfaces_df, attribute_surfaces_df
 
 
-def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BINS, roof_attributes, surfaces_df=None, attribute_surface_df=None):
+def area_estimation(objects_df, egid_surfaces_df, surface_type, object_type, roof_attributes, surfaces_df=None, attribute_surfaces_df=None):
 
     if surface_type == 'occupied':
         surface_type = 'occup'
@@ -63,46 +58,60 @@ def area_estimations(objects_df, egid_surfaces_df, surface_type, object_type, BI
         logger.warning(f'{nbr_tmp} calculated {surface_type} surfaces for the {object_type} are smaller than 0. Those are set to 0.')
         egid_surfaces_df.loc[egid_surfaces_df[f'{surface_type}_area_{object_type}'] < 0, f'{surface_type}_area_{object_type}'] = 0.0
 
-    # Attribute bin to surface area
-    bin_labels = [f"{BINS[i]}-{BINS[i+1]}" for i in range(len(BINS)-1)]
+    # egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}'] / egid_surfaces_df['total_area']
 
-    egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = egid_surfaces_df[f'{surface_type}_area_{object_type}']/egid_surfaces_df['total_area']
-    egid_surfaces_df[f'bin_{surface_type}_area_{object_type} (%)'] = pd.cut(
-        egid_surfaces_df[f'ratio_{surface_type}_area_{object_type}'] * 100, BINS, right=False, labels=bin_labels
-    )
-
-    # Get the global surface
-    if not isinstance(surfaces_df, pd.DataFrame):
-        surfaces_df=pd.DataFrame()
+    # Get the global area
+    if not isinstance(attribute_surfaces_df, pd.DataFrame):
+        surfaces_df = pd.DataFrame.from_records([{'attribute': 'all', 'value': 'All evaluated EGIDs'}])
     surfaces_df[f'{surface_type}_area_{object_type}'] = [egid_surfaces_df[f'{surface_type}_area_{object_type}'].sum()]
     surfaces_df['total_area'] = egid_surfaces_df['total_area'].sum()
-    surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
+    # surfaces_df[f'ratio_{surface_type}_area_{object_type}'] = surfaces_df[f'{surface_type}_area_{object_type}'] / surfaces_df['total_area']
 
-    # Compute surface by roof attributes
+    # Compute area by roof attributes
     tmp_df = pd.DataFrame()
-    surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
+    # surface_types = [f'{surface_type}_area_{object_type}', 'total_area', f'ratio_{surface_type}_area_{object_type}']
+    surface_types = [f'{surface_type}_area_{object_type}', 'total_area']
     attribute_surface_dict = {'attribute': [], 'value': []}
 
     for attribute in roof_attributes:
-        for val in egid_surfaces_df[attribute].unique():
+        for val in sorted(egid_surfaces_df[attribute].unique()):
             attribute_surface_dict['attribute'] = attribute
             attribute_surface_dict['value'] = val
             for var in surface_types:
                 total_area = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'total_area'].sum()
                 sum_surface = egid_surfaces_df.loc[egid_surfaces_df[attribute] == val, f'{surface_type}_area_{object_type}'].sum() if var!='total_area'\
                     else total_area
-                attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
-                    else sum_surface / total_area
+                # attribute_surface_dict[var] = sum_surface if var!=f'ratio_{surface_type}_area_{object_type}' \
+                #     else sum_surface / total_area
+                attribute_surface_dict[var] = sum_surface
 
             tmp_df = pd.concat([tmp_df, pd.DataFrame(attribute_surface_dict, index=[0])], ignore_index=True)
 
-    if not isinstance(attribute_surface_df, pd.DataFrame):
-        attribute_surface_df = tmp_df.copy()
+    if not isinstance(attribute_surfaces_df, pd.DataFrame):
+        attribute_surfaces_df = tmp_df.copy()
     else:
         tmp_df.drop(columns=['total_area'], inplace=True)
-        attribute_surface_df = attribute_surface_df.merge(tmp_df, on=['value', 'attribute'])
+        attribute_surfaces_df = attribute_surfaces_df.merge(tmp_df, on=['value', 'attribute'])
 
-    return egid_surfaces_df, surfaces_df, attribute_surface_df
+    return egid_surfaces_df, surfaces_df, attribute_surfaces_df
+
+
+def relative_error_df(df, target, measure):
+    """Compute relative error between 2 df columns
+
+    Args:
+        df: dataframe
+        target_col (string): name of the target column in the df
+        measure_col (string): name of the measured column in the df
+
+    Returns:
+        out (df): dataframe relative error computed
+    """
+    
+    re = abs(df[measure] - df[target]) / df[target]
+    re.replace([np.inf], 1.0, inplace=True)
+
+    return re
 
 
 def intersection_over_union(polygon1_shape, polygon2_shape):

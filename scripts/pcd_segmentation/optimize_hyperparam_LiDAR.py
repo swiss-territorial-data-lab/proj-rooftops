@@ -118,7 +118,7 @@ EPSG = cfg['epsg']
 ALPHA_SHAPE=cfg['parameters']['alpha_shape']
 
 METHOD = cfg['method']
-VISUALISATION = cfg['visualisation']
+VISU = cfg['visualization']
 
 os.chdir(WORKING_DIR)
 _ = ensure_dir_exists(OUTPUT_DIR)

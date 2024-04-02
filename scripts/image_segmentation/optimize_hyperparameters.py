@@ -75,13 +75,13 @@ def objective(trial):
     metrics_df, _ = assess_results.main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, EGIDS, ROOFS,
                                              method=METHOD, threshold=THRESHOLD,
                                              object_parameters=OBJECT_PARAMETERS, ranges=RANGES, buffer=BUFFER,
-                                             additional_metrics=ADDITIONAL_METRICS, visualisation=VISU)
+                                             additional_metrics=ADDITIONAL_METRICS, visualization=VISU)
 
     print()
 
     # Values of parameters to be optimized
-    f1 = metrics_df['f1'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0]   
-    iou = metrics_df['IoU_median'].loc[(metrics_df['attribute']=='EGID') & (metrics_df['value']=='ALL')].values[0] 
+    f1 = metrics_df['f1'].loc[(metrics_df['attribute'] == 'EGID') & (metrics_df['value'] == 'ALL')].values[0]   
+    iou = metrics_df['IoU_median'].loc[(metrics_df['attribute'] == 'EGID') & (metrics_df['value'] == 'ALL')].values[0] 
 
     return f1, iou
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     AREA_RANGES = cfg['object_attributes']['area_ranges'] 
     DISTANCE_RANGES = cfg['object_attributes']['distance_ranges'] 
     RANGES = [AREA_RANGES] + [DISTANCE_RANGES] 
-    VISU = cfg['visualisation'] if 'visualisation' in cfg.keys() else False
+    VISU = cfg['visualization'] if 'visualization' in cfg.keys() else False
     
     CROP = cfg['image_crop']['enable']
     if CROP == True:
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     UNIQUE = cfg['SAM']['unique']
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']
-    VISU = cfg['SAM']['visualisation_masks']
+    VISU = cfg['SAM']['visualization_masks']
 
     N_TRIALS = cfg['optimization']['n_trials']
     SAMPLER = cfg['optimization']['sampler']

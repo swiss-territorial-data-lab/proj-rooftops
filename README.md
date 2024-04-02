@@ -11,6 +11,7 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
 - [Classification of occupancy](#classification-of-the-roof-plane-occupation)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
+- [Combination of segmentation results](#combination-of-segmentation-results)
 
 ## Requirements
 
@@ -180,4 +181,28 @@ The optimization of hyperparameters can be performed as follow:
 
 ```
 python scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
+```
+
+## Combination of segmentation results
+
+### Overview
+
+LiDAR and image segmentation results can be combined. Two methods are used:
+- Polygon concatenation: the detection polygons obtained from LiDAR segmentation and image segmentation are concatenated. 
+- Polygon filtering with spatial join: the detection polygons obtained from image segmentation are filtered, retaining only polygons that overlap those obtained from LiDAR segmentation.
+
+### Script description
+
+1. `combine_results_seg.py`: combines results of LiDAR segmentation and image segmentation using concatenation (`concatenation`) of polygons and spatial join (`sjoin`) of polygons;
+2. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections. Specify which combination method to assess in the configuration file;
+3. `assess_area.py`: calculates the free and occupied surface of each EGID and compares it with the ground truth. Specify which combination method to assess in the configuration file.
+
+### Workflow
+
+The workflow can be run by issuing the following list of commands:
+
+```
+python scripts/assessment/combine_results_seg.py config/config_combine_seg.yaml
+python scripts/assessment/assess_results.py config/config_combine_seg.yaml
+python scripts/assessment/assess_area.py config/config_combine_seg.yaml
 ```

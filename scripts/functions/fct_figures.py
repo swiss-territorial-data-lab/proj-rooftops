@@ -1,92 +1,79 @@
 import os
-
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 
 def plot_histo(dir_plots, df1, df2, attribute, xlabel):
 
     written_file = []
-    fig = plt.figure(figsize =(12, 8))
-
+    
     df1 = df1.fillna(0)
     df2 = df2.fillna(0)
 
     for i in attribute:
+        fig = plt.figure(figsize =(9,6), layout='constrained')
         bins = np.histogram(np.hstack((df1[i], df2[i])), bins=10)[1]
         df1[i].plot.hist(bins=bins, alpha=0.5, label='GT')
         df2[i].plot.hist(bins=bins, alpha=0.5, label='Detections')
 
-        plt.xlabel(xlabel[i] , fontweight='bold')
+        plt.xlabel(xlabel[i] , fontweight='bold', fontsize=14)
+        plt.ylabel('Frequency' , fontweight='bold', fontsize=14)
 
-        plt.legend(frameon=False)  
+        plt.legend(frameon=False, fontsize=14)  
         plt.title(f'Object distribution')
 
-        plt.tight_layout() 
-        plot_path = os.path.join(dir_plots, f'histo_{i}.png')  
+        plot_path = os.path.join(dir_plots, f'histogram_{i}.png')  
         plt.savefig(plot_path, bbox_inches='tight')
         plt.close(fig)
+        plt.clf()
 
         written_file.append(plot_path)
     
     return written_file
 
 
-def plot_surface(dir_plots, df, attribute, xlabel):
+def plot_area(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(1, 2, sharey= True, figsize=(16,8))
+    fig, ax = plt.subplots(1, 1, figsize=(9,6))
 
     color_list = ['limegreen', 'tomato']  
+    width = 0.4
 
     df = df[df['attribute'] == attribute]  
 
-    df.plot(ax=ax[0], x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, color = color_list)
-    df.plot(ax=ax[1], x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, color = color_list)
-    for b, c in zip(ax[0].containers, ax[1].containers):
-        labels1 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in b.datavalues]
-        labels2 = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax[0].bar_label(b, label_type='center', color = "black", labels=labels1, fontsize=10)
-        ax[1].bar_label(c, label_type='center', color = "black", labels=labels2, fontsize=10)
+    df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
+    df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
+    
+    for b in ax.containers:
+        labels = [f'{int(a)}' if a > 0 else "" for a in b.datavalues]
+        ax.bar_label(b, label_type='center', color = "black", labels=labels, fontsize=8)
+ 
+    ax.set_xlim((-0.5, len(df)-0.5)) 
+    ax.set_xlabel(xlabel, fontweight='bold', fontsize=14)
+    ax.set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=14)   
 
-    if attribute == 'object_class':
-        plt.xticks(rotation=40, ha='right')  
-    ax[0].set_xlabel(xlabel, fontweight='bold')
-    ax[0].set_ylabel('area ($m^2$)', fontweight='bold')
-    ax[1].set_xlabel(xlabel, fontweight='bold')
+    locs = ax.get_xticks(minor=False) 
+    major_ticks_labels = ax.get_xticklabels(minor=False) 
+    minor_ticks = []  
+    minor_ticks_labels = [] 
+    for i in locs:
+        minor_ticks.extend([i - width/2, i + width/2])
+        minor_ticks_labels.extend(['labels', 'detections'])
+    ax.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
 
-    ax[0].legend('', frameon=False)  
-    ax[1].legend(['Free', 'Occupied'], bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    ax[0].set_title(f'GT areas by {attribute.replace("_", " ")}')
-    ax[1].set_title(f'Detection areas by {attribute.replace("_", " ")}')
+    if 'All evaluated EGIDs' in df['value'].unique():
+        ax.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+    else:
+        ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontsize=14)
+        ax.tick_params(axis='x', which='major', pad=30, length=0)
 
-    plt.tight_layout() 
+    ax.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
+
+    ax.legend(['Free surface', 'Occupied surface'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)    
     plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
-    plt.savefig(plot_path, bbox_inches='tight')
-    plt.close(fig)
-
-    return plot_path
-
-
-def plot_surface_bin(dir_plots, df, bins):
-
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    # df = df[df['attribute'] == attribute] 
-    bins = list(set(bins).intersection(df.keys()))
-    bins.sort()
-
-    values = df[bins].iloc[0]
-
-    df = pd.DataFrame({'bins':bins, 'val':values * 100})
-    df.plot.bar(x='bins', y='val', rot=0, color='limegreen')
-
-    plt.xlabel('Free surface area (%)', fontweight='bold')
-    plt.ylabel('Accurate detection (%)', fontweight='bold')
-    plt.legend('', frameon=False)
-    plt.title('EGID')
-
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'surface_accuracy_EGID.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -95,140 +82,63 @@ def plot_surface_bin(dir_plots, df, bins):
 
 def plot_groups(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(figsize=(12,8))
+    fig, ax = plt.subplots(figsize=(9,6), layout='constrained')
 
-    color_list = ['limegreen', 'orange', 'tomato']  
-    counts_list = ['TP', 'FP', 'FN']    
+    df = df[df['attribute'] == attribute] 
+    if df['FP'].isnull().values.any():
+        color_list = ['#00D800', '#21D4DA']  
+        counts_list = ['TP', 'FN']  
+    else:
+        color_list = ['#00D800', '#EF9015', '#21D4DA']  
+        counts_list = ['TP', 'FP', 'FN']  
 
     df = df[df['attribute'] == attribute].copy()
     df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
 
+    df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.8)
     if attribute == 'object_class':
-        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, stacked=True)
         plt.xticks(rotation=40, ha='right')
-    else:
-        df[counts_list].plot.bar(ax=ax, color=color_list, rot=0, width=0.7)
-    plt.xlabel(xlabel, fontweight='bold')
+    elif attribute == 'all':
+        plt.xticks([])
+    plt.xlabel(xlabel, fontweight='bold', fontsize=14)
 
     for c in ax.containers:
         labels = [f'{int(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
+        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=8)
 
-    # plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    plt.title(f'Counts by {attribute.replace("_", " ")}')
+    plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)     
 
-    plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
+
+    return plot_path
+
+
+def plot_histo_object(dir_plots, df, attribute, datasets):
+
+    fig, ax = plt.subplots(figsize=(16,10), layout='constrained')
     
-    return plot_path
+    df = df[['descr', 'dataset']]
 
-
-def plot_stacked_grouped(dir_plots, df, attribute, xlabel):
-
-    fig, ax = plt.subplots(figsize=(12,8))
- 
-    df = df[df['attribute'] == attribute]  
-    if df['FP'].isnull().values.any():
-        color_list = ['limegreen', 'tomato']  
-        counts_list = ['TP', 'FN']  
-    else:
-        color_list = ['limegreen', 'orange', 'tomato']  
-        counts_list = ['TP', 'FP', 'FN']  
-
-    df = df[['value', 'TP', 'FP', 'FN']].set_index('value')
-
-    df[counts_list].plot(ax=ax, kind='bar', stacked=True, color=color_list, rot=0)
+    df['counts'] = 1
+    df = pd.pivot_table(data=df, index=['descr'], columns=['dataset'], values='counts', aggfunc='count')
+    df = df[['training', 'test']] 
+    ax = df.plot.bar(rot=0, log=True, stacked=True, color=['turquoise', 'gold'] , width=0.8)
 
     for c in ax.containers:
-        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color = "black", labels=labels, fontsize=10)
-
-    if attribute == 'object_class':
-        plt.xticks(rotation=40, ha='right')
-    plt.xlabel(xlabel, fontweight='bold')
-
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    plt.title(f'Counts by {attribute.replace("_", " ")}')
-
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
-    plt.savefig(plot_path, bbox_inches='tight')
-    plt.close(fig)
-    
-    return plot_path
-
-
-def plot_stacked_grouped_percent(dir_plots, df, attribute, xlabel):
-
-    fig, ax = plt.subplots(figsize=(12,8))
-
-    format_plot = {'gt': {'color_list': ['limegreen', 'tomato'], 'count_list': ['TP', 'FN'], 'position': -0.05, 'legend': ['TP', 'FN']},
-                   'dt': {'color_list': ['limegreen', 'orange'], 'count_list': ['TP', 'FP'], 'position': 1.05, 'legend': ['', 'FP']}}
-
-    df = df[df['attribute'] == attribute] 
-    for variables in format_plot.values():
-
-        df_subset = df[variables['count_list']+['value']].set_index('value')
-        df_subset['sum'] = df_subset.sum(axis=1)
-
-        for count in variables['count_list']:
-            df_subset[count] = df_subset[count] / df_subset['sum']
-
-        if attribute == 'object_class':
-            df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, align='center')
-            break
-        else:
-            df_subset[variables['count_list']].plot.bar(ax=ax, stacked=True, color=variables['color_list'], rot=0, width=0.3, position=variables['position'], label=variables['legend'])
-
-    for c in ax.containers:
-        labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=10)
-
-    plt.ylim(0, 1)
-    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
-    plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
-    if attribute == 'object_class':
-        plt.xticks(rotation=40, ha='right')
-    else:
-        old_xlim = plt.xlim()
-        plt.xlim(old_xlim[0], old_xlim[1] + 0.3)
-    plt.xlabel(xlabel, fontweight='bold')
-
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    plt.title(f'Counts by {attribute.replace("_", " ")}')
-
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'counts_{attribute}.png')  
-    plt.savefig(plot_path, bbox_inches='tight')
-    plt.close(fig)
-
-    return plot_path
-
-
-def plot_histo_object(dir_plots, df, attribute):
-
-    fig, ax = plt.subplots(figsize=(12,8))
-
-    df['descr'].value_counts(sort=False).plot.bar(rot=0, log=True, width=0.8)
-
-    for c in ax.containers:
-        labels = [f'{"{0:.1f}".format(a)}' if a > 0 else "" for a in c.datavalues]
-        ax.bar_label(c, label_type='center', color="white", labels=labels, fontsize=10)
+        labels = [int(a) if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=8)
 
     plt.gca().set_yticks(plt.gca().get_yticks().tolist())
 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     plt.xlabel('', fontweight='bold')
-    plt.ylabel('Count', fontweight='bold')
-    plt.ylim(1e0,1e4)
+    plt.ylim(1e0, 1e4)
 
-    plt.legend(title='Roundness', bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    # plt.title(f'Counts by {attribute.replace("_", " ")}')
+    plt.legend(title='Dataset', loc='upper left', frameon=False)    
 
-    plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'counts_{attribute}_GT.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
@@ -236,36 +146,34 @@ def plot_histo_object(dir_plots, df, attribute):
     return plot_path
 
 
-def plot_stacked_grouped_object(dir_plots, df, param_ranges, attribute):
+def plot_stacked_grouped_object(dir_plots, df, param_ranges, param, attribute, label):
 
-    fig, ax = plt.subplots(figsize=(12,8))
+    fig, ax = plt.subplots(figsize=(16,10), layout='constrained')
     df_toplot = pd.DataFrame() 
+    param_ranges = param_ranges[param] 
+    label = label[param] 
 
     for lim_inf, lim_sup in param_ranges:
-        filter_df = df[(df['roundness'] >= lim_inf) & (df['roundness'] <= lim_sup)]
-        filter_df['round_cat'] = f"{lim_inf} - {lim_sup}" 
+        filter_df = df[(df[param] >= lim_inf) & (df[param] <= lim_sup)]
+        filter_df['category'] = f"{lim_inf} - {lim_sup}" 
         df_toplot = pd.concat([df_toplot, filter_df], ignore_index=True)
 
-    df_toplot = df_toplot[['descr', 'round_cat']] 
-    df_toplot.groupby(['descr', 'round_cat']).value_counts().unstack().plot(kind='bar', stacked=True, log='True')
+    df_toplot = df_toplot[['descr', 'category']] 
+    ax = df_toplot.groupby(['descr', 'category']).value_counts().unstack().plot(kind='bar', stacked=True, log=True, width=0.8)
 
-    # for c in ax.containers:
-    #     labels = [f'{"{0:.1%}".format(a)}' if a > 0 else "" for a in c.datavalues]
-    #     ax.bar_label(c, label_type='center', color="white", labels=labels, fontsize=10)
+    for c in ax.containers:
+        labels = [int(a) if a > 0 else "" for a in c.datavalues]
+        ax.bar_label(c, label_type='center', color="black", labels=labels, fontsize=8)
 
-    plt.gca().set_yticks(plt.gca().get_yticks().tolist())
-    # plt.gca().set_yticklabels([f'{"{0:.0%}".format(x)}' for x in plt.gca().get_yticks()]) 
+    plt.gca().set_yticks(plt.gca().get_yticks().tolist()) 
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
-    plt.xlabel('', fontweight='bold')
-    plt.ylabel('Count', fontweight='bold')
-    plt.ylim(1e-1,1e4)
+    plt.xlabel('')
+    # plt.ylim(1e-1, 1e5)
 
-    plt.legend(title='Roundness', bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)    
-    # plt.title(f'Counts by {attribute.replace("_", " ")}')
+    plt.legend(title=label.capitalize().replace("_", " "), loc='upper left', frameon=False, ncol=math.ceil(len(param_ranges)/2))    
 
-    plt.tight_layout() 
-    plot_path = os.path.join(dir_plots, f'roundness_class.png')  
+    plot_path = os.path.join(dir_plots, f'{param}_class.png')   
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 
@@ -274,7 +182,7 @@ def plot_stacked_grouped_object(dir_plots, df, param_ranges, attribute):
 
 def plot_metrics(dir_plots, df, attribute, xlabel):
 
-    fig, ax = plt.subplots(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(8,6), layout='constrained')
 
     metrics_list = ['precision', 'recall', 'f1', 'IoU_mean', 'IoU_median']    
 
@@ -287,12 +195,12 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     plt.ylim(-0.05, 1.05)
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
-    plt.xlabel(xlabel, fontweight='bold')
+    elif attribute == 'all':
+        plt.xticks([])
+    plt.xlabel(xlabel, fontweight='bold', fontsize=14)
 
-    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left', frameon=False)
-    plt.title(f'Metrics by {attribute.replace("_", " ")}')
+    plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)
  
-    plt.tight_layout() 
     plot_path = os.path.join(dir_plots, f'metrics_{attribute}.png')  
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)

@@ -321,7 +321,6 @@ def get_inputs_for_assessment(path_egids, path_roofs, labels, detections):
         attribute = 'EGID'
         original_file_path = path_roofs
         desired_file_path = os.path.join(os.path.dirname(path_roofs), ROOFS_NAME[:-4] + "_" + attribute + ".shp")
-
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
@@ -373,6 +372,7 @@ def ensure_dir_exists(dirpath):
 def format_detections(detections_gdf):
 
     if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf.fillna(1)
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
     if 'det_id' in detections_gdf.columns:
@@ -446,24 +446,6 @@ def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     return gdf1
 
 
-def relative_error_df(df, target, measure):
-    """Compute relative error between 2 df columns
-
-    Args:
-        df: dataframe
-        target_col (string): name of the target column in the df
-        measure_col (string): name of the measured column in the df
-
-    Returns:
-        out (df): dataframe relative error computed
-    """
-
-    re = abs(df[measure] - df[target]) / df[target]
-    re.replace([np.inf], 1.0, inplace=True)
-
-    return re
-
-
 def roundness(gdf):
     """Compute the roundness [0,1] of a polygon https://en.wikipedia.org/wiki/Roundness#Roundness_error_definitions 
 
@@ -480,7 +462,7 @@ def roundness(gdf):
 
     return gdf
 
-
+    
 def test_crs(crs1, crs2="EPSG:2056"):
     """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
 
