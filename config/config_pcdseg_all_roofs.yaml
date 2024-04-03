@@ -1,0 +1,144 @@
+# 1 - Retrieve LiDAR point cloud
+retrieve_point_clouds.py:
+  working_dir: data
+  output_dir: LiDAR/2019
+  selected_egids: EGIDs_GT_test.csv
+  input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  overwrite: False
+
+# 2 - Prepare the lidar point cloud
+prepare_data.py:
+  working_dir: </home/username/project_path>      # !!! Absolute path needed to work with WhiteBox Tools!!!
+  pcd_dir: data/LiDAR/2019
+  inputs:
+    pcd_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+    roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+    egids: data/EGIDs_GT_test.csv
+  output_dir: outputs/PCD_segmentation/test/all_roofs
+  filters:
+    filter_class: False
+    class_number: 6                 # 6: Building class
+    filter_roof: True               # Remove all the point below the roof altitude
+    distance_buffer: 2.0            # m, buffer value
+  overwrite: False
+  visualization: False
+
+
+# 3 - Point Cloud plane segmentation and clustering
+pcd_segmentation.py: 
+  working_dir: outputs/PCD_segmentation/test/all_roofs
+  output_dir: per_EGID_data
+  input_dir_pcd: per_EGID_data
+  egids: egid_properties.csv
+  segmentation:
+    planes:
+      distance_threshold: 0.0725    # Max distance a point can be from the plane model, and still be considered an inlier
+      ransac: 3                     # Number of inputs points to be considered inliers in each iteration
+      iterations: 7000              # Number of iterations
+      eps: 11                       # Density parameter that is used to find neighbouring points
+      min_points: 1200              # Minimum number of points to form a plane
+    clusters:
+      eps: 0.8                      # Density parameter that is used to find neighbouring points
+      min_points: 27                # Minimum number of points to form a cluster
+  visualization: False
+
+
+# 4 - 2D vectorisation of segmented 3D point cloud 
+vectorization.py:  
+  working_dir: outputs/PCD_segmentation/test/all_roofs
+  output_dir: .
+  input_dir_pcd: per_EGID_data
+  egids: egid_properties.csv
+  roofs: CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  epsg: 2056
+  area_threshold: 
+    min: 91                         # m2, minimum area of the segmented sections, below the vectorized polygon in will be classified as object
+    max: 210                        # m2, maximum area of the segmented objects, above the vectorized object in will be classified as plane
+  alpha_shape: 2.4                  # Alpha parameter used in the alpha shape algorithm to define a bounding polygon around a group of points 
+  visualization: False
+
+
+# 5 - Post-process the results to improve them
+post_processing.py:
+  working_dir: outputs/PCD_segmentation/test
+  output_dir: post_processed_results
+  roofs: all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  merge_files: True                 # Merge the file listed under "files" together
+  buffer: True
+  vw: True
+  merge_detections: True            # Dissolve intersecting detections
+  buffer_size: 1
+  vw_threshold: 0.1
+  detections: post_processed_results/detections.gpkg    # Path for the detections in case "merge_files" is set to false
+  files:
+    all_detections: all_roofs/all_EGID_occupation.gpkg
+    residential_pitched: pitched_roofs/all_EGID_occupation.gpkg
+    
+
+# 6 - Evaluate the results
+assess_results.py: 
+  working_dir: .
+  output_dir: outputs/PCD_segmentation/test
+  detections: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  method: fusion                    # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  threshold: 0.1                    # threshold value on the IoU to consider that a detection overlaps a label
+  additional_metrics: True          # compute metrics for given attributes (building type, roof type, object class)
+  visualization: True               # Save figures with the TP, FP and FN per types and classes
+  object_attributes:
+    parameters: ['area', 'nearest_distance_centroid']         # choices: 'area', 'nearest_distance_border', 'nearest_distance_centroid' 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+    round_ranges: [[0,0.25], [0.25,0.5], [0.5,0.75], [0.75, 1.0]]
+
+
+# 7 - Estimate the free surface
+assess_area.py:
+  working_dir: .
+  output_dir: outputs/PCD_segmentation/test
+  detections: outputs/PCD_segmentation/test/post_processed_results/roof_partition.gpkg
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  method: fusion                      # methods: 'one-to-one', 'one-to-many' = one detection to many labels, 'charges', 'fusion'
+  visualization: True                 # Save figures with the absolute and realtive free and occupied area in the results and labels
+
+
+# 3 & 4 & 5 - Optimization of the hyperparameters
+optimize_hyperparam_LiDAR.py:
+  working_dir: outputs/PCD_segmentation/test/all_roofs
+  output_dir: optimization
+  input_dir_pcd: per_EGID_data
+  egids: egid_properties.csv
+  ground_truth: ../../../../data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  roofs: CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  epsg: 2056
+  parameters:
+    alpha_shape: 2.4
+  method: fusion
+  visualization: None
+
+
+# 5 & 6 bis - Test combining the results between the classification of occupancy and the LiDAR segmentation and assess the produced polygons
+combine_results_lidar.py: 
+  working_dir: .
+  output_dir: outputs/PCD_segmentation/test/combined_results
+  detections: outputs/PCD_segmentation/test/post_processed_results/merged_detections_buffer_VW.gpkg
+  ground_truth: data/ground_truth/roofs_STDL_proofed_2023-11-10_LiDAR_test.shp
+  egids: outputs/PCD_segmentation/test/all_roofs/egid_properties.csv
+  roofs: outputs/PCD_segmentation/test/all_roofs/CAD_BATIMENT_HORSOL_TOIT_subset_EGID_subset.shp
+  classified_roofs: outputs/roofs/roofs.gpkg
+  classified_roofs_layer: roof_occupation_by_RF
+  # Parameters for the assessment
+  method: fusion
+  threshold: 0.1
+  additional_metrics: True
+  visualization: True
+  object_attributes:
+    parameters: ['area', 'nearest_distance_centroid'] 
+    area_ranges:  [[0,0.5], [0.5,1], [1,5], [5,10], [10,50], [50,100], [100, 750]] 
+    distance_ranges: [[0,1], [1,5], [5,10], [10, 100]]
+  bins: [0, 25, 50, 75, 85, 95, 100] 

@@ -1,3 +1,19 @@
+# Files
+**/*/test*.ipynb
+
+# Folders
+data/LiDAR/**/
+data/image_segmentation/
+data/*photos/
+data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset_EGID.*
+data/EGIDs_GT_test_*
+output*/
+input*/
+model*/
+tests/
+.vscode/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,3 +143,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VScode
+.vscode/
