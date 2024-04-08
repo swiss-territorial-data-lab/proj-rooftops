@@ -8,7 +8,7 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
     - [Hardware](#hardware)
     - [Installation](#installation)
     - [General data](#general-data)
-- [Classification of occupancy](#classification-of-the-roof-plane-occupation)
+- [Classification of occupancy](#classification-of-the-roof-plane-occupancy)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
 - [Combination of segmentation results](#combination-of-segmentation-results)
@@ -126,40 +126,8 @@ When *a ground truth is available*, the classification can be performed and asse
 python scripts/occupation_classification/random_forest.py config/config_occupation_classification.yaml
 ```
 
-Other scripts are present in the folder `scripts/occupation_classification`. Their goal is to detect objects based on intensity. The results were not as good as expected and were therefore not implemented in the final workflow.
+Other scripts are present in the folder `scripts/occupation_classification`. Their goal is to detect objects based on intensity. The results were not as good as expected and they were therefore not implemented in the final workflow.
 
-
-## LiDAR segmentation
-
-**Goal**: segment rooftop objects in the LiDAR point cloud. 
-
-This workflow is based on [Open3D](https://www.open3d.org/docs/release/). It supposes that roofs composed of flat planes and that obstacles protrude.
-
-### Data
-
-The datasets needed for **all workflows** are described here after:
-
-- Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
-- Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation workflows:
-   - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects in the low height classes, such as lawn and terraces, have been removed from the dataset;
-   - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It corresponds to the complete ground truth;
-- EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
-    - EGID_GT_test.csv: 17 EGIDs selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
-
-In addition, the workflows working with **LiDAR** need:
-
-- LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
-- Emprises tiles LiDAR 2019.shp: shapes corresponding to the LiDAR tiles.
-
-In addition, the workflow for the **image** segmentation needs:
-
-- True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
-- Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG.
-
-
-In this repository, only test data is supplied, along with a subset of the roof delimitations, to enable the user to run an example. The full datasets can be requested by contacting the STDL.
-
-## Classification of the roof plane occupancy
 
 ## LiDAR segmentation
 
