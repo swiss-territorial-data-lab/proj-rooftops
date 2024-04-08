@@ -99,7 +99,7 @@ def check_validity(poly_gdf, correct=False):
     try:
         assert(poly_gdf[invalid_condition].shape[0] == 0), \
             f"{poly_gdf[invalid_condition].shape[0]} geometries are invalid on" + \
-                    f" {poly_gdf.shape[0]} polygons."
+                    f" {poly_gdf.shape[0]} detections."
     except Exception as e:
         print(e)
         if correct:

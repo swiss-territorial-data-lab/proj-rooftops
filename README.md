@@ -240,8 +240,9 @@ python scripts/assessment/assess_area.py config/config_imgseg.yaml
 
 The optimization of hyperparameters can be performed as follow:
 
-    $ python3 scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
-
+```
+python scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
+```
 
 ## Combination of segmentation results
 
