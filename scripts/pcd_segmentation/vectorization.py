@@ -1,9 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
-
 import argparse
 import os
 import sys
@@ -292,7 +286,7 @@ if __name__ == "__main__":
     AREA_MIN_PLANE = cfg['area_threshold']['min']
     AREA_MAX_OBJECT = cfg['area_threshold']['max']
     ALPHA = cfg['alpha_shape']
-    VISU = cfg['visualisation']
+    VISU = cfg['visualization']
 
     all_occupation_gdf, written_files = main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, SHP_EGID_ROOFS, EPSG, AREA_MIN_PLANE, AREA_MAX_OBJECT, ALPHA, VISU)
 

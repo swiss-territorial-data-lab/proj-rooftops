@@ -97,7 +97,7 @@ def check_validity(poly_gdf, correct=False):
     invalid_condition = ~poly_gdf.is_valid
 
     try:
-        assert(poly_gdf[invalid_condition].shape[0]==0), \
+        assert(poly_gdf[invalid_condition].shape[0] == 0), \
             f"{poly_gdf[invalid_condition].shape[0]} geometries are invalid on" + \
                     f" {poly_gdf.shape[0]} polygons."
     except Exception as e:
@@ -292,7 +292,22 @@ def geohash(row):
     return out
 
 
-def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detections):
+def get_inputs_for_assessment(path_egids, path_roofs, labels, detections):
+    """Read the different files and format the roofs, labels and detections for the assessment
+
+    Args:
+        path_egids (string): path to the list of egids in csv format
+        path_roofs (string): path the geodata file for the roofs
+        labels (string or GeoDataFrame): path to the labels or labels in the form of a GeoDataFrame
+        detections (string or GeoDataFrame): path to the detections or labels in the form of a GeoDataFrame
+
+    Returns:
+        tuple: 
+            - Dataframe: egid properties
+            - Geodataframe: extend of the roofs
+            - Geodataframe: labels
+            - Geodataframe: detections
+    """
 
     # Get the EGIDS of interest
     egids = pd.read_csv(path_egids)
@@ -307,7 +322,6 @@ def get_inputs_for_assessment(path_egids, path_roofs, output_dir, labels, detect
         attribute = 'EGID'
         original_file_path = path_roofs
         desired_file_path = os.path.join(os.path.dirname(path_roofs), ROOFS_NAME[:-4] + "_" + attribute + ".shp")
-
         roofs_gdf = dissolve_by_attribute(desired_file_path, original_file_path, name=ROOFS_NAME[:-4], attribute=attribute)
 
     roofs_gdf['EGID'] = roofs_gdf['EGID'].astype(int)
@@ -422,6 +436,7 @@ def test_crs(crs1, crs2="EPSG:2056"):
 def format_detections(detections_gdf):
 
     if 'occupation' in detections_gdf.columns:
+        detections_gdf = detections_gdf.fillna(1)
         detections_gdf = detections_gdf[detections_gdf['occupation'].astype(int) == 1].copy()
     detections_gdf['EGID'] = detections_gdf.EGID.astype(int)
     if 'det_id' in detections_gdf.columns:
@@ -449,8 +464,8 @@ def format_labels(labels_gdf, roofs_gdf, selected_egids_arr):
         
     # Clip labels to the corresponding roof
     for egid in selected_egids_arr:
-        labels_egid_gdf = labels_gdf[labels_gdf.EGID==egid].copy()
-        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID==egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
+        labels_egid_gdf = labels_gdf[labels_gdf.EGID == egid].copy()
+        labels_egid_gdf = labels_egid_gdf.clip(roofs_gdf.loc[roofs_gdf.EGID == egid, 'geometry'].buffer(-0.01, join_style='mitre'), keep_geom_type=True)
 
         tmp_gdf = labels_gdf[labels_gdf.EGID!=egid].copy()
         labels_gdf = pd.concat([tmp_gdf, labels_egid_gdf], ignore_index=True)
@@ -495,24 +510,6 @@ def nearest_distance(gdf1, gdf2, join_key, parameter, lsuffix, rsuffix):
     return gdf1
 
 
-def relative_error_df(df, target, measure):
-    """Compute relative error between 2 df columns
-
-    Args:
-        df: dataframe
-        target_col (string): name of the target column in the df
-        measure_col (string): name of the measured column in the df
-
-    Returns:
-        out (df): dataframe relative error computed
-    """
-
-    re = abs(df[measure] - df[target]) / df[target]
-    re.replace([np.inf], 1.0, inplace=True)
-
-    return re
-
-
 def roundness(gdf):
     """Compute the roundness [0,1] of a polygon https://en.wikipedia.org/wiki/Roundness#Roundness_error_definitions 
 
@@ -529,7 +526,7 @@ def roundness(gdf):
 
     return gdf
 
-
+    
 def test_crs(crs1, crs2="EPSG:2056"):
     """Compare coordinate reference system two geodataframes. If they are not the same, stop the script. 
 
@@ -547,7 +544,7 @@ def test_crs(crs1, crs2="EPSG:2056"):
         crs2 = crs2.crs
 
     try:
-        assert(crs1==crs2)
+        assert(crs1 == crs2)
     except AssertionError:
         logger.error(f"CRS mismatch between the two files ({crs1} vs {crs2}")
         sys.exit()

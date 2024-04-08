@@ -1,9 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
-
 import argparse
 import os
 import sys
@@ -31,7 +25,7 @@ tic = time.time()
 logger.info('Starting...')
 
 # Argument and parameter specification
-parser = argparse.ArgumentParser(description="The script prepares the point cloud dataset to be processed (STDL.proj-rooftops)")
+parser = argparse.ArgumentParser(description="The script prepares the point cloud dataset to be processed")
 parser.add_argument('config_file', type=str, help='Framework configuration file')
 args = parser.parse_args()
 
@@ -49,16 +43,16 @@ INPUTS=cfg['inputs']
 FILTERS=cfg['filters']
 
 PCD_TILES=INPUTS['pcd_tiles']
-SHP_ROOFS = INPUTS['shp_roofs']
+ROOFS = INPUTS['roofs']
 EGIDS = INPUTS['egids']
 BUILDING_TYPE = FILTERS['building_type'] if 'building_type' in FILTERS.keys() else 'all'
-ROOF_INCLINATION = FILTERS['roof_inclination'] if 'roof_inclination' in FILTERS.keys() else 'all'
+ROOF_TYPE = FILTERS['roof_type'] if 'roof_type' in FILTERS.keys() else 'all'
 FILTER_CLASS = FILTERS['filter_class']
 CLASS_NUMBER = FILTERS['class_number']
 FILTER_ROOF = FILTERS['filter_roof']
 DISTANCE_BUFFER = FILTERS['distance_buffer']
 
-VISU = cfg['visualisation']
+VISU = cfg['visualization']
 OVERWRITE=cfg['overwrite'] if 'overwrite' in cfg.keys() else True
 
 PCD_EXT = '.las'
@@ -81,35 +75,35 @@ written_files = []
 egids = pd.read_csv(EGIDS)
 if BUILDING_TYPE in ['administrative', 'industrial', 'residential']:
     logger.info(f'Only the building with the type "{BUILDING_TYPE}" are considered.')
-    egids = egids[egids.roof_type==BUILDING_TYPE].copy()
+    egids = egids[egids.building_type==BUILDING_TYPE].copy()
 elif BUILDING_TYPE != 'all':
     logger.critical('Unknown building type passed.')
     sys.exit(1)
-if ROOF_INCLINATION in ['flat', 'pitched', 'mixed']:
-    logger.info(f'Only the roofs with the type "{ROOF_INCLINATION}" are considered.')
-    egids = egids[egids.roof_inclination==ROOF_INCLINATION].copy()
-elif ROOF_INCLINATION != 'all':
+if ROOF_TYPE in ['flat', 'pitched', 'mixed']:
+    logger.info(f'Only the roofs with the type "{ROOF_TYPE}" are considered.')
+    egids = egids[egids.roof_type==ROOF_TYPE].copy()
+elif ROOF_TYPE != 'all':
     logger.critical('Unknown roof type passed.')
     sys.exit(1) 
 
 logger.info(f'{egids.shape[0]} egids will be processed.')
 
 # Get the per-EGID rooftops shapes
-ROOFS_DIR, ROOFS_NAME = os.path.split(SHP_ROOFS)
+ROOFS_DIR, ROOFS_NAME = os.path.split(ROOFS)
 feature_path = os.path.join(OUTPUT_DIR.split('/')[0], ROOFS_NAME[:-4]  + "_EGID.shp")
 
-rooftops = misc.dissolve_by_attribute(feature_path, SHP_ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
+rooftops = misc.dissolve_by_attribute(feature_path, ROOFS, name=ROOFS_NAME[:-4], attribute='EGID', buffer=0.05)
 
 # Produce light files of the selected EGIDs with the essential per-EGID information for the workflow 
-completed_egids = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
+egid_properties = pd.merge(egids, rooftops[['EGID', 'nbr_elem']], on='EGID')
 
-subset_rooftops = rooftops[rooftops.EGID.isin(completed_egids.EGID.tolist())]
+subset_rooftops = rooftops[rooftops.EGID.isin(egid_properties.EGID.tolist())]
 feature_path = os.path.join(OUTPUT_DIR, ROOFS_NAME[:-4]  + "_EGID_subset.shp")
 subset_rooftops.to_file(feature_path)
 written_files.append(feature_path)
 
-feature_path = os.path.join(output_dir, 'completed_egids.csv')
-completed_egids.to_csv(feature_path, index=False)
+feature_path = os.path.join(output_dir, 'egid_properties.csv')
+egid_properties.to_csv(feature_path, index=False)
 written_files.append(feature_path)  
 logger.info(f"...done. A file was written: {feature_path}")
 
@@ -189,7 +183,7 @@ for egid in tqdm(egids.EGID.to_numpy()):
         alti_roof = rooftops.loc[rooftops['EGID'] == int(egid), 'ALTI_MIN'].iloc[0] - DISTANCE_BUFFER
         pcd_filter = pcd_points[pcd_points[:, 2] > alti_roof].copy()
 
-    # Conversion of numpy array to Open3D format + visualisation
+    # Conversion of numpy array to Open3D format + visualization
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pcd_filter)
     if VISU:

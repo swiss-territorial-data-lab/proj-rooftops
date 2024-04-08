@@ -4,38 +4,53 @@
 #
 #    pip-compile requirements.in
 #
+addict==2.4.0
+    # via open3d
 affine==2.4.0
-    # via rasterio
-alembic==1.12.1
+    # via
+    #   rasterio
+    #   rasterstats
+alembic==1.13.1
     # via optuna
+alphashape==1.3.1
+    # via -r requirements.in
 aniso8601==9.0.1
     # via flask-restx
+annotated-types==0.6.0
+    # via pydantic
+anyio==4.2.0
+    # via httpx
 asttokens==2.4.1
     # via stack-data
-attrs==23.1.0
+attrs==23.2.0
     # via
     #   fiona
     #   jsonschema
+    #   morecantile
     #   rasterio
+    #   referencing
+    #   rio-tiler
 backcall==0.2.0
     # via ipython
-beautifulsoup4==4.12.2
+beautifulsoup4==4.12.3
     # via gdown
 blinker==1.7.0
     # via flask
 bqplot==0.12.42
     # via leafmap
-branca==0.7.0
+branca==0.7.1
     # via
     #   folium
     #   ipyleaflet
 cachelib==0.9.0
     # via flask-caching
 cachetools==5.3.2
-    # via large-image
-certifi==2023.11.17
+    # via rio-tiler
+certifi==2024.2.2
     # via
     #   fiona
+    #   httpcore
+    #   httpx
     #   pyproj
     #   rasterio
     #   requests
@@ -43,14 +58,20 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
+    #   alphashape
+    #   click-log
     #   click-plugins
     #   cligj
     #   fiona
     #   flask
     #   localtileserver
     #   rasterio
+    #   rasterstats
+    #   rio-cogeo
     #   uvicorn
     #   whitebox
+click-log==0.4.0
+    # via alphashape
 click-plugins==1.1.1
     # via
     #   fiona
@@ -59,32 +80,52 @@ cligj==0.7.2
     # via
     #   fiona
     #   rasterio
-colorlog==6.7.0
+    #   rasterstats
+color-operations==0.1.1
+    # via rio-tiler
+colorlog==6.8.2
     # via optuna
 colour==0.1.5
     # via leafmap
-comm==0.2.0
+comm==0.2.1
     # via ipywidgets
+configargparse==1.7
+    # via open3d
 contourpy==1.1.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
+dash==2.15.0
+    # via open3d
+dash-core-components==2.0.0
+    # via dash
+dash-html-components==2.0.0
+    # via dash
+dash-table==5.0.0
+    # via dash
 decorator==5.1.1
     # via ipython
-duckdb==0.9.2
+descartes==1.1.0
+    # via -r requirements.in
+duckdb==0.10.0
     # via leafmap
+exceptiongroup==1.2.0
+    # via anyio
 executing==2.0.1
     # via stack-data
+fastjsonschema==2.19.1
+    # via nbformat
 filelock==3.13.1
     # via
     #   gdown
     #   huggingface-hub
 fiona==1.9.5
     # via
-    #   -r requirements.in
     #   geopandas
-flask==2.3.3
+    #   rasterstats
+flask==3.0.2
     # via
+    #   dash
     #   flask-caching
     #   flask-cors
     #   flask-restx
@@ -93,17 +134,17 @@ flask-caching==2.1.0
     # via localtileserver
 flask-cors==4.0.0
     # via localtileserver
-flask-restx==1.2.0
+flask-restx==1.3.0
     # via localtileserver
-folium==0.15.0
+folium==0.15.1
     # via leafmap
-fonttools==4.45.1
+fonttools==4.48.1
     # via matplotlib
-fsspec==2023.10.0
+fsspec==2024.2.0
     # via huggingface-hub
 gdal==3.0.4
     # via -r requirements.in
-gdown==4.7.1
+gdown==5.1.0
     # via
     #   leafmap
     #   segment-geospatial
@@ -113,19 +154,29 @@ geopandas==0.13.2
     # via
     #   -r requirements.in
     #   segment-geospatial
-greenlet==3.0.1
+greenlet==3.0.3
     # via sqlalchemy
 h11==0.14.0
-    # via uvicorn
-huggingface-hub==0.19.4
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.2
+    # via httpx
+httpx==0.26.0
+    # via rio-tiler
+huggingface-hub==0.20.3
     # via
     #   segment-geospatial
     #   timm
-idna==3.4
-    # via requests
-importlib-metadata==6.8.0
+idna==3.6
+    # via
+    #   anyio
+    #   httpx
+    #   requests
+importlib-metadata==7.0.1
     # via
     #   alembic
+    #   dash
     #   fiona
     #   flask
 importlib-resources==6.1.1
@@ -133,21 +184,23 @@ importlib-resources==6.1.1
     #   alembic
     #   flask-restx
     #   jsonschema
+    #   jsonschema-specifications
     #   matplotlib
     #   pystac
+    #   rio-tiler
 ipyevents==2.0.2
     # via leafmap
 ipyfilechooser==0.6.0
     # via
     #   leafmap
     #   whiteboxgui
-ipyleaflet==0.17.4
+ipyleaflet==0.18.2
     # via leafmap
 ipython==8.12.3
     # via ipywidgets
 ipytree==0.2.2
     # via whiteboxgui
-ipywidgets==8.1.1
+ipywidgets==8.1.2
     # via
     #   bqplot
     #   ipyevents
@@ -155,45 +208,45 @@ ipywidgets==8.1.1
     #   ipyleaflet
     #   ipytree
     #   leafmap
+    #   open3d
     #   whiteboxgui
 itsdangerous==2.1.2
     # via flask
 jedi==0.19.1
     # via ipython
-jinja2==3.1.2
+jinja2==3.1.3
     # via
     #   branca
     #   flask
     #   folium
 joblib==1.3.2
-    # via
-    #   -r requirements.in
-    #   scikit-learn
-jsonschema==4.17.3
+    # via scikit-learn
+jsonschema==4.21.1
     # via
     #   flask-restx
+    #   nbformat
     #   pystac
-jupyterlab-widgets==3.0.9
+jsonschema-specifications==2023.12.1
+    # via jsonschema
+jupyter-core==5.7.1
+    # via nbformat
+jupyterlab-widgets==3.0.10
     # via ipywidgets
 kaleido==0.2.1
     # via -r requirements.in
 kiwisolver==1.4.5
     # via matplotlib
-large-image[rasterio]==1.26.1
-    # via
-    #   large-image-source-rasterio
-    #   localtileserver
-large-image-source-rasterio==1.26.1
-    # via large-image
-leafmap==0.29.2
+laspy==2.5.3
+    # via -r requirements.in
+leafmap==0.31.1
     # via segment-geospatial
-localtileserver==0.7.2
+localtileserver==0.10.1
     # via segment-geospatial
 loguru==0.7.2
     # via -r requirements.in
-mako==1.3.0
+mako==1.3.2
     # via alembic
-markupsafe==2.1.3
+markupsafe==2.1.5
     # via
     #   jinja2
     #   mako
@@ -201,67 +254,94 @@ markupsafe==2.1.3
 matplotlib==3.7.4
     # via
     #   -r requirements.in
+    #   descartes
     #   leafmap
+    #   open3d
     #   pycocotools
     #   segment-geospatial
 matplotlib-inline==0.1.6
     # via ipython
+morecantile==5.3.0
+    # via
+    #   rio-cogeo
+    #   rio-tiler
+nbformat==5.9.2
+    # via open3d
+nest-asyncio==1.6.0
+    # via dash
 networkx==3.1
-    # via -r requirements.in
+    # via alphashape
+numexpr==2.8.6
+    # via rio-tiler
 numpy==1.24.4
     # via
     #   -r requirements.in
+    #   alphashape
     #   bqplot
+    #   color-operations
     #   contourpy
     #   folium
-    #   large-image
+    #   laspy
     #   leafmap
     #   matplotlib
+    #   numexpr
+    #   open3d
     #   opencv-python
     #   optuna
     #   pandas
     #   pycocotools
+    #   pyquaternion
     #   rasterio
+    #   rasterstats
+    #   rio-cogeo
+    #   rio-tiler
     #   scikit-learn
     #   scipy
     #   shapely
     #   snuggs
+    #   torch
     #   torchvision
-opencv-python==4.8.1.78
+    #   trimesh
+    #   visvalingamwyatt
+open3d==0.18.0
+    # via -r requirements.in
+opencv-python==4.9.0.80
     # via segment-geospatial
-optuna==3.4.0
+optuna==3.5.0
     # via -r requirements.in
 packaging==23.2
     # via
     #   geopandas
     #   huggingface-hub
-    #   large-image-source-rasterio
     #   matplotlib
     #   optuna
     #   plotly
-palettable==3.3.3
-    # via large-image
 pandas==2.0.3
     # via
     #   bqplot
     #   geopandas
     #   leafmap
+    #   open3d
 parso==0.8.3
     # via jedi
-pexpect==4.8.0
+pexpect==4.9.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-pillow==10.1.0
+pillow==10.2.0
     # via
-    #   large-image
     #   matplotlib
+    #   open3d
     #   torchvision
 pkgutil-resolve-name==1.3.10
     # via jsonschema
+platformdirs==4.2.0
+    # via jupyter-core
 plotly==5.18.0
-    # via leafmap
-prompt-toolkit==3.0.41
+    # via
+    #   dash
+    #   leafmap
+prompt-toolkit==3.0.43
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
@@ -269,6 +349,13 @@ pure-eval==0.2.2
     # via stack-data
 pycocotools==2.0.7
     # via segment-geospatial
+pydantic==2.6.1
+    # via
+    #   morecantile
+    #   rio-cogeo
+    #   rio-tiler
+pydantic-core==2.16.2
+    # via pydantic
 pygeohash==1.2.0
     # via -r requirements.in
 pygments==2.17.2
@@ -280,15 +367,18 @@ pyparsing==3.1.1
 pyproj==3.5.0
     # via
     #   geopandas
+    #   morecantile
     #   segment-geospatial
-pyrsistent==0.20.0
-    # via jsonschema
+pyquaternion==0.9.9
+    # via open3d
 pyshp==2.3.1
     # via leafmap
 pysocks==1.7.1
     # via requests
-pystac[validation]==1.8.3
-    # via pystac-client
+pystac[validation]==1.8.4
+    # via
+    #   pystac-client
+    #   rio-tiler
 pystac-client==0.7.5
     # via leafmap
 python-box==7.1.1
@@ -299,7 +389,7 @@ python-dateutil==2.8.2
     #   pandas
     #   pystac
     #   pystac-client
-pytz==2023.3.post1
+pytz==2024.1
     # via
     #   flask-restx
     #   pandas
@@ -307,26 +397,53 @@ pyyaml==6.0.1
     # via
     #   -r requirements.in
     #   huggingface-hub
+    #   open3d
     #   optuna
     #   timm
 rasterio==1.3.9
     # via
     #   -r requirements.in
-    #   large-image-source-rasterio
+    #   rasterstats
+    #   rio-cogeo
+    #   rio-tiler
     #   segment-geospatial
+rasterstats==0.19.0
+    # via -r requirements.in
+referencing==0.33.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 requests[socks]==2.31.0
     # via
+    #   -r requirements.in
+    #   dash
     #   folium
     #   gdown
     #   huggingface-hub
     #   localtileserver
     #   pystac-client
-safetensors==0.4.0
+retrying==1.3.4
+    # via dash
+rio-cogeo==5.1.1
+    # via localtileserver
+rio-tiler==6.4.0
+    # via localtileserver
+rpds-py==0.17.1
+    # via
+    #   jsonschema
+    #   referencing
+rtree==1.2.0
+    # via alphashape
+safetensors==0.4.2
     # via timm
 scikit-learn==1.3.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   open3d
 scipy==1.10.1
-    # via scikit-learn
+    # via
+    #   alphashape
+    #   scikit-learn
 scooby==0.9.2
     # via
     #   leafmap
@@ -341,18 +458,27 @@ segment-geospatial==0.10.2
 server-thread==0.2.0
     # via localtileserver
 shapely==2.0.2
-    # via geopandas
+    # via
+    #   alphashape
+    #   geopandas
+    #   rasterstats
+simplejson==3.19.2
+    # via rasterstats
 six==1.16.0
     # via
     #   asttokens
     #   fiona
-    #   gdown
     #   python-dateutil
+    #   retrying
+sniffio==1.3.0
+    # via
+    #   anyio
+    #   httpx
 snuggs==1.4.7
     # via rasterio
 soupsieve==2.5
     # via beautifulsoup4
-sqlalchemy==2.0.23
+sqlalchemy==2.0.27
     # via
     #   alembic
     #   optuna
@@ -362,70 +488,86 @@ tenacity==8.2.3
     # via plotly
 threadpoolctl==3.2.0
     # via scikit-learn
-timm==0.9.11
+timm==0.9.12
     # via segment-geospatial
-torch @ https://download.pytorch.org/whl/cu113/torch-1.10.2%2Bcu113-cp38-cp38-linux_x86_64.whl
+torch @ https://download.pytorch.org/whl/cu101/torch-1.8.1%2Bcu101-cp38-cp38-linux_x86_64.whl
     # via
     #   -r requirements.in
     #   segment-anything-hq
     #   segment-anything-py
     #   timm
     #   torchvision
-torchvision @ https://download.pytorch.org/whl/cu113/torchvision-0.11.3%2Bcu113-cp38-cp38-linux_x86_64.whl
+torchvision @ https://download.pytorch.org/whl/cu101/torchvision-0.9.1%2Bcu101-cp38-cp38-linux_x86_64.whl
     # via
     #   -r requirements.in
     #   segment-anything-hq
     #   segment-anything-py
     #   timm
-tqdm==4.66.1
+tqdm==4.66.2
     # via
-    #   -r requirements.in
     #   gdown
     #   huggingface-hub
+    #   open3d
     #   optuna
     #   segment-geospatial
-traitlets==5.13.0
+traitlets==5.14.1
     # via
     #   bqplot
     #   comm
     #   ipython
     #   ipywidgets
+    #   jupyter-core
     #   matplotlib-inline
+    #   nbformat
     #   traittypes
 traittypes==0.2.1
     # via
     #   bqplot
     #   ipyleaflet
-typing-extensions==4.8.0
+trimesh==4.1.3
+    # via alphashape
+typing-extensions==4.9.0
     # via
     #   alembic
+    #   annotated-types
+    #   anyio
+    #   dash
     #   huggingface-hub
     #   ipython
+    #   pydantic
+    #   pydantic-core
     #   sqlalchemy
     #   torch
     #   uvicorn
-tzdata==2023.3
+tzdata==2024.1
     # via pandas
-urllib3==2.1.0
+urllib3==2.2.0
     # via requests
-uvicorn==0.24.0.post1
+uvicorn==0.27.1
     # via server-thread
-wcwidth==0.2.12
+visvalingamwyatt==0.2.0
+    # via -r requirements.in
+wcwidth==0.2.13
     # via prompt-toolkit
-werkzeug==2.3.8
+werkzeug==3.0.1
     # via
+    #   dash
     #   flask
     #   flask-restx
     #   localtileserver
+    #   open3d
     #   server-thread
 whitebox==2.3.1
-    # via whiteboxgui
+    # via
+    #   -r requirements.in
+    #   whiteboxgui
 whiteboxgui==2.3.0
     # via leafmap
-widgetsnbextension==4.0.9
+widgetsnbextension==4.0.10
     # via ipywidgets
 xyzservices==2023.10.1
     # via
+    #   folium
     #   ipyleaflet
     #   leafmap
     #   segment-geospatial

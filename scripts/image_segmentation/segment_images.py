@@ -1,8 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import sys
@@ -20,7 +15,6 @@ from yaml import load, FullLoader
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "caching_allocator"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-# the following allows us to import modules from within this file's parent folder
 sys.path.insert(1, 'scripts')
 import functions.fct_misc as misc
 
@@ -34,10 +28,10 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
 
     os.chdir(WORKING_DIR)
 
-    # Create output directories in case they don't exist, so it is only verified once.
+    # Create output directories in case they don't exist
     misc.ensure_dir_exists(OUTPUT_DIR)
     segmented_images_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'segmented_images'))
-    if METHOD=="resample":
+    if METHOD == "resample":
         resampling_dir = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'resample'))
 
     written_files = []
@@ -48,7 +42,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     if CROP:
         logger.info(f"Images will be cropped with size {SIZE} and written to {IMAGE_DIR}.")
 
-    # Select and download the pretrained model checkpoints 
+    # Select and download the SAM pretrained model
     if DL_CKP == True:
         dl_dir = misc.ensure_dir_exists(CKP_DIR)
         ckp_dir = os.path.join(os.path.expanduser('~'), dl_dir)
@@ -57,12 +51,12 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
     checkpoint = os.path.join(ckp_dir, CKP)
     logger.info(f"Select pretrained model: {CKP}")
 
-    # Provide customed sam kwargs or use the default (samgeo) ones
+    # Provide customized SAM parameters or use the default (samgeo) ones
     if CUSTOM_SAM == True:
-        logger.info("Use of customed SAM parameters")
+        logger.info("Using custom SAM parameters")
         sam_kwargs = sam_dic
     else:
-        logger.info("Use of default SAM parameters")
+        logger.info("Using default SAM parameters")
         sam_kwargs = None
  
     # Define SAM properties
@@ -74,8 +68,8 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         )
 
     logger.info(f"Process images:") 
-    logger.info(f"- Object detection and mask saving")    
-    logger.info(f"- Convert mask to vector")  
+    logger.info(f"    - Object detection and mask saving")    
+    logger.info(f"    - Convert mask to vector")  
 
     for tile in tqdm(tiles, desc='Applying SAM to tiles', total=len(tiles)):
 
@@ -86,10 +80,10 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         size = width * height
         tilepath = tile
         if size >= THD_SIZE:
-            if METHOD=="batch":
+            if METHOD == "batch":
                 logger.info(f"Image too large to be processed -> subdivided in tiles of {TILE_SIZE} px")
                 BATCH = True
-            elif METHOD=="resample":
+            elif METHOD == "resample":
                 logger.info(f"Image too large to be processed -> pixel resampling to {RESAMPLE} m per pixel")
                 tilepath = os.path.join(resampling_dir, file)
                 gdal.Warp(tilepath, tile, xRes=RESAMPLE, yRes=RESAMPLE, resampleAlg='cubic')
@@ -97,13 +91,13 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         else:
             BATCH = False
 
-        # Crop the input image by pixel value
+        # Crop the input image with pixel values
         if CROP:
             cropped_tilepath = misc.crop(tilepath, SIZE, IMAGE_DIR)
             written_files.append(cropped_tilepath)  
             tilepath = cropped_tilepath
 
-        # Produce and save mask
+        # Produce and save masks
         file_path = os.path.join(segmented_images_dir, file.split('.')[0] + '_segment.tif')       
 
         mask_path = file_path
@@ -112,7 +106,7 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
         if os.path.exists(file_path):
             written_files.append(file_path)  
 
-            # Convert segmentation mask to vector layer 
+            # Convert segmentation masks to vector layer 
             file_path = os.path.join(segmented_images_dir, file.split('.')[0] + '_segment')  
         
             if SHP_EXT == 'gpkg': 
@@ -138,9 +132,9 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
 
 if __name__ == "__main__":
 
-# Define contants ------------------------------
     # Start chronometer
     tic = time.time()
+    logger.info('Segment images')
     logger.info('Starting...')
 
     # Argument and parameter specification
@@ -179,7 +173,7 @@ if __name__ == "__main__":
     MASK_MULTI = cfg['SAM']['mask_multiplier']
     CUSTOM_SAM = cfg['SAM']['custom_SAM']['enable']
     CUSTOM_PARAMETERS = cfg['SAM']['custom_SAM']['custom_parameters']
-    VISU = cfg['SAM']['visualisation_masks']
+    VISU = cfg['SAM']['visualization_masks']
 
     main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP, 
          DL_CKP, CKP_DIR, CKP, METHOD, THD_SIZE, TILE_SIZE, RESAMPLE,

@@ -1,8 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-
-#  proj-rooftops
-
 import argparse
 import os
 import sys
@@ -74,7 +69,7 @@ def main (WORKING_DIR, OUTPUT_DIR,
         pcd_df.sort_values(by=['X', 'Y', 'Z'], ignore_index=True, inplace=True)
         array_pts = pcd_df.to_numpy()
 
-        # Conversion of numpy array to Open3D format + visualisation
+        # Conversion of numpy array to Open3D format + visualization
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(array_pts)
         if visu:
@@ -126,7 +121,7 @@ def main (WORKING_DIR, OUTPUT_DIR,
             # Add segmented planes to a dataframe
             plane = np.asarray(segments[i].points)
             plane_df = pd.DataFrame({'X': plane[:, 0],'Y': plane[:, 1],'Z': plane[:, 2], 'group': i, 'type': 'plane'})
-            planes_df = pd.concat([planes_df, plane_df], ignore_index=True)
+            planes_df = pd.concat([planes_df.astype(plane_df.dtypes), plane_df], ignore_index=True)
 
             if len(remaining_pts.points) <= ransac:
                 break
@@ -200,7 +195,7 @@ if __name__ == "__main__":
     EPS_CLUSTER = SEGMENTATION['clusters']['eps']
     MIN_POINTS_CLUSTER = SEGMENTATION['clusters']['min_points']
 
-    VISU = cfg['visualisation']
+    VISU = cfg['visualization']
 
     written_files = main(WORKING_DIR, OUTPUT_DIR, INPUT_DIR_PCD, EGIDS, 
         DISTANCE_THRESHOLD, RANSAC, ITER, EPS_PLANE, MIN_POINTS_PLANE, EPS_CLUSTER, MIN_POINTS_CLUSTER,
