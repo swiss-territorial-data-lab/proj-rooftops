@@ -1,5 +1,6 @@
-# Test scripts
+# Files
 /**/test*.ipynb
+**/.R*
 
 # Folders
 data/LiDAR/**/
@@ -17,8 +18,6 @@ tests/
 __pycache__/
 *.py[cod]
 *$py.class
-.vscode
-**/.R*
 
 # C extensions
 *.so
