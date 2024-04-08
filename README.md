@@ -280,10 +280,10 @@ The suitability of a roof to host a solar or vegetated installation can be estim
 
 **Workflow**
 
-<figure align="center">
-<image src="img\attribute_filtering_flow.jpeg" alt="Diagram of the methodology" style="width:100%;">
+<div align="center">
+<img src="img\attribute_filtering_flow.jpeg" alt="Diagram of the methodology" style="width:100%;"><br>
 <figcaption align="center">Diagram of the criteria applied to determine the roof suitability for vegetation and solar panels.</figcaption> 
-</figure>
+</div><br>
 
 All the filters are applied in one script. 
 
