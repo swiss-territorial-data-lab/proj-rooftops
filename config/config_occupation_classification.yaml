@@ -1,13 +1,13 @@
 
 get_lidar_infos.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: /home/user/path                                 # Absolute path needed!!   
   output_dir: outputs/2019/processed_lidar/infos
   input_dir: inputs/LiDAR/2019
   overwrite: False
 
 
 rasterize_intensity.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: /home/user/path                                 # Absolute path needed!!   
   output_dir: outputs/2019/processed_lidar/intensity           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
   input_dir: inputs/LiDAR/2019
   overwrite: False
@@ -20,7 +20,7 @@ rasterize_intensity.py:
 
 
 rasterize_roughness.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: /home/user/path                                 # Absolute path needed!!   
   output_dir: outputs/2019/processed_lidar/roughness           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
   input_dir: inputs/LiDAR/2019
   overwrite: False
@@ -39,7 +39,7 @@ rasterize_roughness.py:
 
 
 get_zonal_stats.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   output_dir: outputs/2019/roof_classification
   input_dir_rasters: outputs/2019/processed_lidar
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
@@ -50,14 +50,14 @@ get_zonal_stats.py:
 
 
 manual_thresholds.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   output_dir: outputs/2019/roof_classification
   roof_file: outputs/2019/roof_classification/roofs.gpkg
   roof_layer: roof_stats
 
 
 assess_classif_surfaces.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   output_dir: outputs/2019/roof_classification
   gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
   layer_ocen: ocen_classification
@@ -67,7 +67,7 @@ assess_classif_surfaces.py:
 
 
 random_forest.py:
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .ta
   output_dir: outputs/2019/roof_classification
   gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
   layer_ocen: ocen_classification
@@ -82,7 +82,7 @@ random_forest.py:
 # Script tested but not implemented
 segment_objects.py:
   debug_mode: True
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   input_dir_images: outputs/2019/processed_lidar/intensity
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/2019/roof_classification/classified_roofs.gpkg
@@ -94,7 +94,7 @@ segment_objects.py:
 # Script tested but not implemented
 filter_for_objects.py:
   debug_mode: False
-  working_dir: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_dir: .
   input_dir_images: outputs/2019/processed_lidar/intensity
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/2019/roof_classification/classified_roofs.gpkg
