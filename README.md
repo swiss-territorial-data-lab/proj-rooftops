@@ -67,16 +67,6 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
 
-        $ cd segment-geospatial
-        $ git checkout ch/dev
-        $ pip install .
-
-        or in editable mode
-
-        $ pip install -e .
-
-If the installation is successful the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
-
 **Disclaimer**: We do not guarantee that the scripts in the sandbox folder and the scripts not included in the workflows can be executed with the provided requirements
 
 
