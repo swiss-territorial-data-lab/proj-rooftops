@@ -110,9 +110,9 @@ def main(WORKING_DIR, IMAGE_DIR, OUTPUT_DIR, SHP_EXT, CROP,
             file_path = os.path.join(segmented_images_dir, file.split('.')[0] + '_segment')  
         
             if SHP_EXT == 'gpkg': 
-                sam.tiff_to_gpkg(mask_path, file_path, simplify_tolerance=None)
+                sam.tiff_to_gpkg(mask_path, file_path, simplify_tolerance=0.1)
             elif SHP_EXT == 'shp':       
-                sam.tiff_to_vector(mask_path, file_path)
+                sam.tiff_to_vector(mask_path, file_path, simplify_tolerance=0.1)
             written_files.append(file_path)  
 
             if VISU:
