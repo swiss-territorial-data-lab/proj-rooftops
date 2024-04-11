@@ -55,7 +55,6 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         ```
         cd segment-geospatial
-        git checkout ch/dev
         pip install .
         ```
 
