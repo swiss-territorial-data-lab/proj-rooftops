@@ -123,6 +123,12 @@ The following scripts are used to classify roof planes by occupancy:
 
 ### Workflow
 
+Some tiles corresponding to the provided test data can be downloaded with the command below and unzipped by the user.
+
+```
+python scripts/pcd_segmentation/retrieve_point_clouds.py config/config_pcdseg_all_roofs.yaml
+```
+
 The command lines for the workflow are provided below.
 
 ```
