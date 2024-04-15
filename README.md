@@ -7,7 +7,7 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
 - [Requirements](#requirements)
     - [Hardware](#hardware)
     - [Installation](#installation)
-    - [General data](#general-data)
+    - [Data](#data)
 - [Classification of occupancy](#classification-of-the-roof-plane-occupancy)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
@@ -72,7 +72,7 @@ All the dependencies required for the project are listed in `requirements.in` an
 
 ### Data
 
-The datasets needed for **all workflows** are described here after:
+The datasets used by **all workflows** are described here after:
 
 - Roof delimitation: vector shapefile [CAD_BATIMENT_HORSOL_TOIT](https://ge.ch/sitg/sitg_catalog/sitg_donnees?keyword=&geodataid=0635&topic=tous&service=tous&datatype=tous&distribution=tous&sort=auto) providing the roof planes by EGID;
 - Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation workflows:
@@ -97,31 +97,33 @@ In this repository, only test data is supplied, along with a subset of the roof 
 
 ## Classification of the roof plane occupancy
 
-**Goal**: Classify the roof planes as "occupied" or "potentially free" based on their roughness and intensity.
+This set of scripts classifies the roof planes as "occupied" or "potentially free" based on their roughness and intensity.
 
-## Workflow
+### Script description
 
-(*facultative*) The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
+The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
 The following scripts are used to classify roof planes by occupancy:
 1. `rasterize_intensity.py`: creates an intensity raster for each LiDAR point cloud in the input directory.
-    - The parameters and the function for the raster of intensity are referenced here: [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation)
-2. `rasterize_roughness.py`: creates a DEM and saves it in a raster, then estimates the multi-scale roughness from the DEM.
-    - The parameters and the function for the DEM are referenced here: [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel)
-    - The parameters and the function for the multi-scale roughness are referenced here: [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness)
-3. `get_zonal_stats.py`: gets zonal stats of intensity and roughness for roof planes.
-    - Roof planes smaller than 2 m<sup>2</sup> are classified as "occupied" and no zonal stats are calculated. They are too small for a solar or vegetated installation.
-    - When LiDAR point cloud is not classified as building under roof planes, they are classified as "undefined". The existence of a roof at this location should be controlled.
-4. Two possibilities were developed for classification:
-    1. Using manual thresholds *without ground truth*:
-        - `manual_thresholds.py`: classifies the roofs using threshold passed in the config file.
-        - `assess_classif_surfaces.py`: if some ground truth is provided later on or an expert assess the result, calculates the precision of the classification, also called "satisfaction  rate" in the documentation.
-    2. Using a random forest *with the ground truth* 
+    - The function used to produce the intensity rasters is [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation).
+2. `rasterize_roughness.py`: creates a DEM and saves it as a raster, then estimates the multi-scale roughness from the DEM.
+    - The function used to produce the DEM is [LidarDigitalSurfaceModel - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarDigitalSurfaceModel).
+    - The function used to calculate the multi-scale roughness is [MultiscaleRoughness - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/geomorphometric_analysis.html#MultiscaleRoughness).
+3. `get_zonal_stats.py`: gets zonal statistics of intensity and roughness for each roof plane.
+    - Roof planes smaller than 2 m<sup>2</sup> are classified as "occupied" and no zonal statistics are calculated. They are too small for a solar or vegetated installation.
+    - If the LiDAR point cloud overlapping the roof plane is not classified as *building*, hte plane is classified as "undefined". The presence of a roof at this location should be controlled.
+4. Two methods were developed for classification:
+    1. Use of manual thresholds *without ground truth*:
+        - `manual_thresholds.py`: classifies the roofs using threshold defined in the config file.
+        - `assess_classif_surfaces.py`: if ground truth is provided later on or if an expert assesses the result, calculates the precision of the classification, also called "satisfaction  rate".
+    2. Use of a random forest *with ground truth* 
         - `random_forest.py`:
-            - train mode: if the parameter `TRAIN` is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classification.
-            - inference mode: if the parameter `TRAIN` is set to `False`, uses the saved models to make inferences on the roof planes.
+            - train mode: if the `train` parameter is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classifications.
+            - inference mode: if the `train` parameter is set to `False`, uses the trained models to make inferences about roof planes.
 
-The corresponding command lines are provided here below.
+### Workflow
+
+The command lines for the workflow are provided below.
 
 ```
 python scripts/occupation_classification/rasterize_intensity.py config/config_occupation_classification.yaml
@@ -129,7 +131,7 @@ python scripts/occupation_classification/rasterize_roughness.py config/config_oc
 python scripts/occupation_classification/get_zonal_stats.py config/config_occupation_classification.yaml
 ```
 
-When *no ground truth is available*, the classification can be performed with the script `manual_thresholds.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, their quality assessed, and used as ground truth.
+When *no ground truth is available*, the classification can be performed with the script `manual_thresholds.py` using thresholds calibrated manually by an operator. The results can then eventually be assessed by experts, and used as ground truth.
 
 ```
 python scripts/occupation_classification/manual_thresholds.py config/config_occupation_classification.yaml
@@ -142,14 +144,14 @@ When *a ground truth is available*, the classification can be performed and asse
 python scripts/occupation_classification/random_forest.py config/config_occupation_classification.yaml
 ```
 
-Other scripts are present in the folder `scripts/occupation_classification`. Their goal is to detect objects based on intensity. The results were not as good as expected and they were therefore not implemented in the final workflow.
+Other scripts ban be found in the folder `scripts/occupation_classification`. Their goal is to detect objects based on intensity. The results were not satisfactory and they were therefore not implemented in the final workflow.
 
 
 ## LiDAR segmentation
 
 The set of scripts is dedicated to the segmentation of rooftop objects in the LiDAR point cloud. This workflow is based on [Open3D](https://www.open3d.org/docs/release/). It supposes that roofs composed of flat planes and that obstacles protrude.
 
-### Workflow
+### Script description
 
 The following scripts are used to segment the LiDAR point cloud:
 1. `retrieve_point_clouds.py`: downloads the point clouds,
@@ -160,7 +162,9 @@ The following scripts are used to segment the LiDAR point cloud:
 6. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
 7. `assess_area.py`: calculates the free and occupied surface of each EGID and compares it with the ground truth.
 
-The corresponding command lines are provided here below.
+### Workflow
+
+The command lines for the workflow are provided below.
 
 First, the LiDAR point cloud tiles have to be downloaded with the command below and unzipped by the user.
 
@@ -202,8 +206,6 @@ python scripts/pcd_segmentation/optimize_hyperparam_LiDAR.py config/config_pcdse
 
 
 ## Image segmentation
-
-### Overview
 
 The set of scripts is dedicated to the segmentation of objects in images. The segmentation is based on a deep learning method using [SAM](https://github.com/facebookresearch/segment-anything) (Segment-Anything Model). The final product is a vector layer of detected objects on the selected roofs. 
 
@@ -259,24 +261,23 @@ python scripts/assessment/assess_area.py config/config_combine_seg.yaml
 ```
 
 
-
 ## Additional developments
 
-The scripts written for additional developments and not conserved in the final workflow can be found in the `sandbox` folder.
+The scripts written for additional developments and not retained in the final workflow can be found in the `sandbox` folder. We do not provide the environment and the necessary files to test those scripts.
 
-### Filtering of the roof parameters
+### Filtering based on the the roof parameters
 
-The suitability of a roof to host a solar or vegetated installation can be estimated based on the roof slope and area. The screening of roofs based on those approximated parameters was tested. It was not integrated to this workflow as other teams already work on some more developed version of this screening.
+The suitability of a roof to host a solar or vegetated installation can be estimated based on the roof slope and area. The selection of roofs based on these approximated parameters was tested. It was not integrated to this workflow as other teams are already working on a more sophisticated filtering procedure.
 
 **Data**: This workflow is based on the following layers, available in the [SITG catalog](http://ge.ch/sitg/sitg_catalog/sitg_donnees). <br>
-- CAD_BATIMENT_HORSOL_TOIT.shp: Roof areas of above-ground buildings.
+- CAD_BATIMENT_HORSOL_TOIT.shp: roof planes of above-ground buildings.
 - OCEN_SOLAIRE_ID_SURFACE_BASE.shp: roofs, sheds and parkings.
 - FTI_PERIMETRE.shp: perimeters of the industrial zones managed by the Foundation for Industrial Lands of Geneva.
 - DPS_ENSEMBLE.shp & DPS_CLASSEMENT.shp: architectural and landscape surveys of the canton, archaeological and archival research sites, and scientific inventories. Listed buildings in accordance with the cantonal law on the protection of monuments and sites.
 
 **Requirements**
 - There are no hardware or software requirements.
-- Everything was tested with Python 3.11.
+- All the scripts were developed with Python 3.11.
 
 **Workflow**
 
@@ -285,20 +286,16 @@ The suitability of a roof to host a solar or vegetated installation can be estim
 <figcaption align="center">Diagram of the criteria applied to determine the roof suitability for vegetation and solar panels.</figcaption> 
 </div><br>
 
-All the filters are applied in one script. 
+A single script applies all the filters.
 
 ```
-python scripts/sandbox/filter_by_attributes.py config/config_expert_attributes.yaml
+python scripts/sandbox/filter_by_attributes.py config/config_sandbox.yaml
 ```
 
-### Collaboration with flai
+### Automatic classification of the LiDAR point cloud
 
-We worked with [flai](https://www.flai.ai/) to test their algorithm for classifying LiDAR point clouds. flai vectorized the clusters of the class "Roof objects". A script was written to assess the quality of the results based on the vectorized clusters.
+We tested the deep learning algorithm developed by [flai](https://www.flai.ai/) to classify LiDAR point clouds. flai applied it s algorithm to the LiDAR data we provided them. They vectorized the clusters of the class *Roof objects*. A script was written to assess the results by comparison with the ground truth.
 
 ```
-python scripts/sandbox/assess_flai.py config/config_flai.yaml
-```
-The path to the config file is hard-coded at the start of each script.
-```
-python scripts/image_segmentation/optimize_hyperparameters.py config/config_imgseg.yaml
+python scripts/sandbox/assess_flai.py config/config_sandbox.yaml
 ```

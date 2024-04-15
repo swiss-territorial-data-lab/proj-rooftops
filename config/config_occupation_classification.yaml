@@ -1,14 +1,14 @@
 
 get_lidar_infos.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
-  output_dir: outputs/2019/processed_lidar/infos
+  output_dir: outputs/occupancy_classif/processed_lidar/infos
   input_dir: inputs/LiDAR/2019
   overwrite: False
 
 
 rasterize_intensity.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
-  output_dir: outputs/2019/processed_lidar/intensity           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
+  output_dir: outputs/occupancy_classif/processed_lidar/intensity           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
   input_dir: inputs/LiDAR/2019
   overwrite: False
   parameters:
@@ -21,27 +21,27 @@ rasterize_intensity.py:
 
 rasterize_roughness.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
-  output_dir: outputs/2019/processed_lidar/roughness           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
+  output_dir: outputs/occupancy_classif/processed_lidar/roughness           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
   input_dir: inputs/LiDAR/2019
   overwrite: False
   make_dem: True
   parameters_dem: 
     resolution: 0.3   # Output resolution
     radius: 0.3       # Search radius
-    min_z: 325        # Minimum elevation for inclusion in the interpolation
-    max_z: 525        # Maximum elevation for inclusion in the interpolation
+    min_z: 325        # Minimum elevation to be included in the interpolation
+    max_z: 525        # Maximum elevation to be included in the interpolation
     max_edge: 25      # Maximum triangle edge length
   make_rgh: True
   parameters_rgh:
     min_scale: 1      # Minimum search radius
     max_scale: 2      # Maximum search radius
-    step: 1           # Step size (int > 1)
+    step: 1           # Step size (int >= 1)
 
 
 get_zonal_stats.py:
   working_dir: .
-  output_dir: outputs/2019/roof_classification
-  input_dir_rasters: outputs/2019/processed_lidar
+  output_dir: outputs/occupancy_classif/roof_classification
+  input_dir_rasters: outputs/occupancy_classif/processed_lidar
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   debug_mode: False
@@ -51,43 +51,43 @@ get_zonal_stats.py:
 
 manual_thresholds.py:
   working_dir: .
-  output_dir: outputs/2019/roof_classification
-  roof_file: outputs/2019/roof_classification/roofs.gpkg
+  output_dir: outputs/occupancy_classif/roof_classification
+  roof_file: outputs/occupancy_classif/roof_classification/roofs.gpkg
   roof_layer: roof_stats
 
 
 assess_classif_surfaces.py:
   working_dir: .
-  output_dir: outputs/2019/roof_classification
+  output_dir: outputs/occupancy_classif/roof_classification
   gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
-  predictions_file: outputs/2019/roof_classification/classified_roofs.gpkg
+  predictions_file: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   predictions_layer: manually_filtered_roofs
 
 
 random_forest.py:
-  working_dir: .ta
-  output_dir: outputs/2019/roof_classification
+  working_dir: .
+  output_dir: outputs/occupancy_classif/roof_classification
   gt_file: verifications/LiDAR_products/right_classifications_lidar_products.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
-  roof_file: outputs/2019/roof_classification/roofs.gpkg
+  roof_file: outputs/occupancy_classif/roof_classification/roofs.gpkg
   roof_layer: roof_stats
   train: True
-  model_ocan: outputs/2019/roof_classification/model_RF_OCAN.pkl
-  model_ocen: outputs/2019/roof_classification/model_RF_OCEN.pkl
+  model_ocan: outputs/occupancy_classif/roof_classification/model_RF_OCAN.pkl
+  model_ocen: outputs/occupancy_classif/roof_classification/model_RF_OCEN.pkl
 
 
 # Script tested but not implemented
 segment_objects.py:
   debug_mode: True
   working_dir: .
-  input_dir_images: outputs/2019/processed_lidar/intensity
+  input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: outputs/2019/roof_classification/classified_roofs.gpkg
+  roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
-  method: slic   # possible values:  felzenszwalb, quickshift, slic, watershed,
+  method: slic   # supported values:  felzenszwalb, quickshift, slic, watershed,
   save_normalized_intensity: True
 
 
@@ -95,13 +95,13 @@ segment_objects.py:
 filter_for_objects.py:
   debug_mode: False
   working_dir: .
-  input_dir_images: outputs/2019/processed_lidar/intensity
+  input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: outputs/2019/roof_classification/classified_roofs.gpkg
+  roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   kernel: False
   parameters:
-    procedure: ds  # possible values: sd or ds
+    procedure: ds  # supported values: sd or ds
     rdp: True
 
   

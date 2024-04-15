@@ -1,15 +1,3 @@
-#!/bin/python
-# -*- coding: utf-8 -*-
-# 
-#  proj-rooftops: automatic DETECTIONS of rooftops objects
-#
-#      Clemence Herny 
-#      Gwenaelle Salamin
-#      Alessandro Cerioni 
-# 
-# 
-
-
 import argparse
 import os
 import sys

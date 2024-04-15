@@ -1,24 +1,21 @@
 filter_by_attributes.py:
-  working_directory: C:/Users/gwena/Documents/STDL/2_En_cours/occupation-toitures/02_Data
+  working_directory: .
   output_directory: outputs/roof_classification
   input_files:
-    roofs: initial\vectors\SHP_CAD_BATIMENT_HORSOL_TOIT\CAD_BATIMENT_HORSOL_TOIT.shp
-    potential_solar_surfaces: initial\vectors\SHP_OCEN_SOLAIRE_ID_SURFACE_BASE\OCEN_SOLAIRE_ID_SURFACE_BASE.shp
+    roofs: initial/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
+    potential_solar_surfaces: initial/vectors/SHP_OCEN_SOLAIRE_ID_SURFACE_BASE/OCEN_SOLAIRE_ID_SURFACE_BASE.shp
     heritage:
-      ensembles: initial\vectors\SHP_DPS_ENSEMBLE\DPS_ENSEMBLE.shp
-      classement: initial\vectors\SHP_DPS_CLASSEMENT\DPS_CLASSEMENT.shp
-    industrial_zones: initial\vectors\SHP_FTI_PERIMETRE\FTI_PERIMETRE.shp
+      ensembles: initial/vectors/SHP_DPS_ENSEMBLE/DPS_ENSEMBLE.shp
+      classement: initial/vectors/SHP_DPS_CLASSEMENT/DPS_CLASSEMENT.shp
+    industrial_zones: initial/vectors/SHP_FTI_PERIMETRE/FTI_PERIMETRE.shp
   parameters:
     solar_absolute_minimum_area: 2  # The script should be adapted for it to be the absolute minimum area
-    house_vs_building: xx   # Distinction not applicable yet -> what the difference? We do not currently have the buildings high
     houses:
       flat_vs_pitched: 20   # angle limit in degree
       flat_roofs:
         solar_area: 25      # surface limit in m2
       pitched_roofs:
         solar_area: 15      # surface limit in m2
-    buildings:
-      solar_area: 200       # surface limit in m2
     industrial_buildings:
       flat_vs_pitched: 20   # angle limit in degree
       flat_roofs:
@@ -39,8 +36,8 @@ assess_feedback.py:
 
 
 assess_flai.py:  
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: .
   method: one-to-many       # one-to-one or one-to-many
   tiles: initial/LiDAR/Emprises tuiles Lidar 2019.shp
-  gt: processed\manual_GT\merged_occupied_surface.shp
-  detection: processed\tests\flai\2488500_1116500.shp
+  gt: processed/manual_GT/merged_occupied_surface.shp
+  detection: processed/tests/flai/2488500_1116500.shp
