@@ -41,7 +41,7 @@ CHECK_TILES = cfg['check_tiles']
 
 WORKING_DIR = cfg['working_dir']
 OUTPUT_DIR = cfg['output_dir']
-INPUT_DIR_IMAGES = cfg['input_dir_rasters']
+RASTER_DIR = cfg['raster_dir']
 
 LIDAR_TILES = cfg['lidar_tiles']
 ROOFS = cfg['roofs']
@@ -58,8 +58,8 @@ os.chdir(WORKING_DIR)
 _ = misc.ensure_dir_exists(OUTPUT_DIR)
 
 logger.info('Read the files and getting the tile paths...')
-im_list_intensity = glob(os.path.join(INPUT_DIR_IMAGES, 'intensity', '*.tif'))
-im_list_roughness = glob(os.path.join(INPUT_DIR_IMAGES, 'roughness', '*.tif'))
+im_list_intensity = glob(os.path.join(RASTER_DIR, 'intensity', '*.tif'))
+im_list_roughness = glob(os.path.join(RASTER_DIR, 'roughness', '*.tif'))
 lidar_tiles = gpd.read_file(LIDAR_TILES)
 lidar_tiles = lidar_tiles[[TILE_ID, 'geometry']].copy()
 roofs = gpd.read_file(ROOFS)

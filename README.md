@@ -8,7 +8,7 @@ The set of provided scripts aim to evaluate the surface available on rooftops by
     - [Hardware](#hardware)
     - [Installation](#installation)
     - [Data](#data)
-- [Classification of occupancy](#classification-of-the-roof-plane-occupancy)
+- [Classification of occupancy](#classification-of-occupancy)
 - [LiDAR segmentation](#lidar-segmentation)
 - [Image segmentation](#image-segmentation)
 - [Combination of segmentation results](#combination-of-segmentation-results)
@@ -95,7 +95,7 @@ In addition, the workflow for the **image** segmentation needs:
 In this repository, only test data is supplied, along with a subset of the roof delimitations, to enable the user to run an example. The full datasets can be requested by contacting the STDL.
 
 
-## Classification of the roof plane occupancy
+## Classification of occupancy
 
 This set of scripts classifies the roof planes as "occupied" or "potentially free" based on their roughness and intensity.
 
@@ -115,7 +115,7 @@ The following scripts are used to classify roof planes by occupancy:
 4. Two methods were developed for classification:
     1. Use of manual thresholds *without ground truth*:
         - `manual_thresholds.py`: classifies the roofs using threshold defined in the config file.
-        - `assess_classif_surfaces.py`: if ground truth is provided later on or if an expert assesses the result, calculates the precision of the classification, also called "satisfaction  rate".
+        - `assess_classif_surfaces.py`: if ground truth is provided later on or if an expert assesses the result, calculates the precision of the classification, also called "satisfaction rate".
     2. Use of a random forest *with ground truth* 
         - `random_forest.py`:
             - train mode: if the `train` parameter is set to `True`, trains a model per office and saves them as pickle files, assesses the quality of the classifications.
@@ -244,8 +244,6 @@ python scripts/image_segmentation/optimize_hyperparameters.py config/config_imgs
 
 ## Combination of segmentation results
 
-### Overview
-
 LiDAR and image segmentation results can be combined. Two methods are used:
 - Polygon concatenation: the detection polygons obtained from LiDAR segmentation and image segmentation are concatenated. 
 - Polygon filtering with spatial join: the detection polygons obtained from image segmentation are filtered, retaining only polygons that overlap those obtained from LiDAR segmentation.
@@ -271,7 +269,7 @@ python scripts/assessment/assess_area.py config/config_combine_seg.yaml
 
 The scripts written for additional developments and not retained in the final workflow can be found in the `sandbox` folder. We do not provide the environment and the necessary files to test those scripts.
 
-### Filtering based on the the roof parameters
+### Filtering based on roof parameters
 
 The suitability of a roof to host a solar or vegetated installation can be estimated based on the roof slope and area. The selection of roofs based on these approximated parameters was tested. It was not integrated to this workflow as other teams are already working on a more sophisticated filtering procedure.
 
@@ -300,7 +298,7 @@ python scripts/sandbox/filter_by_attributes.py config/config_sandbox.yaml
 
 ### Automatic classification of the LiDAR point cloud
 
-We tested the deep learning algorithm developed by [flai](https://www.flai.ai/) to classify LiDAR point clouds. flai applied it s algorithm to the LiDAR data we provided them. They vectorized the clusters of the class *Roof objects*. A script was written to assess the results by comparison with the ground truth.
+We tested the deep learning algorithm developed by [flai](https://www.flai.ai/) to classify LiDAR point clouds. flai applied its algorithm to the LiDAR data we provided them. They vectorized the clusters of the class *Roof objects*. A script was written to assess the results by comparison with the ground truth.
 
 ```
 python scripts/sandbox/assess_flai.py config/config_sandbox.yaml

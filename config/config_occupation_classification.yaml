@@ -2,14 +2,14 @@
 get_lidar_infos.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/infos
-  input_dir: inputs/LiDAR/2019
+  lidar_dir: inputs/LiDAR/2019
   overwrite: False
 
 
 rasterize_intensity.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
-  output_dir: outputs/occupancy_classif/processed_lidar/intensity           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
-  input_dir: inputs/LiDAR/2019
+  output_dir: outputs/occupancy_classif/processed_lidar/intensity           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
+  lidar_dir: inputs/LiDAR/2019
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
@@ -21,8 +21,8 @@ rasterize_intensity.py:
 
 rasterize_roughness.py:
   working_dir: /home/user/path                                 # Absolute path needed!!   
-  output_dir: outputs/occupancy_classif/processed_lidar/roughness           # The raster of intensity and roughness should be stored in a common folder with subfloder "intensity" and "roughness".
-  input_dir: inputs/LiDAR/2019
+  output_dir: outputs/occupancy_classif/processed_lidar/roughness           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
+  lidar_dir: inputs/LiDAR/2019
   overwrite: False
   make_dem: True
   parameters_dem: 
@@ -41,7 +41,7 @@ rasterize_roughness.py:
 get_zonal_stats.py:
   working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
-  input_dir_rasters: outputs/occupancy_classif/processed_lidar
+  raster_dir: outputs/occupancy_classif/processed_lidar
   lidar_tiles: inputs/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
   debug_mode: False

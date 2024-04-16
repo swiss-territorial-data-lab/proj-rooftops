@@ -33,7 +33,7 @@ with open(args.config_file) as fp:
 WORKING_DIR = cfg['working_dir']
 # WBT needs absolute paths
 OUTPUT_DIR = os.path.join(WORKING_DIR, cfg['output_dir'])
-INPUT_DIR = os.path.join(WORKING_DIR, cfg['input_dir'])
+LIDAR_DIR = os.path.join(WORKING_DIR, cfg['lidar_dir'])
 
 OVERWRITE = cfg['overwrite'] if 'overwrite' in cfg.keys() else False
 
@@ -58,7 +58,7 @@ OUTPUT_DIR_DEM = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'DEM'))
 OUTPUT_DIR_SCALE = misc.ensure_dir_exists(os.path.join(OUTPUT_DIR, 'scale_roughness'))
 
 logger.info('Getting the list of files...')
-lidar_files = glob(os.path.join(WORKING_DIR, INPUT_DIR, '*.las'))
+lidar_files = glob(os.path.join(WORKING_DIR, LIDAR_DIR, '*.las'))
 
 logger.info('Processing files...')
 if len(lidar_files) == 0:
