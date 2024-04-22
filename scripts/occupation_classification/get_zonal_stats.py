@@ -102,7 +102,7 @@ del large_roofs, clipped_roofs
 
 # cf https://gis.stackexchange.com/questions/295362/polygonize-raster-file-according-to-band-values
 nodata_polygons = []
-for tile_id in tqdm(lidar_tiles['id'].values, desc='Transform nodata area to polygons...'):
+for tile_id in tqdm(lidar_tiles['id'].values, desc='Transform nodata area to polygons'):
 
     if any(tile_id in tilepath for tilepath in im_list_intensity):
 
@@ -149,7 +149,7 @@ del nodata_overlap, nodata_overlap_grouped, nodata_overlap_full
 
 # Compute stats for each polygon
 zs_per_roof = gpd.GeoDataFrame()
-for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from tiles...'):
+for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from tiles'):
 
     if any(tile_id in tilepath for tilepath in im_list_intensity) and any(tile_id in tilepath for tilepath in im_list_roughness):
 

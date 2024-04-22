@@ -86,7 +86,12 @@ In addition, the workflows working with **LiDAR** need:
 - LiDAR point clouds: the [tiles of the 2019 flight over the Geneva canton](https://ge.ch/sitggeoportal1/apps/webappviewer/index.html?id=311e4a8ae2724f9698c9bcfb6ab45c56) were used. They are automatically downloaded through a script;
 - Emprises tiles LiDAR 2019.shp: shapes corresponding to the LiDAR tiles.
 
-In addition, the workflow for the **image** segmentation needs:
+The workflow for the **roof classification**, needs:
+
+- Ground truth of the roof occupancy: vector shapefile of the roof delimitation with an attribute `class` giving the real roof occupancy.
+    - _Disclaimer_: a subset of the ground truth used to train a random forest is given here. It does not correspond to the data used to train the random forest during the project.
+
+The workflow for the **image** segmentation needs:
 
 - True orthophotos of the canton of Geneva: processed from aerial image acquired by the State of Geneva in 2019. RGB tiff images with a spatial resolution of about 7 cm/px. Images are available on request from SITG.
 - Image tile shapes: vector shapefile of the true orthophoto tiles available on request from SITG.

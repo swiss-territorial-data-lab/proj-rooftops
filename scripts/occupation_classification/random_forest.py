@@ -103,12 +103,17 @@ def random_forest(labels_gdf, features_df, desc=None, seed=42, nbr_estimators = 
     results_df.to_csv(filepath, index=False)
     written_files.append(filepath)
 
+    if len(results_df.real_class.unique()) == 1:
+        logger.warning(f"Only the class {results_df.real_class.unique()[0]} is present in the test set.")
+
     agreement = {
         'global': round(results_df.agreement.sum()/results_df.shape[0], 3),
         'occupied': round(results_df.loc[results_df.real_class=='occupied', 'agreement'].sum()
-                        /results_df.loc[results_df.real_class=='occupied', 'agreement'].shape[0], 3),
+                        /results_df.loc[results_df.real_class=='occupied', 'agreement'].shape[0], 3) \
+                            if results_df.loc[results_df.real_class=='occupied', 'agreement'].shape[0] > 0 else np.NaN,
         'potentially free': round(results_df.loc[results_df.real_class=='potentially free', 'agreement'].sum()
-                        /results_df.loc[results_df.real_class=='potentially free', 'agreement'].shape[0], 3),
+                        /results_df.loc[results_df.real_class=='potentially free', 'agreement'].shape[0], 3) \
+                            if results_df.loc[results_df.real_class=='potentially free', 'agreement'].shape[0] > 0 else np.NaN,
     }
     logger.info(f'Global agreement rate: {agreement["global"]}')
 
