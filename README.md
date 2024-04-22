@@ -104,6 +104,7 @@ This set of scripts classifies the roof planes as "occupied" or "potentially fre
 The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
 The following scripts are used to classify roof planes by occupancy:
+0. `retrieve_point_clouds.py`: downloads the tiles intersecting a vector layer. This script is borrowed from the LiDAR segmentation workflow.
 1. `rasterize_intensity.py`: creates an intensity raster for each LiDAR point cloud in the input directory.
     - The function used to produce the intensity rasters is [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation).
 2. `rasterize_roughness.py`: creates a DEM and saves it as a raster, then estimates the multi-scale roughness from the DEM.
@@ -168,6 +169,9 @@ The following scripts are used to segment the LiDAR point cloud:
 6. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections,
 7. `assess_area.py`: calculates the free and occupied surface of each EGID and compares it with the ground truth.
 
+An additional script is available:
+* `optimize_hyperparam_LiDAR.py`: optimizes the hyperparameters to maximize the f1 score and median IoU. Based on the [Oputna](https://optuna.org/) framework.
+
 ### Workflow
 
 The command lines for the workflow are provided below.
@@ -222,7 +226,7 @@ The set of scripts is dedicated to the segmentation of objects in images. The se
 3. `produce_vector_layer.py`: filters the vector layer for each building and aggregates all layers into a single one (detected objects);
 4. `assess_results.py`: evaluates results by comparing them with the ground truth, calculates metrics and tags detections;
 5. `assess_area.py`: calculates the free and occupied surface of each EGID and compare it with the ground truth;
-6. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1-score, median IoU, precision, recall,...). Based on the [Oputna](https://optuna.org/) framework.
+6. `optimize_hyperparameters.py`: optimizes SAM hyperparameters to maximize the desired metrics (f1 score, median IoU, precision, recall,...). Based on the [Oputna](https://optuna.org/) framework.
 
 ### Workflow
 

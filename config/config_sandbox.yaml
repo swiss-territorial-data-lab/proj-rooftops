@@ -1,5 +1,5 @@
 filter_by_attributes.py:
-  working_directory: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_directory: .
   output_directory: outputs/roof_classification
   input_files:
     roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT.shp
