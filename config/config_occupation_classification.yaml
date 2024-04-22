@@ -1,13 +1,13 @@
 
 get_lidar_infos.py:
-  working_dir: C:\Users\gwena\Documents\GitHub\proj-rooftops                                 # Absolute path needed!!   
+  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/infos
   lidar_dir: data/LiDAR/2019
   overwrite: False
 
 
 rasterize_intensity.py:
-  working_dir: C:\Users\gwena\Documents\GitHub\proj-rooftops                                 # Absolute path needed!!   
+  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/intensity           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
   lidar_dir: data/LiDAR/2019
   overwrite: False
@@ -20,7 +20,7 @@ rasterize_intensity.py:
 
 
 rasterize_roughness.py:
-  working_dir: C:\Users\gwena\Documents\GitHub\proj-rooftops                                 # Absolute path needed!!   
+  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/roughness           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
   lidar_dir: data/LiDAR/2019
   overwrite: False
