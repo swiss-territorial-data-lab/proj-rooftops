@@ -39,11 +39,7 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         pip install -r requirements.txt
 
-    - Requirements for the image workflow only
-
-            pip install -r requirements_images.txt
-
-    - Requirements for the LiDAR workflow only
+    - Requirements for the LiDAR workflows only
 
             pip install -r requirements_lidar.txt
             
