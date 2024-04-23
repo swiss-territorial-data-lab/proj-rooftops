@@ -128,6 +128,7 @@ def intersection_over_union(polygon1_shape, polygon2_shape):
     # Calculate intersection and union, and the IoU
     polygon_intersection = polygon1_shape.intersection(polygon2_shape).area
     polygon_union = polygon1_shape.area + polygon2_shape.area - polygon_intersection
+    
     return polygon_intersection / polygon_union
 
 
