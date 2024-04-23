@@ -78,7 +78,7 @@ The datasets used by **all workflows** are described here after:
 - Ground truth of the roof objects: vector shapefile of the labels produced for this project and used for the assessments of the segmentation workflows:
    - version 2023-11-10 LiDAR: ground truth used for the optimization and the assessment of the LiDAR segmentation. Most objects in the low height classes, such as lawn and terraces, have been removed from the dataset;
    - version 2023-11-13: ground truth used for the optimization and the assessment of the image segmentation. It corresponds to the complete ground truth;
-- EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The buildings are listed in `EGID_GT_full.csv` and split into the training and test datasets:
+- EGID lists: selected buildings for the ground truth identified by their federal number (EGID). The complete list of building is divided between the training and test datasets:
     - EGID_GT_test.csv: 17 EGIDs selected to control the performance of the algorithm on a test dataset. It is provided here as an example to run the code with.
 
 In addition, the workflows working with **LiDAR** need:
