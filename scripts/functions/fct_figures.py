@@ -43,7 +43,7 @@ def plot_area(dir_plots, df, attribute, xlabel, broken_axis=False):
 
     df = df[df['attribute'] == attribute] 
 
-    if broken_axis == False:
+    if not broken_axis:
         fig, ax = plt.subplots(1, 1, figsize=(9,6))
 
         df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
