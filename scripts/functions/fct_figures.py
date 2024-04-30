@@ -190,14 +190,15 @@ def plot_metrics(dir_plots, df, attribute, xlabel):
     
     for metric in metrics_list:
         if not df[metric].isnull().values.any():
-            plt.scatter(df['value'], df[metric], label=metric.replace("_", " "), s=150)
+            plt.scatter(df['value'], df[metric], label=metric.replace("_", " "), s=150, zorder=2)
 
-    plt.ylim(-0.05, 1.05)
+    plt.ylim(0, 1.05)
     if attribute == 'object_class':
         plt.xticks(rotation=40, ha='right')
     elif attribute == 'all':
         plt.xticks([])
     plt.xlabel(xlabel, fontweight='bold', fontsize=14)
+    plt.grid(color='lightgray', linewidth = 0.5, zorder=1)
 
     plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)
  
