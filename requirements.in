@@ -19,7 +19,7 @@ rasterio
 rasterstats
 requests
 scikit-learn
-segment-geospatial
+segment-geospatial @ git+https://github.com/swiss-territorial-data-lab/segment-geospatial.git@v1.0.0
 torch @ https://download.pytorch.org/whl/cu113/torch-1.10.2%2Bcu113-cp38-cp38-linux_x86_64.whl
 torchvision @ https://download.pytorch.org/whl/cu113/torchvision-0.11.3%2Bcu113-cp38-cp38-linux_x86_64.whl
 visvalingamwyatt

@@ -1,9 +1,9 @@
 # 1 - Image tile generation
 generate_tiles.py:
   working_dir: data
-  image_dir: ../../../../../s3/proj-rooftops/02_Data/initial/Geneva/ORTHOPHOTOS/2019/TIFF_TRUEORTHO/
-  output_dir: image_segmentation/tiles/test
-  tiles: image_segmentation/true_orthophotos/Tuiles.shp
+  image_dir: true_orthophotos/2019/
+  output_dir: ../outputs/image_segmentation/test/tiles
+  tiles: true_orthophotos/Tuiles.shp
   roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   egids: EGIDs_GT_test.csv
   filters:
@@ -15,7 +15,7 @@ generate_tiles.py:
 # 2 - Segment Anything Model
 segment_images.py:
   working_dir: .
-  image_dir:  data/image_segmentation/tiles/test
+  image_dir:  outputs/image_segmentation/test/tiles
   output_dir: outputs/image_segmentation/test
   vector_extension: gpkg      # 'gpkg' or 'shp'
   image_crop:                 # activate the option to crop the input image according to pixel coordinates (for performing tests)

@@ -39,30 +39,17 @@ All the dependencies required for the project are listed in `requirements.in` an
 
         pip install -r requirements.txt
 
-    - Requirements for the LiDAR workflows only
+    - Requirements for the LiDAR workflows only:
 
             pip install -r requirements_lidar.txt
             
 - Specific libraries were used for image processing:
     - PyTorch version 1.10
     - CUDA version 11.3
-    - segment-geospatial [0.10.2](https://github.com/opengeos/segment-geospatial/releases/tag/v0.10.2). <br>
-    The library was adapted to our needs and can be cloned from this forked repository: https://github.com/swiss-territorial-data-lab/segment-geospatial.git. <br> To install it in your virtual environment, execute the following commands:
+    - segment-geospatial version [0.10.2](https://github.com/opengeos/segment-geospatial/releases/tag/v0.10.2). <br>
+    The library was forked and adapted to our needs and can be found on the STDL's git repository: https://github.com/swiss-territorial-data-lab/segment-geospatial/releases/tag/v1.0.0. <br> 
 
-        ```
-        cd segment-geospatial
-        pip install .
-        ```
-
-        or in editable mode:
-
-        ```
-        pip install -e .
-        ```
-
-        If the installation is successful, the message "You are using a modified version of segment-geospatial library (v 0.10.2 fork)" must be printed in the prompt while executing the script `segment_images.py`.  
-
-**Disclaimer**: We do not guarantee that the scripts in the sandbox folder and the scripts not included in the workflows can be executed with the provided requirements
+**Disclaimer**: We do not guarantee that the scripts in the sandbox folder and the scripts not included in the workflows can be executed with the provided requirements.
 
 
 ### Data
