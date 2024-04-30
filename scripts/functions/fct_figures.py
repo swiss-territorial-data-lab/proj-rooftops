@@ -35,45 +35,112 @@ def plot_histo(dir_plots, df1, df2, attribute, xlabel):
     return written_file
 
 
-def plot_area(dir_plots, df, attribute, xlabel):
+def plot_area(dir_plots, df, attribute, xlabel, broken_axis=False):
 
-    fig, ax = plt.subplots(1, 1, figsize=(9,6))
 
     color_list = ['limegreen', 'tomato']  
     width = 0.4
 
-    df = df[df['attribute'] == attribute]  
+    df = df[df['attribute'] == attribute] 
 
-    df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
-    df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
+    if broken_axis == False:
+        fig, ax = plt.subplots(1, 1, figsize=(9,6))
+
+        df.plot(ax=ax, x='value', y=['free_area_labels', 'occup_area_labels',], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
+        df.plot(ax=ax, x='value', y=['free_area_dets', 'occup_area_dets',], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
+        
+        for b in ax.containers:
+            labels = [f'{int(a)}' if a > 0 else "" for a in b.datavalues]
+            ax.bar_label(b, label_type='center', color = "black", labels=labels, fontsize=8)
     
-    for b in ax.containers:
-        labels = [f'{int(a)}' if a > 0 else "" for a in b.datavalues]
-        ax.bar_label(b, label_type='center', color = "black", labels=labels, fontsize=8)
- 
-    ax.set_xlim((-0.5, len(df)-0.5)) 
-    ax.set_xlabel(xlabel, fontweight='bold', fontsize=14)
-    ax.set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=14)   
+        ax.set_xlim((-0.5, len(df)-0.5)) 
+        ax.set_xlabel(xlabel, fontweight='bold', fontsize=14)
+        ax.set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=14)   
 
-    locs = ax.get_xticks(minor=False) 
-    major_ticks_labels = ax.get_xticklabels(minor=False) 
-    minor_ticks = []  
-    minor_ticks_labels = [] 
-    for i in locs:
-        minor_ticks.extend([i - width/2, i + width/2])
-        minor_ticks_labels.extend(['labels', 'detections'])
-    ax.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
+        locs = ax.get_xticks(minor=False) 
+        major_ticks_labels = ax.get_xticklabels(minor=False) 
+        minor_ticks = []  
+        minor_ticks_labels = [] 
+        for i in locs:
+            minor_ticks.extend([i - width/2, i + width/2])
+            minor_ticks_labels.extend(['labels', 'detections'])
+        ax.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
 
-    if 'All evaluated EGIDs' in df['value'].unique():
-        ax.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+        if 'All evaluated EGIDs' in df['value'].unique():
+            ax.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+        else:
+            ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontsize=14)
+            ax.tick_params(axis='x', which='major', pad=30, length=0)
+
+        ax.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
+
+        ax.legend(['Free surface', 'Occupied surface'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)
+        plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
+
     else:
-        ax.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontsize=14)
-        ax.tick_params(axis='x', which='major', pad=30, length=0)
+        fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(9,6))
 
-    ax.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
+        ax1.spines['bottom'].set_visible(False)
+        ax1.tick_params(axis='x', which='both',bottom=False)
+        ax2.spines['top'].set_visible(False)
+        bs = 1.0e4
+        ts = 4.0e4
+        ax2.set_ylim(0, bs)
+        ax1.set_ylim(ts, 1.5e5)
 
-    ax.legend(['Free surface', 'Occupied surface'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)    
-    plot_path = os.path.join(dir_plots, f'area_{attribute}.png')  
+        df.plot(ax=ax1, x='value', y=['free_area_labels', 'occup_area_labels'], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
+        df.plot(ax=ax1, x='value', y=['free_area_dets', 'occup_area_dets'], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
+        df.plot(ax=ax2, x='value', y=['free_area_labels', 'occup_area_labels'], kind='bar', stacked=True, rot=0, width=width, position=1.05, color=color_list)
+        df.plot(ax=ax2, x='value', y=['free_area_dets', 'occup_area_dets'], kind='bar', stacked=True, rot=0, width=width, position=-0.05, color=color_list)
+
+        n = 0
+        for (b,c) in zip(ax1.containers, ax2.containers):
+            labels = [f'{int(a)}' if a > 0 else '' for a in c.datavalues]
+            ax2.bar_label(c, label_type='center', color = 'black', labels=labels, fontsize=8)
+            n += 1
+            labels = [f'{int(a)}' if a > 0 else '' for a in b.datavalues]
+            if n == 1 or n == 3:
+                labels= [x if x < str(bs) else '' for x in labels]
+            ax1.bar_label(b, label_type='center', color = 'black', labels=labels, fontsize=8)
+
+        locs = ax2.get_xticks(minor=False) 
+        major_ticks_labels = ax2.get_xticklabels(minor=False) 
+        minor_ticks = []  
+        minor_ticks_labels = [] 
+        for i in locs:
+            minor_ticks.extend([i - width/2, i + width/2])        
+            minor_ticks_labels.extend(['labels', 'detections'])  
+        ax2.set_xticks(ticks=minor_ticks, labels=minor_ticks_labels, minor=True)
+
+        ax1.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
+        ax2.ticklabel_format(style='sci', axis='y', useOffset=True, scilimits=(0,0))
+
+        ax1.legend(['Free surface', 'Occupied surface'], bbox_to_anchor=(1.02, 1.0), loc='upper left', frameon=False, fontsize=14)    
+        ax2.legend().remove()
+
+        for tick in ax2.get_xticklabels():
+            tick.set_rotation(0)
+        d = .01  
+        kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+        ax1.plot((-d, +d), (-d, +d), **kwargs)      
+        ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+        kwargs.update(transform=ax2.transAxes)  
+        ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  
+        ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+
+        ax1.set_xlim((-0.5, len(df)-0.5)) 
+        ax2.set_xlabel(xlabel, fontweight='bold', fontsize=14)
+        ax1.set_ylabel('Area ($m^2$)', fontweight='bold', fontsize=14)   
+        ax1.yaxis.set_label_coords(-0.05, -.1)
+
+        if 'All evaluated EGIDs' in df['value'].unique():
+            ax2.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+        else:
+            ax2.set_xticks(ticks=locs, labels=major_ticks_labels, minor=False, fontsize=14)
+            ax2.tick_params(axis='x', which='major', pad=30, length=0)
+
+        plot_path = os.path.join(dir_plots, f'area_{attribute}_broken.png')  
+
     plt.savefig(plot_path, bbox_inches='tight')
     plt.close(fig)
 

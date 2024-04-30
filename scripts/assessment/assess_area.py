@@ -102,7 +102,7 @@ def main(WORKING_DIR, OUTPUT_DIR, LABELS, DETECTIONS, ROOFS, EGIDS, METHOD, visu
 
             for attr in attribute_surfaces_df.attribute.unique():
                 if attr in xlabel_dict.keys():
-                    filepath = figures.plot_area(output_dir, attribute_surfaces_df, attribute=attr, xlabel=xlabel_dict[attr])
+                    filepath = figures.plot_area(output_dir, attribute_surfaces_df, attribute=attr, xlabel=xlabel_dict[attr], broken_axis=False)
                     written_files[filepath] = ''
 
 
