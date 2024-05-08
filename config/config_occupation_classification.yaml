@@ -2,27 +2,27 @@
 get_lidar_infos.py:
   working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/infos
-  lidar_dir: data/LiDAR/2019
+  lidar_dir: inputs/LiDAR/2023
   overwrite: False
 
 
 rasterize_intensity.py:
-  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data    # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/intensity           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
-  lidar_dir: data/LiDAR/2019
+  lidar_dir: inputs/LiDAR/2023
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
     resolution: 0.3   # Output resolution
     radius: 0.3       # Search radius
     returns: first    # Point return types to include. Supported values: all, first, last
-    excluded_classes: 1, 2, 3, 5, 7, 9, 13, 15, 16, 19         # Classes to exclude, i.e., classes that are not about the building roof.
+    excluded_classes: 1, 2, 3, 4, 5, 7, 9, 11, 13, 14, 15, 16, 17, 18, 19, 21, 22, 25, 29, 31    # Classes to exclude, i.e., classes that are not about the building roof.
 
 
 rasterize_roughness.py:
-  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data       # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/roughness           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
-  lidar_dir: data/LiDAR/2019
+  lidar_dir: inputs/LiDAR/2023
   overwrite: False
   make_dem: True
   parameters_dem: 
@@ -39,14 +39,14 @@ rasterize_roughness.py:
 
 
 get_zonal_stats.py:
-  working_dir: .
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
   output_dir: outputs/occupancy_classif/roof_classification
   raster_dir: outputs/occupancy_classif/processed_lidar
-  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/SHP_CAD_BATIMENT_HORSOL_TOIT_subset.gpkg
   debug_mode: False
   check_tiles: False
-  tile_id: fme_basena
+  tile_id: TUILE
 
 
 manual_thresholds.py:
@@ -59,7 +59,7 @@ manual_thresholds.py:
 assess_classif_surfaces.py:
   working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
-  gt_file: data/ground_truth/occupancy_classification.gpkg
+  gt_file: inputs/ground_truth/occupancy_classification.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
   predictions_file: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
@@ -69,7 +69,7 @@ assess_classif_surfaces.py:
 random_forest.py:
   working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
-  gt_file: data/ground_truth/occupancy_classification.gpkg
+  gt_file: inputs/ground_truth/occupancy_classification.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
   roof_file: outputs/occupancy_classif/roof_classification/roofs.gpkg
@@ -84,7 +84,7 @@ segment_objects.py:
   debug_mode: True
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   method: slic   # supported values:  felzenszwalb, quickshift, slic, watershed,
@@ -96,7 +96,7 @@ filter_for_objects.py:
   debug_mode: False
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   kernel: False

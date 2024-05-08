@@ -9,6 +9,7 @@ from yaml import load, FullLoader
 import geopandas as gpd
 import pandas as pd
 
+from joblib import Parallel, delayed
 from urllib.request import urlretrieve
 
 sys.path.insert(1, 'scripts')
@@ -37,6 +38,8 @@ SELECTED_EGIDS = cfg['selected_egids']
 INPUT_TILES = cfg['input_tiles']
 ROOFS = cfg['roofs']
 
+N_JOBS = 10
+
 OVERWRITE = cfg['overwrite']
 
 written_files = []
@@ -54,16 +57,19 @@ egid_list = egids_df.EGID.unique()
 roof_subset_gdf = roofs_gdf.loc[roofs_gdf.EGID.isin(egid_list), ['EGID', 'geometry']].dissolve(by='EGID', as_index=False)
 tile_subset_gdf = gpd.sjoin(tiles_gdf, roof_subset_gdf, lsuffix="_tile", rsuffix="_roof")
 
-for tile_name in tqdm(tile_subset_gdf.fme_basena.unique(), desc="Download the tiles"):
+job_dict = {}
+for tile_name in tqdm(tile_subset_gdf.TUILE.unique(), desc="Get info for each tile"):
     filepath = os.path.join(OUTPUT_DIR, tile_name + '.las.zip')
 
     if (not OVERWRITE) and (os.path.isfile(filepath) or os.path.isfile(filepath[:-4])):
         continue
 
-    url = 'https://ge.ch/sitg/geodata/SITG/TELECHARGEMENT/LIDAR_2019/' + tile_name + '.las.zip'
+    url = 'https://ge.ch/sitg/geodata/SITG/TELECHARGEMENT/LIDAR_2023/' + tile_name + '.las.zip'
+    job_dict[tile_name] = {'url': url, 'filename': filepath}
 
-    _ = urlretrieve(url, filepath)
-    written_files.append(filepath)
+job_outcome = Parallel(n_jobs=N_JOBS, backend="loky")(
+    delayed(urlretrieve)(**v) for k, v in tqdm(sorted(list(job_dict.items())), desc=f'Download tiles with {N_JOBS} in prallel')
+    )
 
 if len(written_files) == 0:
     logger.success("Done! All files were present in the output folder.")

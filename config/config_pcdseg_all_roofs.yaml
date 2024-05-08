@@ -1,10 +1,10 @@
 # 1 - Retrieve LiDAR point cloud
 retrieve_point_clouds.py:
-  working_dir: data
-  output_dir: LiDAR/2019
-  selected_egids: EGIDs_GT_test.csv
-  input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
-  roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
+  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  output_dir: inputs/LiDAR/2023
+  selected_egids: whole_canton/EGID_list.csv
+  input_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/SHP_CAD_BATIMENT_HORSOL_TOIT_subset.gpkg
   overwrite: False
 
 # 2 - Prepare the lidar point cloud
