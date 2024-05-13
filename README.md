@@ -91,6 +91,7 @@ This set of scripts classifies the roof planes as "occupied" or "potentially fre
 The script `get_lidar_infos.py` allows to get some characteristics of the point clouds.
 
 The following scripts are used to classify roof planes by occupancy:
+
 0. `retrieve_point_clouds.py`: downloads the tiles intersecting a vector layer. This script is borrowed from the LiDAR segmentation workflow.
 1. `rasterize_intensity.py`: creates an intensity raster for each LiDAR point cloud in the input directory.
     - The function used to produce the intensity rasters is [LidarIdwInterpolation - WhiteboxTools](https://www.whiteboxgeo.com/manual/wbt_book/available_tools/lidar_tools.html#LidarIdwInterpolation).
