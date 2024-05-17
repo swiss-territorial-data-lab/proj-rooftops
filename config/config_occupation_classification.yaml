@@ -46,7 +46,7 @@ get_zonal_stats.py:
   roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   debug_mode: False
   check_tiles: False
-  tile_id: TUILE
+  tile_id: fme_basena
 
 
 manual_thresholds.py:
@@ -59,7 +59,7 @@ manual_thresholds.py:
 assess_classif_surfaces.py:
   working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
-  gt_file: inputs/ground_truth/occupancy_classification.gpkg
+  gt_file: data/ground_truth/occupancy_classification.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
   predictions_file: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
@@ -84,7 +84,7 @@ segment_objects.py:
   debug_mode: True
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  lidar_tiles: data/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   method: slic   # supported values:  felzenszwalb, quickshift, slic, watershed,
@@ -96,7 +96,7 @@ filter_for_objects.py:
   debug_mode: False
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  lidar_tiles: data/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   kernel: False
