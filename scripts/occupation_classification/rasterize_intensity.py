@@ -46,8 +46,6 @@ RADIUS = PARAMETERS['radius']
 RETURNS = PARAMETERS['returns']
 EXCLUDED_CLASSES = PARAMETERS['excluded_classes']
 
-LIDAR_PROPERTY = "intensity"
-
 N_JOBS = 20
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)

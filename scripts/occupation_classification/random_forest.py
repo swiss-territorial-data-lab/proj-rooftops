@@ -165,12 +165,6 @@ if __name__ == '__main__':
 
     # Data processing --------------------------------------
 
-    logger.info('Read the files')
-
-    ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
-
-    ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
-
     logger.info('Format the data')
     all_features_gdf = gpd.read_file(ROOF_PATH, layer=ROOF_LAYER)
 
@@ -189,6 +183,12 @@ if __name__ == '__main__':
     ])
 
     if TRAIN:
+        logger.info('Read the ground truth')
+
+        ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
+
+        ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
+
         logger.info('Train and test a random forest for the OCEN')
         agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN', nbr_estimators=30)
         written_files.extend(tmp)

@@ -42,8 +42,6 @@ N_JOBS = 10
 
 OVERWRITE = cfg['overwrite']
 
-written_files = []
-
 os.chdir(WORKING_DIR)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -68,12 +66,10 @@ for tile_name in tqdm(tile_subset_gdf.TUILE.unique(), desc="Get info for each ti
     job_dict[tile_name] = {'url': url, 'filename': filepath}
 
 job_outcome = Parallel(n_jobs=N_JOBS, backend="loky")(
-    delayed(urlretrieve)(**v) for k, v in tqdm(sorted(list(job_dict.items())), desc=f'Download tiles with {N_JOBS} in prallel')
+    delayed(urlretrieve)(**v) for k, v in tqdm(sorted(list(job_dict.items())), desc=f'Download tiles with {N_JOBS} in parallel')
     )
 
-if len(written_files) == 0:
+if len(job_dict.keys()) == 0:
     logger.success("Done! All files were present in the output folder.")
 else:
-    logger.success("Done! Some files were written:")
-    for file in written_files:
-        logger.success(f"- {file}")
+    logger.success("Done! Some files were written in the output folder.")

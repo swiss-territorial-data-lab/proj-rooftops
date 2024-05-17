@@ -154,6 +154,9 @@ for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from t
     if any(tile_id in tilepath for tilepath in im_list_intensity) and any(tile_id in tilepath for tilepath in im_list_roughness):
 
         roofs_on_tile = building_roofs[building_roofs['tile_id']==tile_id].reset_index(drop=True)
+        if roofs_on_tile.empty:
+            logger.warning(f'No roof on the tile {tile_id}.')
+            continue
 
         # Intensity statistics
         tilepath = misc.get_tilepath_from_id(tile_id, im_list_intensity)
