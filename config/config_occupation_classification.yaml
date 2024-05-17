@@ -2,14 +2,14 @@
 get_lidar_infos.py:
   working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/infos
-  lidar_dir: inputs/LiDAR/2023
+  lidar_dir: data/LiDAR/2019
   overwrite: False
 
 
 rasterize_intensity.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data    # Absolute path needed!!   
+  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/intensity           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
-  lidar_dir: inputs/LiDAR/2023
+  lidar_dir: data/LiDAR/2019
   overwrite: False
   parameters:
     method: idw       # Interpolation method. Supported values: idw (Inverse Distance Weighting), nnb (Nearest Neighbour Interpolation) 
@@ -20,9 +20,9 @@ rasterize_intensity.py:
 
 
 rasterize_roughness.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data       # Absolute path needed!!   
+  working_dir: </home/username/project_path>                                 # Absolute path needed!!   
   output_dir: outputs/occupancy_classif/processed_lidar/roughness           # Intensity and roughness rasters should be stored in a common folder with "intensity" and "roughness" subfolders.
-  lidar_dir: inputs/LiDAR/2023
+  lidar_dir: data/LiDAR/2019
   overwrite: False
   make_dem: True
   parameters_dem: 
@@ -39,11 +39,11 @@ rasterize_roughness.py:
 
 
 get_zonal_stats.py:
-  working_dir: C:\Users\gwena\Documents\STDL\2_En_cours\occupation-toitures\02_Data
+  working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
   raster_dir: outputs/occupancy_classif/processed_lidar
-  lidar_tiles: inputs/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
-  roofs: inputs/vectors/SHP_CAD_BATIMENT_HORSOL_TOIT/SHP_CAD_BATIMENT_HORSOL_TOIT_subset.gpkg
+  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
+  roofs: data/SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   debug_mode: False
   check_tiles: False
   tile_id: TUILE
@@ -69,7 +69,7 @@ assess_classif_surfaces.py:
 random_forest.py:
   working_dir: .
   output_dir: outputs/occupancy_classif/roof_classification
-  gt_file: inputs/ground_truth/occupancy_classification.gpkg
+  gt_file: data/ground_truth/occupancy_classification.gpkg
   layer_ocen: ocen_classification
   layer_ocan: ocan_classification
   roof_file: outputs/occupancy_classif/roof_classification/roofs.gpkg

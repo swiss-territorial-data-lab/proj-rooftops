@@ -39,7 +39,7 @@ INPUT_TILES = cfg['input_tiles']
 ROOFS = cfg['roofs']
 
 N_JOBS = 10
-
+TILE_ID = cfg['tile_id']
 OVERWRITE = cfg['overwrite']
 
 os.chdir(WORKING_DIR)
@@ -56,7 +56,7 @@ roof_subset_gdf = roofs_gdf.loc[roofs_gdf.EGID.isin(egid_list), ['EGID', 'geomet
 tile_subset_gdf = gpd.sjoin(tiles_gdf, roof_subset_gdf, lsuffix="_tile", rsuffix="_roof")
 
 job_dict = {}
-for tile_name in tqdm(tile_subset_gdf.TUILE.unique(), desc="Get info for each tile"):
+for tile_name in tqdm(tile_subset_gdf[TILE_ID].unique(), desc="Get info for each tile"):
     filepath = os.path.join(OUTPUT_DIR, tile_name + '.las.zip')
 
     if (not OVERWRITE) and (os.path.isfile(filepath) or os.path.isfile(filepath[:-4])):
