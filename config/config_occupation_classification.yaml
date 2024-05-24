@@ -84,7 +84,7 @@ segment_objects.py:
   debug_mode: True
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: data/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   method: slic   # supported values:  felzenszwalb, quickshift, slic, watershed,
@@ -96,7 +96,7 @@ filter_for_objects.py:
   debug_mode: False
   working_dir: .
   input_dir_images: outputs/occupancy_classif/processed_lidar/intensity
-  lidar_tiles: data/LiDAR/2023_LiDAR_GRILLE_TOITS.gpkg
+  lidar_tiles: data/LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: outputs/occupancy_classif/roof_classification/classified_roofs.gpkg
   roofs_layer: roof_occupation_by_RF
   kernel: False
