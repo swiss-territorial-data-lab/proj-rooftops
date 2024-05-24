@@ -155,7 +155,7 @@ for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from t
 
         roofs_on_tile = building_roofs[building_roofs['tile_id']==tile_id].reset_index(drop=True)
         if roofs_on_tile.empty:
-            logger.warning(f'No roof on the tile {tile_id}.')
+            logger.warning(f'No roof for which to calculate stats on the tile {tile_id}.')
             continue
 
         # Intensity statistics
