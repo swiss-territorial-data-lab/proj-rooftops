@@ -75,9 +75,7 @@ for file in lidar_files:
                 filename + f'_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}.tif'
             )
 
-    if MAKE_DEM:
-
-        if (not os.path.isfile(output_path_dem)) | OVERWRITE:
+    if MAKE_DEM & (not os.path.isfile(output_path_dem) | OVERWRITE):
             job_dict_dem[filename] = {
                 'i': file, 
                 'output': output_path_dem, 

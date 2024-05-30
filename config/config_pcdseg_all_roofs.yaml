@@ -6,7 +6,8 @@ retrieve_point_clouds.py:
   input_tiles: LiDAR/Emprises tuiles Lidar 2019.shp
   roofs: SHP_CAD_BATIMENT_HORSOL_TOIT/CAD_BATIMENT_HORSOL_TOIT_subset.shp
   overwrite: False
-  tile_id: fme_basena
+  tile_id: fme_basena             # Field in the shapefile that contains the ID of the tile
+  year: 2019
 
 # 2 - Prepare the lidar point cloud
 prepare_data.py:

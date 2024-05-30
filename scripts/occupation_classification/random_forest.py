@@ -170,7 +170,6 @@ if __name__ == '__main__':
 
     consideration_condition = (
         (all_features_gdf.area>2) 
-        # & (~all_features_gdf.median_r.isna())
         & (all_features_gdf.status!='undefined')
     )
     features_gdf = all_features_gdf[consideration_condition].copy()
@@ -180,7 +179,7 @@ if __name__ == '__main__':
                             # 'nodata_overlap', 'min_i', 'max_i', 'ALTI_MIN', 'median_i',
                             # 'mean_i', 'mean_r', 'max_r',
                             'status', 'reason', 'geometry'
-    ])
+    ])      # Uncomment lines depending on the attributes to use. Default: keep all stats
 
     if TRAIN:
         logger.info('Read the ground truth')

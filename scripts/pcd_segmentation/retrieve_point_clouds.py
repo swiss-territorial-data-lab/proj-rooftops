@@ -40,6 +40,7 @@ ROOFS = cfg['roofs']
 
 N_JOBS = 10
 TILE_ID = cfg['tile_id']
+YEAR = cfg['year']
 OVERWRITE = cfg['overwrite']
 
 os.chdir(WORKING_DIR)
@@ -62,7 +63,7 @@ for tile_name in tqdm(tile_subset_gdf[TILE_ID].unique(), desc="Get info for each
     if (not OVERWRITE) and (os.path.isfile(filepath) or os.path.isfile(filepath[:-4])):
         continue
 
-    url = 'https://ge.ch/sitg/geodata/SITG/TELECHARGEMENT/LIDAR_2023/' + tile_name + '.las.zip'
+    url = f'https://ge.ch/sitg/geodata/SITG/TELECHARGEMENT/LIDAR_{YEAR}/{tile_name}.las.zip'
     job_dict[tile_name] = {'url': url, 'filename': filepath}
 
 job_outcome = Parallel(n_jobs=N_JOBS, backend="loky")(

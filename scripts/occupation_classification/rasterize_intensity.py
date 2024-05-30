@@ -64,7 +64,7 @@ for file in lidar_files:
     output_path_tif = os.path.join(OUTPUT_DIR, 
                                  os.path.basename(file.rstrip('.las')) + f'_{METHOD}_{str(RES).replace(".", "pt")}_{str(RADIUS).replace(".", "pt")}_{RETURNS}.tif')
     
-    if (not os.path.isfile(output_path_tif)) | OVERWRITE:
+    if not os.path.isfile(output_path_tif) | OVERWRITE:
         if METHOD == 'idw':
             job_dict[os.path.basename(file.rstrip('.las'))] = {
                 'i': file, 
