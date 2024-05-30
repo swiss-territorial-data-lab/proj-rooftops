@@ -16,7 +16,7 @@ rasterize_intensity.py:
     resolution: 0.3   # Output resolution
     radius: 0.3       # Search radius
     returns: first    # Point return types to include. Supported values: all, first, last
-    excluded_classes: 1, 2, 3, 5, 7, 9, 13, 15, 16, 19         # Classes to exclude, i.e., classes that are not about the building roof.
+    excluded_classes: 1, 2, 3, 4, 5, 7, 9, 11, 13, 14, 15, 16, 17, 18, 19, 21, 22, 25, 29, 31    # Classes to exclude, i.e., classes that are not about the building roof.
 
 
 rasterize_roughness.py:

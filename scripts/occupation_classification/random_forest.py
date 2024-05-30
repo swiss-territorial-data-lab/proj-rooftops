@@ -165,18 +165,11 @@ if __name__ == '__main__':
 
     # Data processing --------------------------------------
 
-    logger.info('Read the files')
-
-    ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
-
-    ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
-
     logger.info('Format the data')
     all_features_gdf = gpd.read_file(ROOF_PATH, layer=ROOF_LAYER)
 
     consideration_condition = (
         (all_features_gdf.area>2) 
-        # & (~all_features_gdf.median_r.isna())
         & (all_features_gdf.status!='undefined')
     )
     features_gdf = all_features_gdf[consideration_condition].copy()
@@ -186,9 +179,15 @@ if __name__ == '__main__':
                             # 'nodata_overlap', 'min_i', 'max_i', 'ALTI_MIN', 'median_i',
                             # 'mean_i', 'mean_r', 'max_r',
                             'status', 'reason', 'geometry'
-    ])
+    ])      # Uncomment lines depending on the attributes to use. Default: keep all stats
 
     if TRAIN:
+        logger.info('Read the ground truth')
+
+        ocen_gt = gpd.read_file(GT_PATH, layer=OCEN_LAYER)
+
+        ocan_gt = gpd.read_file(GT_PATH, layer=OCAN_LAYER)
+
         logger.info('Train and test a random forest for the OCEN')
         agreement_ocen_df, tmp = random_forest(ocen_gt, features_df, desc='OCEN', nbr_estimators=30)
         written_files.extend(tmp)

@@ -154,6 +154,9 @@ for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from t
     if any(tile_id in tilepath for tilepath in im_list_intensity) and any(tile_id in tilepath for tilepath in im_list_roughness):
 
         roofs_on_tile = building_roofs[building_roofs['tile_id']==tile_id].reset_index(drop=True)
+        if roofs_on_tile.empty:
+            logger.warning(f'No roof for which to calculate stats on the tile {tile_id}.')
+            continue
 
         # Intensity statistics
         tilepath = misc.get_tilepath_from_id(tile_id, im_list_intensity)
@@ -194,7 +197,7 @@ for tile_id in tqdm(lidar_tiles['id'].unique(), desc='Getting zonal stats from t
 zs_per_roof['MOE_i'] = Z*zs_per_roof['std_i'] / (zs_per_roof['count_i']**(1/2))
 
 if (nbr_no_roofs + zs_per_roof.shape[0] != nbr_existing_clipped_roofs):
-    logger.error(f'There is a difference of {nbr_no_roofs + zs_per_roof.shape[0]  - nbr_existing_clipped_roofs} roofs after filtering nodata values.')
+    logger.error(f'There is a difference of {nbr_no_roofs + zs_per_roof.shape[0]  - nbr_existing_clipped_roofs} roofs after computing zonal stats.')
 
 
 roof_stats = pd.concat([zs_per_roof, small_roofs, no_roofs], ignore_index=True)
