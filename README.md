@@ -31,17 +31,22 @@ All the dependencies required for the project are listed in `requirements.in` an
         python3 -m venv <dir_path>/<name of the virtual environment>
         source <dir_path>/<name of the virtual environment>/bin/activate
 
-- Install dependencies with pip >= 20.3:
+- Install GDAL if you intend to run the image processing:
 
-        pip install -r requirements.txt
+        sudo apt-get install -y python3-gdal gdal-bin libgdal-dev gcc g++ python3.8-dev
 
-- _requirements.txt_ has been obtained by compiling _requirements.in_. Recompiling the file might lead to libraries version changes:
+- Install dependencies **with pip >= 20.3 and setuptools < 58.0.0**:
 
+        pip install wheel   # because of GDAL
         pip install -r requirements.txt
 
     - Requirements for the LiDAR workflows only:
 
             pip install -r requirements_lidar.txt
+
+- _requirements.txt_ has been obtained by compiling _requirements.in_ with the libary `pip-tools`. Recompiling the file might lead to libraries version changes:
+
+        pip-compile requirements.in
             
 - Specific libraries were used for image processing:
     - PyTorch version 1.10
